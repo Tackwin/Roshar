@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <optional>
 #include <vector>
 
 #include "./../Math/Vector.hpp"
@@ -28,6 +29,7 @@ private:
 
 	static Vector2f mouseScreenPos;
 	static Vector2f mouseScreenDelta;
+	static std::optional<Vector2f> mouseStartDragPos;
 
 	static Vector2u windowsSize;
 

@@ -13,5 +13,8 @@ namespace details {
 #define CONCAT_(x, y) x##y
 #define CONCAT(x, y) CONCAT_(x, y)
 #define defer details::Defer CONCAT(defer_, __COUNTER__) = [&]
-#define BEG_END(x) std::begin(x), std::end(x)
-#define C_REF(x) const x&
+
+#define BEG(x) std::begin(x)
+#define END(x) std::end(x)
+#define BEG_END(x) BEG(x), END(x)
+#define V2F(x) Vector2f{(x), (x)}

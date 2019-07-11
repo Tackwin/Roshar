@@ -343,3 +343,4 @@ Vector2f InputsManager::applyInverseView(const sf::View& view, Vector2f p) noexc
 
 	return view.getInverseTransform().transformPoint(normalized);
 }
+

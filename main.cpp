@@ -25,26 +25,29 @@ int main(int, char**) {
 	editor.level_to_edit = &level;
 
 	bool run_editor = false;
-	bool run_level = true;
 
 	while (window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
 		IM::update(window);
 		ImGui::SFML::Update(window, sf::seconds(dt));
 
-		run_editor |= IM::isKeyJustPressed(sf::Keyboard::E);
-		run_level &= !run_editor;
-		run_level |= IM::isKeyJustPressed(sf::Keyboard::Return);
-		run_editor &= !run_level;
+		if (IM::isKeyJustPressed(sf::Keyboard::E)) {
+			run_editor = !run_editor;
+		}
 
 		window.clear();
 
+		ImGui::Begin("Environment");
+		ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
+		ImGui::InputFloat("Drag", &Environment.drag);
+		ImGui::InputFloat("Gravity", &Environment.gravity);
+		ImGui::End();
+
 		if (run_editor) {
-			editor.input();
 			editor.update(dt);
 			editor.render(window);
 		}
-		if (run_level) {
+		else {
 			level.update(dt);
 		}
 		level.render(window);

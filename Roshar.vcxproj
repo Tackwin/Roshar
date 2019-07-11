@@ -83,7 +83,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <ForcedIncludeFiles>macros.hpp;constexpr.hpp;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedIncludeFiles>global.hpp;macros.hpp;constexpr.hpp;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PreprocessorDefinitions>SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -113,6 +113,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>global.hpp;macros.hpp;constexpr.hpp;</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,16 +138,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="global.cpp" />
     <ClCompile Include="imgui-SFML.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Managers\InputsManager.cpp" />
     <ClCompile Include="OS\Windows\file.cpp" />
+    <ClCompile Include="Time.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Collision.hpp" />
     <ClInclude Include="constexpr.hpp" />
     <ClInclude Include="Editor.hpp" />
+    <ClInclude Include="global.hpp" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui-SFML.h" />
     <ClInclude Include="imgui-SFML_export.h" />
@@ -161,6 +167,7 @@
     <ClInclude Include="Math\Vector.hpp" />
     <ClInclude Include="OS\file.hpp" />
     <ClInclude Include="render_commang.hpp" />
+    <ClInclude Include="Time.hpp" />
     <ClInclude Include="xstd.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

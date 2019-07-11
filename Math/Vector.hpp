@@ -526,7 +526,7 @@ struct Vector : public __vec_member<D, T> {
 		Vector4d colorB
 	) noexcept {
 		sf::CircleShape head(10, 3);
-		head.setOrigin({ 10, 10 });
+		head.setOrigin({ 10, 20 });
 		head.setPosition(B + Vector2f{0, -10});
 		head.setRotation(90 + 180 * (B - A).angleX() / 3.1415926f);
 		head.setFillColor(colorB);
