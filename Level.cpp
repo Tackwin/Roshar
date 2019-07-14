@@ -28,7 +28,8 @@ void Block::render(sf::RenderTarget& target) noexcept {
 
 void Kill_Zone::render(sf::RenderTarget& target) noexcept {
 	sf::RectangleShape shape(size);
-	shape.setOutlineColor(Vector4f{ 0.1f, 1.f, 0.5f, 1.f });
+	shape.setFillColor(Vector4f{ 0.1f, 1.f, 0.5f, 1.f });
+	shape.setOutlineColor(Vector4f{ 1.f, 1.f, 1.f, 1.f });
 	shape.setOutlineThickness(0.01f);
 	shape.setPosition(pos);
 	target.draw(shape);
@@ -60,11 +61,39 @@ void Player::render(sf::RenderTarget& target) noexcept {
 	target.draw(shape);
 }
 
+void Dispenser::render(sf::RenderTarget& target) noexcept {
+	sf::CircleShape shape(proj_r);
+	shape.setFillColor(Vector4f{ 0.4f, 0.3f, 0.2f, 1.f });
+	shape.setOrigin(shape.getRadius(), shape.getRadius());
+	shape.setPosition(start_pos);
+	target.draw(shape);
+
+	if (editor_selected) {
+		shape.setOutlineThickness(0.1f);
+		target.draw(shape);
+
+		shape.setFillColor(sf::Color::Transparent);
+		shape.setPosition(end_pos);
+		target.draw(shape);
+	}
+}
+
+void Projectile::render(sf::RenderTarget& target) noexcept {
+	sf::CircleShape shape(r);
+	shape.setFillColor(Vector4f{ 0.2f, 0.3f, 0.4f, 1.f });
+	shape.setOrigin(shape.getRadius(), shape.getRadius());
+	shape.setPosition(pos);
+	target.draw(shape);
+}
+
 void Level::render(sf::RenderTarget& target) noexcept {
 	target.setView(camera);
 	for (auto& x : blocks) x.render(target);
 	for (auto& x : kill_zones) x.render(target);
+	for (auto& x : dispensers) x->render(target);
+	for (auto& x : projectiles) x.render(target);
 	for (auto& x : prest_sources) x.render(target);
+
 	player.render(target);
 
 	if (start_drag) {
@@ -98,14 +127,18 @@ void Level::render(sf::RenderTarget& target) noexcept {
 }
 
 
-bool blockPlayer(std::vector<Block>& blocks, Player player) noexcept {
+bool blockPlayer(std::vector<Block>& blocks, const Player& player) noexcept {
 	for (const auto& b : blocks) if (test(b, player)) return true;
 	return false;
 }
 
-bool killZonesPlayer(std::vector<Kill_Zone>& kill_zones, Player player) noexcept {
+bool killZonesPlayer(std::vector<Kill_Zone>& kill_zones, const Player& player) noexcept {
 	for (const auto& b : kill_zones) if (test(b, player)) return true;
 	return false;
+}
+
+bool projectilsPlayer(std::vector<Projectile>& projectiles, const Player& player) noexcept {
+	return std::any_of(BEG_END(projectiles), [&](auto x) {return test(x, player); });
 }
 
 Level::Level() noexcept {
@@ -113,11 +146,18 @@ Level::Level() noexcept {
 }
 
 void Level::update(float dt) noexcept {
+	started |= IM::isKeyJustPressed();
+	if (!started) return;
+	
 	auto prev_player_pos = player.pos;
 
 	auto prevPlayer = player;
 
 	if (IM::isWindowFocused()) {
+		if (IM::isKeyJustPressed(sf::Keyboard::Quote)) {
+			return retry();
+		}
+
 		if (IM::isKeyPressed(sf::Keyboard::Q)) {
 			player.pos.x -= dt * 5;
 		}
@@ -166,6 +206,31 @@ void Level::update(float dt) noexcept {
 		}
 	}
 
+	for (auto& x : dispensers) {
+		x->timer -= dt;
+		if (x->timer <= 0) {
+			x->timer = x->hz;
+
+			Projectile p;
+			p.pos = x->start_pos;
+			p.r = x->proj_r;
+			p.speed = (x->end_pos - x->start_pos).normalize() * x->proj_speed;
+			p.origin = x;
+
+			projectiles.push_back(p);
+		}
+	}
+	for (size_t i = projectiles.size() - 1; i + 1 > 0; --i) {
+		auto& x = projectiles[i];
+
+		x.pos += x.speed * dt;
+
+		if (x.origin.expired()) continue;
+
+		if (test(*x.origin.lock(), x)) {
+			projectiles.erase(BEG(projectiles) + i);
+		}
+	}
 
 	player.forces.y -= Environment.gravity;
 	for (const auto& x : basic_bindings) player.forces += x * Environment.gravity;
@@ -174,25 +239,29 @@ void Level::update(float dt) noexcept {
 	player.velocity *= std::powf(Environment.drag, dt);
 	player.forces = {};
 
+	const auto dead_velocity_2 = Environment.dead_velocity * Environment.dead_velocity;
+
 	player.pos.x += player.velocity.x * dt;
-	if (killZonesPlayer(kill_zones, player)) {
-		return retry();
-	}
 	if (blockPlayer(blocks, player)) {
+		if (player.velocity.length2() > dead_velocity_2) return retry();
 		player.pos.x = prevPlayer.pos.x;
 		player.velocity.x = 0;
 		player.forces.x = 0;
 	}
-	player.floored = false;
-	player.pos.y += player.velocity.y * dt;
-	if (killZonesPlayer(kill_zones, player)) {
+	if (killZonesPlayer(kill_zones, player) || projectilsPlayer(projectiles, player)) {
 		return retry();
 	}
+	player.floored = false;
+	player.pos.y += player.velocity.y * dt;
 	if (blockPlayer(blocks, player)) {
+		if (player.velocity.length2() > dead_velocity_2) return retry();
 		player.pos.y = prevPlayer.pos.y;
 		player.floored = player.velocity.y < 0;
 		player.velocity.y = 0;
 		player.forces.y = 0;
+	}
+	if (killZonesPlayer(kill_zones, player) || projectilsPlayer(projectiles, player)) {
+		return retry();
 	}
 
 	for (size_t i = prest_sources.size() - 1; i + 1 > 0; --i) {
@@ -257,6 +326,21 @@ void to_dyn_struct(dyn_struct& str, const Block& block) noexcept {
 	str["pos"] = block.pos;
 	str["size"] = block.size;
 }
+void from_dyn_struct(const dyn_struct& str, Dispenser& dispenser) noexcept {
+	dispenser.start_pos = (Vector2f)str["start_pos"];
+	dispenser.end_pos = (Vector2f)str["end_pos"];
+	dispenser.proj_r = (float)str["proj_r"];
+	dispenser.hz = (float)str["hz"];
+	dispenser.proj_speed = (float)str["proj_speed"];
+}
+void to_dyn_struct(dyn_struct& str, const Dispenser& dispenser) noexcept {
+	str = dyn_struct::structure_t{};
+	str["start_pos"] = dispenser.start_pos;
+	str["end_pos"] = dispenser.end_pos;
+	str["proj_r"] = dispenser.proj_r;
+	str["proj_speed"] = dispenser.proj_speed;
+	str["hz"] = dispenser.hz;
+}
 void from_dyn_struct(const dyn_struct& str, Kill_Zone& block) noexcept {
 	block.pos = (Vector2f)str["pos"];
 	block.size = (Vector2f)str["size"];
@@ -281,6 +365,10 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 		level.kill_zones.push_back((Kill_Zone)x);
 	for (const auto& x : iterate_array(str["prest_sources"]))
 		level.prest_sources.push_back((Prest_Source)x);
+	if (has(str, "dispensers")) {
+		for (const auto& x : iterate_array(str["dispensers"]))
+			level.dispensers.push_back(std::make_shared<Dispenser>(x));
+	}
 
 	Player player;
 	player.forces = {};
@@ -303,6 +391,8 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	for (const auto& x : level.kill_zones) str["kill_zones"].push_back(x);
 	str["prest_sources"] = dyn_struct_array();
 	for (const auto& x : level.prest_sources) str["prest_sources"].push_back(x);
+	str["dispensers"] = dyn_struct_array();
+	for (const auto& x : level.dispensers) str["dispensers"].push_back(*x);
 
 	auto& player = str["player"] = dyn_struct::structure_t{};
 

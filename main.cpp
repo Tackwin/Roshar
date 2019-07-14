@@ -42,6 +42,7 @@ int main(int, char**) {
 		ImGui::InputFloat("Gather step", &Environment.gather_step);
 		ImGui::InputFloat("Drag", &Environment.drag);
 		ImGui::InputFloat("Gravity", &Environment.gravity);
+		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
 		ImGui::End();
 
 		if (run_editor) {

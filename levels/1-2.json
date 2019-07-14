@@ -77,6 +77,7 @@
 		},
 		"prest": 1.500000
 	} ],
+	"dispensers": [],
 	"player": {
 		"pos": {
 			"__type_tag__": 774610643,

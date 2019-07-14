@@ -6,6 +6,8 @@ struct Environment_t {
 	float gather_speed{ 4 };
 	float gather_step{ 0.5f };
 	int drag_angle_step{ 16 };
+
+	float dead_velocity{ 6 };
 };
 
 extern Environment_t Environment;

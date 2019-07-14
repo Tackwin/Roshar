@@ -530,9 +530,9 @@ struct Vector : public __vec_member<D, T> {
 		Vector4d colorB
 	) noexcept {
 		sf::CircleShape head(0.1f, 3);
-		head.setOrigin({ 0.1f, 0.2f });
-		head.setPosition(B + Vector2f{0, -0.1f});
-		head.setRotation((float)(90 + 180 * (B - A).angleX() / 3.1415926));
+		head.setOrigin({ 0.1f, 0.0f });
+		head.setPosition(B);
+		head.setRotation(90 + (float)(180 * (B - A).angleX() / 3.1415926));
 		head.setFillColor(colorB);
 		Vector<2, T>::renderLine(target, A, B, colorA, colorB);
 		target.draw(head);

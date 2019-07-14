@@ -3,6 +3,8 @@
 struct Block;
 struct Player;
 struct Kill_Zone;
+struct Dispenser;
+struct Projectile;
 struct Prest_Source;
 template<size_t D, typename T>
 struct Vector;
@@ -13,3 +15,6 @@ struct Vector;
 [[nodiscard]] extern bool test(const Prest_Source& x, const Player& p) noexcept;
 [[nodiscard]] extern bool test(const Kill_Zone& x, const Vector<2, float>& v) noexcept;
 [[nodiscard]] extern bool test(const Kill_Zone& x, const Player& p) noexcept;
+[[nodiscard]] extern bool test(const Projectile& x, const Player& p) noexcept;
+[[nodiscard]] extern bool test(const Dispenser& x, const Vector<2, float>& p) noexcept;
+[[nodiscard]] extern bool test(const Dispenser& x, const Projectile& p) noexcept;

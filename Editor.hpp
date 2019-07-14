@@ -12,6 +12,7 @@ class Editor {
 		Block = 0,
 		Prest,
 		Kill_Zone,
+		Dispenser,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;
@@ -24,7 +25,6 @@ class Editor {
 
 	std::string save_path;
 
-	void render_selected(sf::RenderTarget& target, Block& block) noexcept;
 	void delete_all_selected() noexcept;
 public:
 	Level* level_to_edit{ nullptr };

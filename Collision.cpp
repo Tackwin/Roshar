@@ -40,3 +40,23 @@ bool test(const Prest_Source& b, const Vector2f& p) noexcept {
 	//     (b.pos - p.pos).length2() < sqrt(b.prest)² * Prest_Source::Radius_Multiplier²
 	return (b.pos - p).length2() < b.prest * mult;
 }
+bool test(const Projectile& x, const Player& p) noexcept {
+	Circlef c;
+	c.c = x.pos;
+	c.r = x.r;
+	return is_in(Rectangle<float>(p.pos, p.size), c);
+}
+bool test(const Dispenser& x, const Vector2f& p) noexcept {
+	Circlef c;
+	c.c = x.start_pos;
+	c.r = x.proj_r;
+	if (is_in(p, c)) return true;
+	c.c = x.end_pos;
+	return is_in(p, c);
+}
+bool test(const Dispenser& x, const Projectile& p) noexcept {
+	Circlef c;
+	c.c = x.end_pos;
+	c.r = p.r;
+	return is_in(p.pos, c);
+}

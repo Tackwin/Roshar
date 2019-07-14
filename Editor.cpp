@@ -73,14 +73,35 @@ void Editor::render(sf::RenderTarget&) noexcept {
 	require_dragging &= element_creating;
 
 	auto pred = [](auto& x) {return x.editor_selected; };
-	auto prest_selected = std::count_if(BEG_END(level_to_edit->prest_sources), pred);
-	if (prest_selected) {
+	auto pred_ptr = [](auto& x) {return x->editor_selected; };
+	auto n_selected = std::count_if(BEG_END(level_to_edit->prest_sources), pred);
+	if (n_selected) {
 		float x = { 0 };
-		if (prest_selected == 1)
-			x = std::find_if(BEG_END(level_to_edit->prest_sources), pred)->prest;
+		if (n_selected == 1) x = std::find_if(BEG_END(level_to_edit->prest_sources), pred)->prest;
 
 		if (ImGui::InputFloat("Prest", &x))
 			for (auto& y : level_to_edit->prest_sources) if (pred(y)) y.prest = x;
+	}
+
+	n_selected = std::count_if(BEG_END(level_to_edit->dispensers), pred_ptr);
+	if (n_selected) {
+		float r{ 0 };
+		float speed{ 0 };
+		float hz{ 0 };
+
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(level_to_edit->dispensers), pred_ptr);
+			r = (*it)->proj_r;
+			speed = (*it)->proj_speed;
+			hz = (*it)->hz;
+		}
+
+		if (ImGui::InputFloat("Radius", &r))
+			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_r = r;
+		if (ImGui::InputFloat("Speed", &speed))
+			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_speed = speed;
+		if (ImGui::InputFloat("Cadence", &hz))
+			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->hz = hz;
 	}
 
 	if (element_creating) {
@@ -102,6 +123,9 @@ void Editor::render(sf::RenderTarget&) noexcept {
 					break;
 				case Creating_Element::Prest:
 					*out = "Prest";
+					break;
+				case Creating_Element::Dispenser:
+					*out = "Dispenser";
 					break;
 				default:
 					assert(false);
@@ -162,10 +186,17 @@ void Editor::update(float dt) noexcept {
 				b.editor_selected = oring || test(b, IM::getMousePosInView(cam));
 			}
 		};
+		auto iter_ptr = [cam = level_to_edit->camera, shift](auto& c) noexcept {
+			for (auto& b : c) {
+				bool oring = (shift && b->editor_selected);
+				b->editor_selected = oring || test(*b, IM::getMousePosInView(cam));
+			}
+		};
 
 		iter(level_to_edit->blocks);
 		iter(level_to_edit->kill_zones);
 		iter(level_to_edit->prest_sources);
+		iter_ptr(level_to_edit->dispensers);
 	}
 	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
 }
@@ -201,17 +232,18 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			level_to_edit->kill_zones.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Dispenser: {
+			Dispenser new_block;
+			new_block.start_pos = start;
+			new_block.end_pos = end;
+			new_block.proj_r = .1f;
+			new_block.proj_speed = 1.f;
+
+			level_to_edit->dispensers.emplace_back(std::make_shared<Dispenser>(new_block));
+			break;
+		}
 		}
 	}
-}
-
-void Editor::render_selected(sf::RenderTarget& target, Block& block) noexcept {
-	sf::RectangleShape shape(block.size + Vector2f{2, 2});
-	shape.setOutlineColor(Vector4f{ 1.0, 1.0, 1.0, 1.0 });
-	shape.setOutlineThickness(1);
-	shape.setFillColor(Vector4f{ 1.0, 1.0, 1.0, sin_time });
-	shape.setPosition(block.pos - Vector2f{ 1, 1 });
-	target.draw(shape);
 }
 
 void Editor::delete_all_selected() noexcept {
@@ -222,8 +254,16 @@ void Editor::delete_all_selected() noexcept {
 			}
 		}
 	};
+	auto delete_in_iterable_ptr = [](auto& iter) {
+		for (size_t i = iter.size() - 1; i + 1 > 0; --i) {
+			if (iter[i]->editor_selected) {
+				iter.erase(BEG(iter) + i);
+			}
+		}
+	};
 
 	delete_in_iterable(level_to_edit->blocks);
 	delete_in_iterable(level_to_edit->kill_zones);
 	delete_in_iterable(level_to_edit->prest_sources);
+	delete_in_iterable_ptr(level_to_edit->dispensers);
 }
