@@ -28,8 +28,7 @@ int main(int, char**) {
 
 	while (window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
-		IM::update(window);
-		ImGui::SFML::Update(window, sf::seconds(dt));
+		IM::update(window, dt);
 
 		if (IM::isKeyJustPressed(sf::Keyboard::E)) {
 			run_editor = !run_editor;
@@ -39,6 +38,8 @@ int main(int, char**) {
 
 		ImGui::Begin("Environment");
 		ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
+		ImGui::InputFloat("Gather speed", &Environment.gather_speed);
+		ImGui::InputFloat("Gather step", &Environment.gather_step);
 		ImGui::InputFloat("Drag", &Environment.drag);
 		ImGui::InputFloat("Gravity", &Environment.gravity);
 		ImGui::End();

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -31,7 +31,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -83,10 +83,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <ForcedIncludeFiles>global.hpp;macros.hpp;constexpr.hpp;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PreprocessorDefinitions>SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DisableSpecificWarnings>4307;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -113,7 +114,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ForcedIncludeFiles>global.hpp;macros.hpp;constexpr.hpp;</ForcedIncludeFiles>
+      <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -139,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Collision.cpp" />
+    <ClCompile Include="dyn_struct.cpp" />
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="global.cpp" />
     <ClCompile Include="imgui-SFML.cpp" />
@@ -151,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="Collision.hpp" />
     <ClInclude Include="constexpr.hpp" />
+    <ClInclude Include="dyn_struct.hpp" />
     <ClInclude Include="Editor.hpp" />
     <ClInclude Include="global.hpp" />
     <ClInclude Include="imconfig.h" />
@@ -165,6 +168,7 @@
     <ClInclude Include="Math\Rectangle.hpp" />
     <ClInclude Include="Math\Segment.hpp" />
     <ClInclude Include="Math\Vector.hpp" />
+    <ClInclude Include="Memory\ValuePtr.hpp" />
     <ClInclude Include="OS\file.hpp" />
     <ClInclude Include="render_commang.hpp" />
     <ClInclude Include="Time.hpp" />

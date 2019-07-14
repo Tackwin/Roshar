@@ -10,6 +10,8 @@ class Editor {
 
 	enum class Creating_Element {
 		Block = 0,
+		Prest,
+		Kill_Zone,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;
@@ -19,6 +21,8 @@ class Editor {
 	bool element_creating{ false };
 
 	float sin_time{ 0.f };
+
+	std::string save_path;
 
 	void render_selected(sf::RenderTarget& target, Block& block) noexcept;
 	void delete_all_selected() noexcept;

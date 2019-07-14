@@ -4,8 +4,12 @@
 #include <functional>
 #include <random>
 
+#include "dyn_struct.hpp"
+
 #pragma warning(push)
 #pragma warning(disable: 4201)
+
+static constexpr auto Vector2_Type_Tag = "Vector2<T>"_id;
 
 #define COLOR_UNROLL(x) (x).r, (x).g, (x).b, (x).a
 #define XYZW_UNROLL(v) (v).x, (v).y, (v).z, (v).w
@@ -525,10 +529,10 @@ struct Vector : public __vec_member<D, T> {
 		Vector4d colorA,
 		Vector4d colorB
 	) noexcept {
-		sf::CircleShape head(10, 3);
-		head.setOrigin({ 10, 20 });
-		head.setPosition(B + Vector2f{0, -10});
-		head.setRotation(90 + 180 * (B - A).angleX() / 3.1415926f);
+		sf::CircleShape head(0.1f, 3);
+		head.setOrigin({ 0.1f, 0.2f });
+		head.setPosition(B + Vector2f{0, -0.1f});
+		head.setRotation((float)(90 + 180 * (B - A).angleX() / 3.1415926));
 		head.setFillColor(colorB);
 		Vector<2, T>::renderLine(target, A, B, colorA, colorB);
 		target.draw(head);
@@ -620,5 +624,18 @@ Vector<D, T> operator/(U scalar, const Vector<D, T>& vec) noexcept {
 	}
 	return result;
 }
+
+
+template<typename T>
+void to_dyn_struct(dyn_struct& s, const Vector<2, T>& x) noexcept {
+	s = { x.x, x.y };
+	s.type_tag = Vector2_Type_Tag;
+}
+template<typename T>
+void from_dyn_struct(const dyn_struct& s, Vector<2, T>& x) noexcept {
+	x.x = (T)s[0];
+	x.y = (T)s[1];
+}
+
 
 #pragma warning(pop)

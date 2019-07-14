@@ -1,9 +1,12 @@
 #include "OS/file.hpp"
+#include <cassert>
 #include <Windows.h>
+#include <ShObjIdl_core.h>
 
-xstd::std_expected<std::string> file::read_whole_text(const std::filesystem::path& path) noexcept {
+xstd::std_expected<std::string>
+file::read_whole_text(const std::filesystem::path& path) noexcept {
 	auto handle = CreateFile(
-		path.native().c_str(),
+		path.string().c_str(),
 		GENERIC_READ,
 		FILE_SHARE_READ,
 		nullptr,
@@ -32,3 +35,231 @@ xstd::std_expected<std::string> file::read_whole_text(const std::filesystem::pat
 
 	return buffer;
 }
+
+xstd::std_expected<std::vector<char>>
+file::read_whole_file(const std::filesystem::path& path) noexcept {
+	auto handle = CreateFile(
+		path.string().c_str(),
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return Error::Win_Create_File;
+	}
+	defer{ CloseHandle(handle); };
+
+	LARGE_INTEGER large_int;
+	GetFileSizeEx(handle, &large_int);
+	if (large_int.QuadPart == 0) {
+		return Error::Win_File_Size;
+	}
+
+	std::vector<char> buffer;
+	buffer.resize((std::size_t)large_int.QuadPart);
+
+	DWORD read;
+	if (!ReadFile(handle, buffer.data(), (DWORD)large_int.QuadPart, &read, nullptr)) {
+		return Error::Win_File_Read;
+	}
+
+	return buffer;
+}
+
+bool file::overwrite_file(const std::filesystem::path& path, std::string_view str) noexcept {
+	FILE* f;
+	auto err = fopen_s(&f, path.generic_string().c_str(), "wb");
+	if (!f || err) return false;
+
+	defer{ fclose(f); };
+
+	auto wrote = fwrite(str.data(), 1, str.size(), f);
+	if (wrote != str.size()) return false;
+
+	return true;
+}
+
+const char* create_cstr_extension_label_map(
+	decltype(file::OpenFileOpts::ext_filters) filters
+) noexcept {
+	std::string result;
+
+	for (auto& [label, exts] : filters) {
+		result += label + '\0';
+
+		for (auto& ext : exts) {
+			result += ext + ';';
+		}
+
+		if (!exts.empty()) {
+			result.pop_back();
+		}
+
+		result += '\0';
+	}
+
+	char* result_cstr = new char[result.size() + 1];
+	memcpy(result_cstr, result.c_str(), sizeof(char) * (result.size() + 1));
+	result_cstr[result.size()] = '\0';
+	return result_cstr;
+}
+
+void file::open_file_async(
+	std::function<void(file::OpenFileResult)>&& callback, file::OpenFileOpts opts
+) noexcept {
+	auto thread = std::thread([opts, callback]() {
+		constexpr auto BUFFER_SIZE = 512;
+
+		char* filepath = new char[BUFFER_SIZE];
+		memcpy(
+			filepath,
+			opts.filepath.string().c_str(),
+			opts.filepath.string().size() + 1
+		);
+		defer{ delete[] filepath; };
+
+		char* filename = new char[BUFFER_SIZE];
+		memcpy(
+			filename,
+			opts.filename.string().c_str(),
+			opts.filename.string().size() + 1
+		);
+		defer{ delete[] filename; };
+
+		const char* filters = create_cstr_extension_label_map(opts.ext_filters);
+		defer{ delete filters; };
+
+		OPENFILENAME ofn;
+		ZeroMemory(&ofn, sizeof(ofn));
+
+		ofn.lStructSize = sizeof(OPENFILENAME);
+		ofn.hwndOwner = (HWND)opts.owner;
+		ofn.lpstrFilter = filters;
+		ofn.lpstrFile = filepath;
+		ofn.nMaxFile = BUFFER_SIZE;
+		ofn.lpstrFileTitle = filename;
+		ofn.nMaxFileTitle = BUFFER_SIZE;
+		ofn.Flags =
+			(opts.allow_multiple ? OFN_ALLOWMULTISELECT : 0) ||
+			(opts.prompt_for_create ? OFN_CREATEPROMPT : 0) ||
+			(opts.allow_redirect_link ? 0 : OFN_NODEREFERENCELINKS);
+
+		OpenFileResult result;
+
+		if (GetOpenFileName(&ofn)) {
+			result.succeded = true;
+
+			// To make sure they are generic.
+			result.filename = std::filesystem::path{ filename };
+			result.filepath = std::filesystem::path{ filepath };
+		}
+		else {
+			result.succeded = false;
+			result.error_code = CommDlgExtendedError();
+		}
+
+		callback(result);
+		});
+	thread.detach();
+}
+
+
+file::OpenFileResult file::open_file(file::OpenFileOpts opts) noexcept {
+	constexpr auto BUFFER_SIZE = 512;
+
+	char* filepath = new char[BUFFER_SIZE];
+	memcpy(
+		filepath,
+		opts.filepath.string().c_str(),
+		opts.filepath.string().size() + 1
+	);
+	defer{ delete filepath; };
+
+	char* filename = new char[BUFFER_SIZE];
+	memcpy(
+		filename,
+		opts.filename.string().c_str(),
+		opts.filename.string().size() + 1
+	);
+	defer{ delete filename; };
+
+	const char* filters = create_cstr_extension_label_map(opts.ext_filters);
+	defer{ delete filters; };
+
+	OPENFILENAMEA ofn;
+	ZeroMemory(&ofn, sizeof(ofn));
+
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = (HWND)opts.owner;
+	ofn.lpstrFilter = filters;
+	ofn.lpstrFile = filepath;
+	ofn.nMaxFile = BUFFER_SIZE;
+	ofn.lpstrFileTitle = filename;
+	ofn.nMaxFileTitle = BUFFER_SIZE;
+	ofn.Flags =
+		(opts.allow_multiple ? OFN_ALLOWMULTISELECT : 0) ||
+		(opts.prompt_for_create ? OFN_CREATEPROMPT : 0) ||
+		(opts.allow_redirect_link ? 0 : OFN_NODEREFERENCELINKS);
+
+	OpenFileResult result;
+
+	if (GetOpenFileNameA(&ofn)) {
+		result.succeded = true;
+
+		// To make sure they are generic.
+		result.filename = std::filesystem::path{ filename };
+		result.filepath = std::filesystem::path{ filepath };
+	}
+	else {
+		result.succeded = false;
+		result.error_code = CommDlgExtendedError();
+	}
+	return result;
+}
+
+
+void file::open_dir_async(
+	std::function<void(std::optional<std::filesystem::path>)>&& callback
+) noexcept {
+	std::thread([callback]() {callback(open_dir()); }).detach();
+}
+std::optional<std::filesystem::path> file::open_dir() noexcept {
+	std::optional<std::filesystem::path> result = std::nullopt;
+	std::thread{ [&result] {
+		constexpr auto BUFFER_SIZE = 2048;
+
+		HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+		if (FAILED(hr)) return;
+
+		IFileDialog* file_dialog;
+		auto return_code = CoCreateInstance(
+			CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&file_dialog)
+		);
+		if (FAILED(return_code)) return;
+		defer{ file_dialog->Release(); };
+
+		DWORD options;
+		if (FAILED(file_dialog->GetOptions(&options))) return;
+
+		file_dialog->SetOptions(options | FOS_PICKFOLDERS);
+
+		if (FAILED(file_dialog->Show(NULL))) return;
+
+		IShellItem* psi;
+		if (FAILED(file_dialog->GetResult(&psi))) return;
+		defer{ psi->Release(); };
+
+		LPWSTR pointer;
+		if (FAILED(psi->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, &pointer))) return;
+		assert(pointer);
+
+		result = std::filesystem::path{ std::wstring{pointer} };
+	} }.join();
+
+	return result;
+}
+
+

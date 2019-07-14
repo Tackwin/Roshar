@@ -22,5 +22,14 @@ namespace Error {
 	X(Win_Create_File);
 	X(Win_File_Size);
 	X(Win_File_Read);
+	X(Win_File_Write);
+	X(Win_File_Incomplete_Write);
 #undef X
 }
+
+constexpr size_t operator""_id(const char* user, size_t size) {
+	size_t seed = 0;
+	for (size_t i = 0; i < size; ++i) seed = xstd::hash_combine(seed, (size_t)user[i]);
+	return seed;
+}
+

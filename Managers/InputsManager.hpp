@@ -38,10 +38,14 @@ private:
 
 	static sf::Keyboard::Key lastKey;
 
+	static bool mouseCaptured;
+	static bool keyCaptured;
+	static bool focused;
+
 public:
 	static std::string nameOfKey(sf::Keyboard::Key) noexcept;
 
-	static void update(sf::RenderWindow &window);
+	static void update(sf::RenderWindow &window, float dt);
 
 	static sf::Keyboard::Key getLastKeyPressed() noexcept;
 
@@ -92,8 +96,11 @@ public:
 	};
 	static bool isMouseJustReleased(const sf::Mouse::Button &button);
 
+	static bool isWindowFocused() noexcept;
+
 	static float getLastScroll() noexcept;
 
+	static Vector2u getWindowSize() noexcept;
 	static Vector2f getMousePosInView(const sf::View& view);
 	static Vector2f getMouseScreenPos();
 	static Vector2f getMouseScreenDelta() noexcept;

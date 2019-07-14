@@ -4,6 +4,7 @@
 
 #include <cassert>
 
+#include "imgui.h"
 #include "imgui-SFML.h"
 
 
@@ -12,6 +13,10 @@ sf::Uint32 InputsManager::textEntered;
 bool InputsManager::wasKeyJustPressed = false;
 bool InputsManager::wasKeyJustReleased = false;
 int InputsManager::nKeyPressed = 0;
+
+bool IM::mouseCaptured = false;
+bool IM::keyCaptured = false;
+bool IM::focused = false;
 
 float InputsManager::lastScroll = 0.f;
 
@@ -39,10 +44,8 @@ void print_sequence(const std::vector<sf::Keyboard::Key>& x) {
 	printf("\n");
 }
 
-InputsManager::InputsManager() {
-}
-InputsManager::~InputsManager() {
-}
+InputsManager::InputsManager() {}
+InputsManager::~InputsManager() {}
 
 std::string InputsManager::nameOfKey(sf::Keyboard::Key k) noexcept {
 #define X(a) case sf::Keyboard::a: return #a;
@@ -171,6 +174,7 @@ bool InputsManager::isLastSequence(
 	std::initializer_list<sf::Keyboard::Key> keys,
 	std::initializer_list<sf::Keyboard::Key> modifiers
 ) noexcept {
+	if (!keyCaptured) return false;
 	if (keys.size() > currentSequence.size()) return false;
 
 	auto end_pair = std::pair{ std::end(keys), std::end(currentSequence) };
@@ -190,7 +194,7 @@ bool InputsManager::isLastSequenceJustFinished(
 	std::initializer_list<sf::Keyboard::Key> keys,
 	std::initializer_list<sf::Keyboard::Key> modifiers
 ) noexcept {
-	return (wasKeyJustPressed && isLastSequence(keys, modifiers));
+	return (!keyCaptured&& wasKeyJustPressed && isLastSequence(keys, modifiers));
 }
 
 bool InputsManager::isKeyJustPressed() noexcept {
@@ -211,17 +215,17 @@ bool InputsManager::isKeyPressed(const sf::Keyboard::Key &key) {
 	return keyPressed[key];
 }
 bool InputsManager::isKeyJustPressed(const sf::Keyboard::Key &key) {
-	return keyJustPressed[key];
+	return !keyCaptured && keyJustPressed[key];
 }
 bool InputsManager::isKeyJustReleased(const sf::Keyboard::Key &key) {
-	return keyJustReleased[key];
+	return !keyCaptured && keyJustReleased[key];
 }
 
 bool InputsManager::isMousePressed(const sf::Mouse::Button &button) {
-	return mousePressed[button];
+	return !mouseCaptured && mousePressed[button];
 }
 bool InputsManager::isMouseJustPressed(const sf::Mouse::Button &button) {
-	return mouseJustPressed[button];
+	return !mouseCaptured && mouseJustPressed[button];
 }
 bool InputsManager::isMouseJustReleased(const sf::Mouse::Button &button) {
 	return mouseJustReleased[button];
@@ -246,7 +250,7 @@ float InputsManager::getLastScroll() noexcept {
 	return lastScroll;
 }
 
-void InputsManager::update(sf::RenderWindow &window) {
+void InputsManager::update(sf::RenderWindow& window, float dt) {
 	wasKeyJustPressed = false;
 	wasKeyJustReleased = false;
 	nKeyPressed = std::max(nKeyPressed, 0);
@@ -297,6 +301,8 @@ void InputsManager::update(sf::RenderWindow &window) {
 
 		ImGui::SFML::ProcessEvent(event);
 
+		if (!window.hasFocus()) continue;
+		
 		if(event.type == sf::Event::Closed)
 			window.close();
 
@@ -320,10 +326,16 @@ void InputsManager::update(sf::RenderWindow &window) {
 		}
 	}
 
+	focused = window.hasFocus();
+
 	mouseScreenDelta = (Vector2f)sf::Mouse::getPosition(window) - mouseScreenPos;
 	mouseScreenPos = sf::Mouse::getPosition(window);
 
 	windowsSize = window.getSize();
+
+	ImGui::SFML::Update(window, sf::seconds(dt));
+	keyCaptured = ImGui::GetIO().WantCaptureKeyboard;
+	mouseCaptured = ImGui::GetIO().WantCaptureMouse;
 }
 
 
@@ -342,5 +354,13 @@ Vector2f InputsManager::applyInverseView(const sf::View& view, Vector2f p) noexc
 	normalized.y = +1.f - 2.f * (p.y - viewPort.top) / viewPort.height;
 
 	return view.getInverseTransform().transformPoint(normalized);
+}
+
+bool IM::isWindowFocused() noexcept {
+	return focused;
+}
+
+Vector2u IM::getWindowSize() noexcept {
+	return windowsSize;
 }
 
