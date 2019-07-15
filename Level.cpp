@@ -15,11 +15,11 @@ void Block::render(sf::RenderTarget& target) noexcept {
 		thread_local float sin_time = 0;
 		sin_time += std::cosf(sin_time) * 0.01f;
 
-		float size_up = 4;
+		float size_up = 0.04f;
 
 		shape.setSize(size + V2F(size_up));
 		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(1);
+		shape.setOutlineThickness(0.01f);
 		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, sin_time });
 		shape.setPosition(pos - V2F(size_up / 2));
 		target.draw(shape);
@@ -38,11 +38,11 @@ void Kill_Zone::render(sf::RenderTarget& target) noexcept {
 		thread_local float sin_time = 0;
 		sin_time += std::cosf(sin_time) * 0.01f;
 
-		float size_up = 4;
+		float size_up = 0.04f;
 
 		shape.setSize(size + V2F(size_up));
 		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(1);
+		shape.setOutlineThickness(.01f);
 		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, sin_time });
 		shape.setPosition(pos - V2F(size_up / 2));
 		target.draw(shape);
@@ -75,6 +75,17 @@ void Dispenser::render(sf::RenderTarget& target) noexcept {
 		shape.setFillColor(sf::Color::Transparent);
 		shape.setPosition(end_pos);
 		target.draw(shape);
+
+		std::size_t i = 0;
+		auto proj_timer = offset_timer + ++i / hz - timer;
+
+		while ((end_pos - start_pos).length() > proj_speed * proj_timer && proj_timer > 0) {
+			Projectile p;
+			p.pos = start_pos + (end_pos - start_pos).normalize() * proj_timer * proj_speed;
+			p.r = proj_r;
+			p.render(target);
+			proj_timer = offset_timer + ++i / hz - timer;
+		}
 	}
 }
 
@@ -146,6 +157,7 @@ Level::Level() noexcept {
 }
 
 void Level::update(float dt) noexcept {
+	update_camera(dt);
 	started |= IM::isKeyJustPressed();
 	if (!started) return;
 	
@@ -190,7 +202,7 @@ void Level::update(float dt) noexcept {
 			if (dt_vec.length2() > drag_dead_zone * drag_dead_zone) {
 				auto discrete_angle = dt_vec.angleX();
 				auto angle_step = 2 * PI / Environment.drag_angle_step;
-				discrete_angle = angle_step * (int)(discrete_angle / angle_step);
+				discrete_angle = angle_step * std::roundf(discrete_angle / angle_step);
 
 				auto unit = Vector2f::createUnitVector(discrete_angle);
 				auto prest_gathered = 
@@ -209,7 +221,7 @@ void Level::update(float dt) noexcept {
 	for (auto& x : dispensers) {
 		x->timer -= dt;
 		if (x->timer <= 0) {
-			x->timer = x->hz;
+			x->timer = 1 / x->hz;
 
 			Projectile p;
 			p.pos = x->start_pos;
@@ -271,8 +283,6 @@ void Level::update(float dt) noexcept {
 			break;
 		}
 	}
-
-	update_camera(dt);
 }
 
 void Level::update_camera(float dt) noexcept {
@@ -296,6 +306,18 @@ void Level::retry() noexcept {
 		auto new_level = *initial_level;
 		*this = new_level;
 	}
+}
+
+
+void Level::pause() noexcept {}
+void Level::resume() noexcept {
+	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
+	auto iter_ptr = [](auto& x) noexcept { for (auto& y : x) y->editor_selected = false; };
+
+	iter(blocks);
+	iter(kill_zones);
+	iter(prest_sources);
+	iter_ptr(dispensers);
 }
 
 void Prest_Source::render(sf::RenderTarget& target) noexcept {
@@ -365,10 +387,8 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 		level.kill_zones.push_back((Kill_Zone)x);
 	for (const auto& x : iterate_array(str["prest_sources"]))
 		level.prest_sources.push_back((Prest_Source)x);
-	if (has(str, "dispensers")) {
-		for (const auto& x : iterate_array(str["dispensers"]))
-			level.dispensers.push_back(std::make_shared<Dispenser>(x));
-	}
+	for (const auto& x : iterate_array(str["dispensers"]))
+		level.dispensers.push_back(std::make_shared<Dispenser>(x));
 
 	Player player;
 	player.forces = {};

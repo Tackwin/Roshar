@@ -32,6 +32,12 @@ int main(int, char**) {
 
 		if (IM::isKeyJustPressed(sf::Keyboard::E)) {
 			run_editor = !run_editor;
+			if (!run_editor) {
+				level.resume();
+			}
+			else {
+				level.pause();
+			}
 		}
 
 		window.clear();

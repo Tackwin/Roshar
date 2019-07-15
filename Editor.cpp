@@ -88,12 +88,14 @@ void Editor::render(sf::RenderTarget&) noexcept {
 		float r{ 0 };
 		float speed{ 0 };
 		float hz{ 0 };
+		float offset_timer{ 0.f };
 
 		if (n_selected == 1) {
 			auto it = std::find_if(BEG_END(level_to_edit->dispensers), pred_ptr);
 			r = (*it)->proj_r;
 			speed = (*it)->proj_speed;
 			hz = (*it)->hz;
+			offset_timer = (*it)->offset_timer;
 		}
 
 		if (ImGui::InputFloat("Radius", &r))
@@ -101,7 +103,12 @@ void Editor::render(sf::RenderTarget&) noexcept {
 		if (ImGui::InputFloat("Speed", &speed))
 			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_speed = speed;
 		if (ImGui::InputFloat("Cadence", &hz))
-			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->hz = hz;
+			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) {
+				y->hz = hz;
+				y->timer = 1.f / hz;
+			}
+		if (ImGui::InputFloat("Offset", &offset_timer)) for (auto& y : level_to_edit->dispensers)
+				if (pred_ptr(y)) y->offset_timer = offset_timer;
 	}
 
 	if (element_creating) {
@@ -237,7 +244,9 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.start_pos = start;
 			new_block.end_pos = end;
 			new_block.proj_r = .1f;
+			new_block.hz = 1;
 			new_block.proj_speed = 1.f;
+			new_block.timer = 1.f / new_block.hz;
 
 			level_to_edit->dispensers.emplace_back(std::make_shared<Dispenser>(new_block));
 			break;
@@ -254,16 +263,20 @@ void Editor::delete_all_selected() noexcept {
 			}
 		}
 	};
-	auto delete_in_iterable_ptr = [](auto& iter) {
-		for (size_t i = iter.size() - 1; i + 1 > 0; --i) {
-			if (iter[i]->editor_selected) {
-				iter.erase(BEG(iter) + i);
-			}
-		}
-	};
 
 	delete_in_iterable(level_to_edit->blocks);
 	delete_in_iterable(level_to_edit->kill_zones);
 	delete_in_iterable(level_to_edit->prest_sources);
-	delete_in_iterable_ptr(level_to_edit->dispensers);
+
+	for (size_t i = level_to_edit->dispensers.size() - 1; i + 1 > 0; --i) {
+		if (level_to_edit->dispensers[i]->editor_selected) {
+			level_to_edit->dispensers.erase(BEG(level_to_edit->dispensers) + i);
+
+			for (size_t j = level_to_edit->projectiles.size() - 1; j + 1 > 0; --j) {
+				auto& x = level_to_edit->projectiles[j];
+				if (x.origin.expired())
+					level_to_edit->projectiles.erase(BEG(level_to_edit->projectiles) + j);
+			}
+		}
+	}
 }

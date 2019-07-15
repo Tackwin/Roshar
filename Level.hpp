@@ -35,6 +35,7 @@ struct Dispenser {
 	float proj_speed;
 
 	float timer{ 0 };
+	float offset_timer{ 0 };
 
 	void render(sf::RenderTarget& target) noexcept;
 };
@@ -104,6 +105,9 @@ struct Level {
 
 	void render(sf::RenderTarget& target) noexcept;
 	void update(float dt) noexcept;
+
+	void pause() noexcept;
+	void resume() noexcept;
 
 private:
 	std::optional<Vector2f> camera_target;
