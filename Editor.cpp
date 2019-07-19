@@ -3,16 +3,17 @@
 #include "imgui.h"
 #include "Managers/InputsManager.hpp"
 #include "Math/Vector.hpp"
+#include "Math/Rectangle.hpp"
 #include "os/file.hpp"
 
 #include "Level.hpp"
 
-#include <stdio.h>
+#include <cstdio>
 #include <algorithm>
 
 #include "Collision.hpp"
 
-void Editor::render(sf::RenderTarget&) noexcept {
+void Editor::render(sf::RenderTarget& target) noexcept {
 	ImGui::Begin("Editor");
 	defer{ ImGui::End(); };
 
@@ -33,9 +34,8 @@ void Editor::render(sf::RenderTarget&) noexcept {
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
 	if (level_to_edit && ImGui::Button("Save")) {
-		std::wstring path;
-		std::copy(BEG_END(save_path), std::back_inserter(path));
-		save_to_json_file((dyn_struct)*level_to_edit, std::filesystem::path{ path });
+		if (ask_to_save) ImGui::OpenPopup("Sure ?");
+		else save(save_path);
 	}
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
@@ -76,15 +76,38 @@ void Editor::render(sf::RenderTarget&) noexcept {
 	auto pred_ptr = [](auto& x) {return x->editor_selected; };
 	auto n_selected = std::count_if(BEG_END(level_to_edit->prest_sources), pred);
 	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Prest sources");
 		float x = { 0 };
 		if (n_selected == 1) x = std::find_if(BEG_END(level_to_edit->prest_sources), pred)->prest;
 
+		ImGui::Text("Prest");
+		ImGui::SameLine();
 		if (ImGui::InputFloat("Prest", &x))
 			for (auto& y : level_to_edit->prest_sources) if (pred(y)) y.prest = x;
 	}
 
+	n_selected = std::count_if(BEG_END(level_to_edit->next_zones), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Next zones");
+		char next[512];
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(level_to_edit->next_zones), pred);
+			strcpy_s(next, 512, it->next_level.c_str());
+		}
+
+		ImGui::Text("Next");
+		ImGui::SameLine();
+		if (ImGui::InputText("Next", next, sizeof(next))) {
+			for (auto& y : level_to_edit->next_zones) if (pred(y)) y.next_level = next;
+		}
+	}
+
 	n_selected = std::count_if(BEG_END(level_to_edit->dispensers), pred_ptr);
 	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("dispensers");
 		float r{ 0 };
 		float speed{ 0 };
 		float hz{ 0 };
@@ -98,15 +121,26 @@ void Editor::render(sf::RenderTarget&) noexcept {
 			offset_timer = (*it)->offset_timer;
 		}
 
+		ImGui::Text("Radius");
+		ImGui::SameLine();
 		if (ImGui::InputFloat("Radius", &r))
 			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_r = r;
+
+		ImGui::Text("Speed");
+		ImGui::SameLine();
 		if (ImGui::InputFloat("Speed", &speed))
 			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_speed = speed;
+
+		ImGui::Text("Cadence");
+		ImGui::SameLine();
 		if (ImGui::InputFloat("Cadence", &hz))
 			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) {
 				y->hz = hz;
 				y->timer = 1.f / hz;
 			}
+
+		ImGui::Text("Offset");
+		ImGui::SameLine();
 		if (ImGui::InputFloat("Offset", &offset_timer)) for (auto& y : level_to_edit->dispensers)
 				if (pred_ptr(y)) y->offset_timer = offset_timer;
 	}
@@ -134,6 +168,12 @@ void Editor::render(sf::RenderTarget&) noexcept {
 				case Creating_Element::Dispenser:
 					*out = "Dispenser";
 					break;
+				case Creating_Element::Next_Zone:
+					*out = "Next_Zone";
+					break;
+				case Creating_Element::Dry_Zone:
+					*out = "Dry_Zone";
+					break;
 				default:
 					assert(false);
 					break;
@@ -144,6 +184,53 @@ void Editor::render(sf::RenderTarget&) noexcept {
 			(int)Creating_Element::Size
 		);
 		element_to_create = (Creating_Element)x;
+	}
+
+	if (ImGui::BeginPopup("Sure ?")) {
+		defer{ ImGui::EndPopup(); };
+
+		ImGui::Text(
+			"Are you sure to save this level at this location:\n%s\n, it will overwrite whatever\
+ is there.",
+			save_path.c_str()
+		);
+		if (ImGui::Button("Yes")) {
+			save(save_path);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("No")) ImGui::CloseCurrentPopup();
+	}
+
+	if (pos_start_drag) {
+		auto view = target.getView();
+		defer{ target.setView(view); };
+		target.setView(target.getDefaultView());
+
+		if (snap_horizontal) {
+			auto pos = Vector2f{ pos_start_drag->x, (float)IM::getMouseScreenPos().y };
+			sf::CircleShape mark(3);
+			mark.setFillColor(Vector4f{ 1.f, 1.f, 1.f, 0.5f });
+			mark.setPosition(pos);
+			target.draw(mark);
+			Vector2f::renderLine(target, *pos_start_drag, pos, { 1.0, 1.0, 1.0, 0.2 });
+		}
+		if (snap_vertical) {
+			auto pos = Vector2f{ (float)IM::getMouseScreenPos().x, pos_start_drag->y };
+			sf::CircleShape mark(3);
+			mark.setFillColor(Vector4f{ 1.f, 1.f, 1.f, 0.5f });
+			mark.setPosition(pos);
+			target.draw(mark);
+			Vector2f::renderLine(target, *pos_start_drag, pos, { 1.0, 1.0, 1.0, 0.2 });
+		}
+	}
+
+	if (start_selection) {
+		sf::RectangleShape shape;
+		shape.setPosition(*start_selection);
+		shape.setSize(IM::getMousePosInView(level_to_edit->camera) - *start_selection);
+		shape.setFillColor(Vector4d{ 0, 1, 0, 0.5 });
+		target.draw(shape);
 	}
 }
 
@@ -185,27 +272,40 @@ void Editor::update(float dt) noexcept {
 		}
 	}
 	if (IM::isMouseJustPressed(sf::Mouse::Right)) {
+		start_selection = IM::getMousePosInView(level_to_edit->camera);
+	}
+	else if (start_selection && IM::isMouseJustReleased(sf::Mouse::Right)) {
+		defer{ start_selection.reset(); };
+		Rectanglef rec{
+			*start_selection,
+			IM::getMousePosInView(level_to_edit->camera) - *start_selection
+		};
+
 		auto shift = IM::isKeyPressed(sf::Keyboard::LShift);
 
-		auto iter = [cam = level_to_edit->camera, shift](auto& c) noexcept {
+		auto iter = [cam = level_to_edit->camera, shift, rec](auto& c) noexcept {
 			for (auto& b : c) {
 				bool oring = (shift && b.editor_selected);
-				b.editor_selected = oring || test(b, IM::getMousePosInView(cam));
+				b.editor_selected = oring || test(b, rec);
 			}
 		};
-		auto iter_ptr = [cam = level_to_edit->camera, shift](auto& c) noexcept {
+		auto iter_ptr = [cam = level_to_edit->camera, shift, rec](auto& c) noexcept {
 			for (auto& b : c) {
 				bool oring = (shift && b->editor_selected);
-				b->editor_selected = oring || test(*b, IM::getMousePosInView(cam));
+				b->editor_selected = oring || test(*b, rec);
 			}
 		};
 
 		iter(level_to_edit->blocks);
+		iter(level_to_edit->dry_zones);
 		iter(level_to_edit->kill_zones);
+		iter(level_to_edit->next_zones);
 		iter(level_to_edit->prest_sources);
 		iter_ptr(level_to_edit->dispensers);
 	}
 	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
+	snap_vertical = IM::isKeyPressed(sf::Keyboard::LShift) && IM::isKeyPressed(sf::Keyboard::V);
+	snap_horizontal = IM::isKeyPressed(sf::Keyboard::LShift) && IM::isKeyPressed(sf::Keyboard::H);
 }
 
 void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
@@ -239,6 +339,19 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			level_to_edit->kill_zones.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Next_Zone: {
+			Next_Zone new_block;
+			new_block.pos = start;
+			new_block.size = end - start;
+
+			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
+			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
+			new_block.size.x = std::abs(new_block.size.x);
+			new_block.size.y = std::abs(new_block.size.y);
+
+			level_to_edit->next_zones.emplace_back(std::move(new_block));
+			break;
+		}
 		case Creating_Element::Dispenser: {
 			Dispenser new_block;
 			new_block.start_pos = start;
@@ -249,6 +362,13 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.timer = 1.f / new_block.hz;
 
 			level_to_edit->dispensers.emplace_back(std::make_shared<Dispenser>(new_block));
+			break;
+		}
+		case Creating_Element::Dry_Zone: {
+			Dry_Zone new_block;
+			new_block.rec = { start, end - start };
+
+			level_to_edit->dry_zones.emplace_back(new_block);
 			break;
 		}
 		}
@@ -265,7 +385,9 @@ void Editor::delete_all_selected() noexcept {
 	};
 
 	delete_in_iterable(level_to_edit->blocks);
+	delete_in_iterable(level_to_edit->dry_zones);
 	delete_in_iterable(level_to_edit->kill_zones);
+	delete_in_iterable(level_to_edit->next_zones);
 	delete_in_iterable(level_to_edit->prest_sources);
 
 	for (size_t i = level_to_edit->dispensers.size() - 1; i + 1 > 0; --i) {
@@ -279,4 +401,22 @@ void Editor::delete_all_selected() noexcept {
 			}
 		}
 	}
+
+#define S(x) level_to_edit->x.size()
+	auto n_elements =
+		S(blocks) +
+		S(dry_zones) +
+		S(kill_zones) +
+		S(next_zones) +
+		S(prest_sources) +
+		S(dispensers);
+#undef S
+
+	if (n_elements == 0) ask_to_save = true;
 }
+
+void Editor::save(const std::filesystem::path& path) noexcept {
+	save_to_json_file((dyn_struct)* level_to_edit, path);
+	ask_to_save = false;
+}
+

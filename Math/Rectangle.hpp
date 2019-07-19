@@ -3,6 +3,36 @@
 
 template<typename T>
 struct Rectangle {
+
+	enum class Side {
+		Left = 0,
+		Right,
+		Top,
+		Bot,
+		None,
+		Size
+	};
+
+	constexpr static Vector2<T> get_normal(Side s) noexcept {
+		switch (s) {
+		case Side::Left: return { -1, 0 };
+		case Side::Top: return { 0, 1 };
+		case Side::Right: return { 1, 0 };
+		case Side::Bot: return { 0, -1 };
+		default: return { 0, 0 };
+		}
+	}
+
+	constexpr static Vector2<T> get_tangent(Side s) noexcept {
+		switch (s) {
+		case Side::Left: return { 1, 0 };
+		case Side::Top: return { 0, 1 };
+		case Side::Right: return { 1, 0 };
+		case Side::Bot: return { 0, 1 };
+		default: return { 0, 0 };
+		}
+	}
+
 	union {
 		struct {
 			Vector<2, T> pos;
@@ -21,12 +51,30 @@ struct Rectangle {
 	Rectangle(const Vector<2, T>& pos, const Vector<2, T>& size) :
 		pos(pos),
 		size(size) 
-	{}
+	{
+		if (this->size.x < 0) {
+			this->pos.x += this->size.x;
+			this->size.x = -this->size.x;
+		}
+		if (this->size.y < 0) {
+			this->pos.y += this->size.y;
+			this->size.y = -this->size.y;
+		}
+	}
 #ifdef SFML_GRAPHICS_HPP
 
 	Rectangle(const sf::FloatRect& rec) : 
 		x(rec.left), y(rec.top), w(rec.width), h(rec.height)
-	{}
+	{
+		if (size.x < 0) {
+			pos.x += size.x;
+			size.x = -size.x;
+		}
+		if (size.y < 0) {
+			pos.y += size.y;
+			size.y = -size.y;
+		}
+	}
 
 #endif
 
@@ -35,6 +83,20 @@ struct Rectangle {
 				pos.x + size.x < other.pos.x || pos.x > other.pos.x + other.size.x ||
 				pos.y + size.y < other.pos.y || pos.y > other.pos.y + other.size.y
 			);
+	}
+
+	constexpr Side intersect_side(const Rectangle<T>& other) const noexcept {
+		if (!intersect(other)) return Side::None;
+
+		auto left = x - (other.x + other.w); left *= left;
+		auto right = (x + w) - other.x; right *= right;
+		auto top = (y + h) - other.y; top *= top;
+		auto bot = y - (other.y + other.h); bot *= bot;
+
+		if (left == std::min<T>({ left, right, top, bot })) return Side::Left;
+		else if (right == std::min<T>({ left, right, top, bot })) return Side::Right;
+		else if (top == std::min<T>({ left, right, top, bot })) return Side::Top;
+		else  return Side::Bot;
 	}
 
 	// works only for top down y
@@ -192,3 +254,21 @@ struct Rectangle {
 
 };
 
+using Rectanglef = Rectangle<float>;
+
+struct dyn_struct;
+template<typename T>
+void from_dyn_struct(const dyn_struct& str, Rectangle<T>& x) noexcept {
+	x.x = (T)str[0];
+	x.y = (T)str[1];
+	x.w = (T)str[2];
+	x.h = (T)str[3];
+}
+template<typename T>
+void to_dyn_struct(dyn_struct& str, const Rectangle<T>& x) noexcept {
+	str = dyn_struct::array_t{};
+	str.push_back(x.x);
+	str.push_back(x.y);
+	str.push_back(x.w);
+	str.push_back(x.h);
+}

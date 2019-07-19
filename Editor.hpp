@@ -13,6 +13,8 @@ class Editor {
 		Prest,
 		Kill_Zone,
 		Dispenser,
+		Next_Zone,
+		Dry_Zone,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;
@@ -21,11 +23,20 @@ class Editor {
 	bool placing_player{ false };
 	bool element_creating{ false };
 
+	std::optional<Vector2f> start_selection;
+
 	float sin_time{ 0.f };
+
+	bool snap_horizontal{ false };
+	bool snap_vertical{ false };
+
+	bool ask_to_save{ false };
 
 	std::string save_path;
 
 	void delete_all_selected() noexcept;
+
+	void save(const std::filesystem::path& path) noexcept;
 public:
 	Level* level_to_edit{ nullptr };
 

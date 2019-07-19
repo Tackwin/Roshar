@@ -389,9 +389,9 @@ namespace ImGui {
 
 			if (s_windowHasFocus) {
 				if (io.WantSetMousePos) {
-					sf::Vector2i mousePos(static_cast<int>(io.MousePos.x),
+					sf::Vector2i p(static_cast<int>(io.MousePos.x),
 						static_cast<int>(io.MousePos.y));
-					sf::Mouse::setPosition(mousePos);
+					sf::Mouse::setPosition(p);
 				}
 				else {
 					io.MousePos = mousePos;

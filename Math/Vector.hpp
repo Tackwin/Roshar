@@ -296,6 +296,10 @@ struct Vector : public __vec_member<D, T> {
 		return *this;
 	}
 
+	constexpr Vector<D, T> projectTo(const Vector<D, T>& other) const noexcept {
+		return dot(other) / length();
+	}
+
 	Vector<D, T> round(T magnitude) {
 		Vector<D, T> results;
 		for (size_t i = 0; i < D; ++i) {

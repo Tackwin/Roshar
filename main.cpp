@@ -13,7 +13,11 @@
 #include "Level.hpp"
 
 int main(int, char**) {
-	sf::RenderWindow window(sf::VideoMode(1280, 720), "Roshar");
+	Environment.window_width = 1280;
+	Environment.window_height = 720;
+	sf::RenderWindow window(
+		sf::VideoMode(Environment.window_width, Environment.window_height), "Roshar"
+	);
 
 	ImGui::SFML::Init(window);
 	defer{ ImGui::SFML::Shutdown(); };
