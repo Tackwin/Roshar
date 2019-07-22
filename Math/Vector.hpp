@@ -297,7 +297,7 @@ struct Vector : public __vec_member<D, T> {
 	}
 
 	constexpr Vector<D, T> projectTo(const Vector<D, T>& other) const noexcept {
-		return dot(other) / length();
+		return other * dot(other) / other.length2();
 	}
 
 	Vector<D, T> round(T magnitude) {
@@ -339,6 +339,11 @@ struct Vector : public __vec_member<D, T> {
 			res[i] = lamb(this->components[i]);
 		}
 		return res;
+	}
+
+	template<size_t Dp = D>
+	constexpr std::enable_if_t<Dp == 2, Vector<D, T>> rotate90() const noexcept {
+		return { -this->y, this->x };
 	}
 
 #pragma region OPERATOR
@@ -533,8 +538,10 @@ struct Vector : public __vec_member<D, T> {
 		Vector4d colorA,
 		Vector4d colorB
 	) noexcept {
-		sf::CircleShape head(0.1f, 3);
-		head.setOrigin({ 0.1f, 0.0f });
+		float r = (B - A).length() / 10;
+
+		sf::CircleShape head(r , 3);
+		head.setOrigin({ r, 0.0f });
 		head.setPosition(B);
 		head.setRotation(90 + (float)(180 * (B - A).angleX() / 3.1415926));
 		head.setFillColor(colorB);

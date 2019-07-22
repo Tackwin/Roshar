@@ -148,16 +148,16 @@ struct Rectangle {
 	}
 
 	Vector2<T> topLeft() const noexcept {
-		return pos;
-	}
-	Vector2<T> topRight() const noexcept {
-		return { x + w, y };
-	}
-	Vector2<T> botLeft() const noexcept {
 		return { x, y + h };
 	}
-	Vector2<T> botRight() const noexcept {
+	Vector2<T> topRight() const noexcept {
 		return pos + size;
+	}
+	Vector2<T> botLeft() const noexcept {
+		return pos;
+	}
+	Vector2<T> botRight() const noexcept {
+		return { x + w, y };
 	}
 
 	Rectangle<T> fitUpRatio(double ratio) const noexcept {

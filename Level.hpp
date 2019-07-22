@@ -82,6 +82,19 @@ struct Prest_Source {
 	void render(sf::RenderTarget& target) noexcept;
 };
 
+struct Rock {
+	bool editor_selected{ false };
+
+	float r;
+	Vector2f pos;
+	Vector2f velocity;
+
+	std::vector<Vector2f> bindings;
+	float mass;
+
+	void render(sf::RenderTarget& target) noexcept;
+};
+
 struct Player {
 	Vector2f pos;
 	Vector2f size{ 0.5f, 1 };
@@ -98,8 +111,15 @@ struct Player {
 };
 
 struct Level {
+	struct Debug_Vector {
+		Vector2f a;
+		Vector2f b;
+	};
+	std::vector<Debug_Vector> debug_vectors;
+
 	ValuePtr<Level> initial_level;
 
+	std::vector<Rock> rocks;
 	std::vector<Block> blocks;
 	std::vector<Dry_Zone> dry_zones;
 	std::vector<Kill_Zone> kill_zones;
@@ -107,6 +127,8 @@ struct Level {
 	std::vector<Projectile> projectiles;
 	std::vector<Prest_Source> prest_sources;
 	std::vector<std::shared_ptr<Dispenser>> dispensers;
+
+	std::vector<Vector2f> markers;
 
 	float camera_speed{ 10 };
 	float camera_idle_radius{ 0.3f };
@@ -163,5 +185,7 @@ extern void from_dyn_struct(const dyn_struct& str, Kill_Zone& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Kill_Zone& block) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Prest_Source& prest) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Prest_Source& prest) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Rock& r) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Rock& r) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Level& level) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Level& level) noexcept;

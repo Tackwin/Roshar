@@ -15,6 +15,7 @@ class Editor {
 		Dispenser,
 		Next_Zone,
 		Dry_Zone,
+		Rock,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;

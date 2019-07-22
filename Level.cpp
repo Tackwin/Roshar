@@ -1,7 +1,10 @@
 #include "Level.hpp"
 
 #include <imgui.h>
+#include <chrono>
+#include <thread>
 
+#include "Math/Circle.hpp"
 #include "Managers/InputsManager.hpp"
 #include "Collision.hpp"
 #include "Time.hpp"
@@ -96,6 +99,24 @@ void Dry_Zone::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
+void Rock::render(sf::RenderTarget& target) noexcept {
+	sf::CircleShape shape(r);
+	shape.setOrigin(r, r);
+	shape.setPosition(pos);
+	shape.setFillColor(Vector4d{ 0.5, 0.6, 0.7, 1.0 });
+	target.draw(shape);
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		shape.setRadius(r + 0.04f);
+		shape.setOrigin(shape.getRadius(), shape.getRadius());
+		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
+		target.draw(shape);
+	}
+}
+
 void Player::update(float) noexcept {
 }
 
@@ -153,12 +174,20 @@ void Projectile::render(sf::RenderTarget& target) noexcept {
 void Level::render(sf::RenderTarget& target) noexcept {
 	target.setView(camera);
 	for (auto& x : blocks) x.render(target);
+	for (auto& x : rocks) x.render(target);
 	for (auto& x : dry_zones) x.render(target);
 	for (auto& x : kill_zones) x.render(target);
 	for (auto& x : next_zones) x.render(target);
 	for (auto& x : dispensers) x->render(target);
 	for (auto& x : projectiles) x.render(target);
 	for (auto& x : prest_sources) x.render(target);
+
+	for (auto& x : markers) {
+		sf::CircleShape shape(0.05f);
+		shape.setPosition(x);
+		shape.setFillColor(sf::Color::Red);
+		target.draw(shape);
+	}
 
 	player.render(target);
 
@@ -188,13 +217,30 @@ void Level::render(sf::RenderTarget& target) noexcept {
 	}
 
 	if (start_drag) {
-		Vector2f::renderLine(target, target.mapPixelToCoords(*start_drag), IM::getMousePosInView(camera), { 0, 1, 0, 1 });
+		Vector2f::renderLine(
+			target,
+			target.mapPixelToCoords(*start_drag),
+			IM::getMousePosInView(camera),
+			{ 0, 1, 0, 1 }
+		);
 	}
+
+	static bool flag = false;
+	for (const auto& x : debug_vectors) {
+		Vector2f::renderArrow(target, x.a, x.a + x.b, { 1, 1, 0, 1 }, { 1, 1, 0, 1 });
+	}
+	if (flag) {
+		using namespace std::chrono_literals;
+	}
+	flag = !debug_vectors.empty();
+
 
 	auto view = target.getView();
 	defer{ target.setView(view); };
 	target.setView(target.getDefaultView());
-	sf::RectangleShape shape({ Environment.window_width, Environment.window_height });
+	sf::RectangleShape shape(
+		{ (float)Environment.window_width, (float)Environment.window_height }
+	);
 	shape.setPosition(0, 0);
 	if (!in_editor && camera_fade_out_timer > 0) {
 		auto alpha = 1 - (camera_fade_out_timer / Camera_Fade_Time);
@@ -209,22 +255,6 @@ void Level::render(sf::RenderTarget& target) noexcept {
 		shape.setFillColor(Vector4d{ gray, gray, gray, alpha });
 		target.draw(shape);
 	}
-}
-
-
-bool blockPlayer(std::vector<Block>& blocks, const Player& player) noexcept {
-
-	for (const auto& b : blocks) if (test(b, player)) return true;
-	return false;
-}
-
-bool killZonesPlayer(std::vector<Kill_Zone>& kill_zones, const Player& player) noexcept {
-	for (const auto& b : kill_zones) if (test(b, player)) return true;
-	return false;
-}
-
-bool projectilsPlayer(std::vector<Projectile>& projectiles, const Player& player) noexcept {
-	return std::any_of(BEG_END(projectiles), [&](auto x) {return test(x, player); });
 }
 
 Level::Level() noexcept {
@@ -259,6 +289,11 @@ bool Level::test_input(float) noexcept {
 			) {
 			basic_bindings.pop_back();
 		}
+		if (IM::isKeyJustPressed(sf::Keyboard::Return)) {
+			markers.push_back(player.pos);
+
+			if (IM::isKeyPressed(sf::Keyboard::LShift)) markers.clear();
+		}
 
 		if (start_drag) {
 			if (!IM::isMousePressed(sf::Mouse::Left)) {
@@ -289,6 +324,7 @@ bool Level::test_input(float) noexcept {
 }
 
 void Level::update(float dt) noexcept {
+	debug_vectors.clear();
 	update_camera(dt);
 
 	if (camera_fade_out_timer > 0) {
@@ -352,6 +388,10 @@ void Level::update(float dt) noexcept {
 
 void Level::test_collisions(float dt, Player previous_player) noexcept {
 	const auto dead_velocity_2 = Environment.dead_velocity * Environment.dead_velocity;
+	auto test_any = [](const auto& cont, const auto& to_test) {
+		return std::any_of(BEG_END(cont), [&](auto x) {return test(x, to_test); });
+	};
+	auto test_any_p = [&p = player, test_any](const auto& cont) { return test_any(cont, p); };
 
 	Vector2f flat_velocities = { 0, 0 };
 	for (const auto& x : player.flat_velocities) flat_velocities += x;
@@ -361,7 +401,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	float impact = 0;
 
 	player.pos.x += velocities.x * dt;
-	if (blockPlayer(blocks, player)) {
+	if (test_any_p(blocks)) {
 		impact += std::abs(velocities.x);
 		player.pos.x = previous_player.pos.x;
 		player.velocity.x = 0;
@@ -369,7 +409,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	}
 	player.floored = false;
 	player.pos.y += velocities.y * dt;
-	if (blockPlayer(blocks, player)) {
+	if (test_any_p(blocks)) {
 		impact += std::abs(velocities.y);
 		player.pos.y = previous_player.pos.y;
 		player.floored = velocities.y < 0;
@@ -377,22 +417,84 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 		player.forces.y = 0;
 	}
 	
-	if (impact > 1) {
-		printf("Impact: %f\n", impact);
+	for (auto& rock : rocks) {
+		for (const auto& x : rock.bindings) rock.velocity += x * dt / rock.mass;
+		rock.velocity.y -= Environment.gravity * dt;
+
+		Circlef circle;
+
+		circle.c = rock.pos;
+		circle.r = rock.r;
+
+		circle.c += rock.velocity * dt;
+
+		Vector2f debug_1;
+		Vector2f debug_2;
+
+		size_t max_loop = 10;
+		for (const auto& block : blocks) {
+			Rectanglef rec;
+
+			rec.pos = block.pos;
+			rec.size = block.size;
+
+			if (auto opt = get_next_velocity(circle, rock.velocity, rec, 0.f); opt) {
+				debug_1 = rock.velocity;
+				debug_2 = *opt;
+				rock.velocity = *opt;
+				circle.c = rock.pos;
+				//circle.c = rock.pos + rock.velocity * dt;
+			}
+		}
+
+		debug_vectors.push_back({ rock.pos, debug_1 });
+		debug_vectors.push_back({ rock.pos, debug_2 });
+
+		rock.pos = circle.c;
+		continue;
+		circle.c.x += rock.velocity.x * dt;
+
+		for (auto& block : blocks) {
+			Rectanglef rec;
+
+			rec.pos = block.pos;
+			rec.size = block.size;
+
+			if (is_in(rec, circle)) {
+				circle.c.x = rock.pos.x;
+				rock.velocity.x = 0;
+				break;
+			}
+		}
+
+		circle.c.y += rock.velocity.y * dt;
+
+		for (auto& block : blocks) {
+			Rectanglef rec;
+
+			rec.pos = block.pos;
+			rec.size = block.size;
+
+			if (is_in(rec, circle)) {
+				circle.c.y = rock.pos.y;
+				rock.velocity.y = 0;
+				break;
+			}
+		}
+
+		rock.pos = circle.c;
 	}
-	auto test_any = [&p = player] (auto& cont) {
-		return std::any_of(BEG_END(cont), [&](auto x) {return test(x, p); });
-	};
-	
-	if (
-		impact > Environment.dead_velocity ||
-		killZonesPlayer(kill_zones, player) ||
-		projectilsPlayer(projectiles, player)
-	) {
+
+	if (impact > Environment.dead_velocity || test_any_p(kill_zones) || test_any_p(projectiles)) {
 		return die();
 	}
 
-	if (test_any(dry_zones)) basic_bindings.clear();
+	for (const auto& d : dry_zones) {
+		if (test(d, player)) basic_bindings.clear();
+		for (auto& r : rocks) {
+			if (test(d, r)) r.bindings.clear();
+		}
+	}
 
 	for (auto& x : next_zones) {
 		if (!test(x, player)) continue;
@@ -537,13 +639,19 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 		level.kill_zones.push_back((Kill_Zone)x);
 	for (const auto& x : iterate_array(str["next_zones"]))
 		level.next_zones.push_back((Next_Zone)x);
-	if (has(str, "dry_zones"))
-		for (const auto& x : iterate_array(str["dry_zones"]))
-			level.dry_zones.push_back((Dry_Zone)x);
+	if (has(str, "dry_zones")) for (const auto& x : iterate_array(str["dry_zones"]))
+		level.dry_zones.push_back((Dry_Zone)x);
+	if (has(str, "rocks")) for (const auto& x : iterate_array(str["rocks"]))
+		level.rocks.push_back((Rock)x);
 	for (const auto& x : iterate_array(str["prest_sources"]))
 		level.prest_sources.push_back((Prest_Source)x);
 	for (const auto& x : iterate_array(str["dispensers"]))
 		level.dispensers.push_back(std::make_shared<Dispenser>(x));
+	if (has(str, "markers")) {
+		for (const auto& x : iterate_array(str["markers"]))
+			level.markers.push_back((Vector2f)x);
+	}
+
 
 	Player player;
 	player.forces = {};
@@ -572,6 +680,10 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	for (const auto& x : level.prest_sources) str["prest_sources"].push_back(x);
 	str["dispensers"] = dyn_struct_array();
 	for (const auto& x : level.dispensers) str["dispensers"].push_back(*x);
+	str["markers"] = dyn_struct_array();
+	for (const auto& x : level.markers) str["markers"].push_back(x);
+	str["rocks"] = dyn_struct_array();
+	for (const auto& x : level.rocks) str["rocks"].push_back(x);
 
 	auto& player = str["player"] = dyn_struct::structure_t{};
 
@@ -595,3 +707,18 @@ void to_dyn_struct(dyn_struct& str, const Next_Zone& x) noexcept {
 	str["size"] = x.size;
 	str["next_level"] = x.next_level;
 }
+void from_dyn_struct(const dyn_struct& str, Rock& x) noexcept {
+	x.pos = (Vector2f)str["pos"];
+	x.velocity = (Vector2f)str["velocity"];
+	x.r = (float)str["r"];
+	x.mass = (float)str["mass"];
+}
+void to_dyn_struct(dyn_struct& str, const Rock& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["pos"] = x.pos;
+	str["velocity"] = x.velocity;
+	str["mass"] = x.mass;
+	str["r"] = x.r;
+}
+
+

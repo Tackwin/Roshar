@@ -19,7 +19,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 
 	if (ImGui::Button("Creating an element")) {
 		element_creating = true;
-		require_dragging= true;
+		require_dragging = true;
 		if (!element_to_create) element_to_create = (Creating_Element)0;
 	}
 
@@ -50,12 +50,15 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			*l = (Level)* opt_dyn;
 			s = result.filepath.string();
 		}, opts);
-	}ImGui::SameLine();
+	}
+	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
 	if (level_to_edit && ImGui::Button("Reload")) {
+		auto old_markers = std::move(level_to_edit->markers);
 		auto opt_dyn = load_from_json_file(save_path);
 		if (!opt_dyn) return;
 		*level_to_edit = (Level)* opt_dyn;
+		level_to_edit->markers = std::move(old_markers);
 	}
 	char buffer[512];
 	strcpy_s(buffer, save_path.data());
@@ -101,6 +104,31 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::SameLine();
 		if (ImGui::InputText("Next", next, sizeof(next))) {
 			for (auto& y : level_to_edit->next_zones) if (pred(y)) y.next_level = next;
+		}
+	}
+
+	n_selected = std::count_if(BEG_END(level_to_edit->rocks), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Rocks");
+		float mass;
+		float radius;
+
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(level_to_edit->rocks), pred);
+			mass = it->mass;
+			radius = it->r;
+		}
+
+		ImGui::Text("Mass");
+		ImGui::SameLine();
+		if (ImGui::InputFloat("Mass", &mass)) {
+			for (auto& y : level_to_edit->rocks) if (pred(y)) y.mass = mass;
+		}
+		ImGui::Text("Radius");
+		ImGui::SameLine();
+		if (ImGui::InputFloat("Radius", &radius)) {
+			for (auto& y : level_to_edit->rocks) if (pred(y)) y.r = radius;
 		}
 	}
 
@@ -174,6 +202,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 				case Creating_Element::Dry_Zone:
 					*out = "Dry_Zone";
 					break;
+				case Creating_Element::Rock:
+					*out = "Rock";
+					break;
 				default:
 					assert(false);
 					break;
@@ -184,6 +215,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			(int)Creating_Element::Size
 		);
 		element_to_create = (Creating_Element)x;
+		require_dragging =
+			element_to_create != Creating_Element::Prest &&
+			element_to_create != Creating_Element::Rock;
 	}
 
 	if (ImGui::BeginPopup("Sure ?")) {
@@ -251,12 +285,24 @@ void Editor::update(float dt) noexcept {
 			pos_start_drag = std::nullopt;
 		}
 	}
-	if (element_creating && *element_to_create == Creating_Element::Prest) {
-		if (IM::isMouseJustPressed(sf::Mouse::Left)) {
+	if (element_creating && element_to_create && IM::isMouseJustPressed(sf::Mouse::Left)) {
+		switch (*element_to_create) {
+		case Creating_Element::Prest: {
 			Prest_Source p;
 			p.pos = IM::getMousePosInView(level_to_edit->camera);
 			p.prest = 1;
 			level_to_edit->prest_sources.push_back(p);
+			break;
+		}
+		case Creating_Element::Rock: {
+			Rock r;
+			r.pos = IM::getMousePosInView(level_to_edit->camera);
+			r.r = 0.1f;
+			r.mass = 1;
+			level_to_edit->rocks.push_back(r);
+			break;
+		}
+		default: break;
 		}
 	}
 
@@ -296,6 +342,7 @@ void Editor::update(float dt) noexcept {
 			}
 		};
 
+		iter(level_to_edit->rocks);
 		iter(level_to_edit->blocks);
 		iter(level_to_edit->dry_zones);
 		iter(level_to_edit->kill_zones);
@@ -384,6 +431,7 @@ void Editor::delete_all_selected() noexcept {
 		}
 	};
 
+	delete_in_iterable(level_to_edit->rocks);
 	delete_in_iterable(level_to_edit->blocks);
 	delete_in_iterable(level_to_edit->dry_zones);
 	delete_in_iterable(level_to_edit->kill_zones);
@@ -404,6 +452,7 @@ void Editor::delete_all_selected() noexcept {
 
 #define S(x) level_to_edit->x.size()
 	auto n_elements =
+		S(rocks) +
 		S(blocks) +
 		S(dry_zones) +
 		S(kill_zones) +

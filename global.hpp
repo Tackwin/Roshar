@@ -11,8 +11,8 @@ struct Environment_t {
 
 	float dead_velocity{ 10 };
 
-	float window_width;
-	float window_height;
+	std::uint32_t window_width;
+	std::uint32_t window_height;
 };
 
 extern std::filesystem::path Exe_Path;

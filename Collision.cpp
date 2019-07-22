@@ -6,6 +6,18 @@
 #include "Math/Rectangle.hpp"
 #include "Math/Vector.hpp"
 
+bool test(const Rock& r, const Rectangle<float>& x) noexcept {
+	return is_in(x, Circlef{ .c = r.pos,.r = r.r });
+}
+
+bool test(const Block& b, const Rock& x) noexcept {
+	return is_in(Rectanglef(b.pos, b.size), Circlef{ .c = x.pos,.r = x.r });
+}
+
+bool test(const Dry_Zone& b, const Rock& x) noexcept {
+	return is_in(b.rec, Circlef{ .c = x.pos,.r = x.r });
+}
+
 bool test(const Block& b, const Player& p) noexcept {
 	if (b.pos.x < p.pos.x + p.size.x && p.pos.x < b.pos.x + b.size.x &&
 		b.pos.y < p.pos.y + p.size.y && p.pos.y < b.pos.y + b.size.y) return true;
@@ -102,3 +114,34 @@ bool test(const Next_Zone& x, const Rectangle<float>& r) noexcept {
 bool test(const Next_Zone& x, const Player& p) noexcept {
 	return Rectanglef{ x.pos, x.size }.intersect({ p.pos, p.size });
 }
+
+std::optional<Vector2f> get_next_velocity(
+	const Circlef& circle, const Vector2f current_velocity, const Rectanglef& rec, float bounciness
+) noexcept {
+	if (!is_in(rec, circle)) return std::nullopt;
+
+	Vector2f p = circle.c + Vector2f{0, 1};
+	if (is_in(rec.botLeft(), circle)) {
+		p = rec.botLeft();
+	}
+	else if (is_in(rec.botRight(), circle)) {
+		p = rec.botRight();
+	}
+	else if (is_in(rec.topLeft(), circle)) {
+		p = rec.topLeft();
+	}
+	else if (is_in(rec.topRight(), circle)) {
+		p = rec.topRight();
+	}
+	else if (circle.c.x < rec.x || rec.x + rec.w < circle.c.x) {
+		p = circle.c + Vector2f{ 1, 0 };
+	}
+	//else if (circle.c.y < rec.y || rec.y + rec.h < circle.c.y)
+
+
+	Vector2f dt = (p - circle.c);
+	Vector2f dtp = dt.rotate90();
+
+	return current_velocity.projectTo(dtp) + current_velocity.projectTo(dt) * bounciness;
+}
+
