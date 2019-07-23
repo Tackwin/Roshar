@@ -12,7 +12,7 @@
 void Block::render(sf::RenderTarget& target) noexcept {
 	sf::RectangleShape shape(size);
 	shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-	shape.setOutlineThickness(0.01f);
+	shape.setOutlineThickness(0.00f);
 	shape.setPosition(pos);
 	target.draw(shape);
 
@@ -100,11 +100,21 @@ void Dry_Zone::render(sf::RenderTarget& target) noexcept {
 }
 
 void Rock::render(sf::RenderTarget& target) noexcept {
-	sf::CircleShape shape(r);
+	sf::CircleShape shape(r, 1000);
 	shape.setOrigin(r, r);
 	shape.setPosition(pos);
 	shape.setFillColor(Vector4d{ 0.5, 0.6, 0.7, 1.0 });
 	target.draw(shape);
+
+	for (auto& binding : bindings) {
+		Vector2f::renderArrow(
+			target,
+			pos,
+			pos + binding,
+			{ 1, 0, 1, 1 },
+			{ 1, 0, 1, 1 }
+		);
+	}
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -173,12 +183,12 @@ void Projectile::render(sf::RenderTarget& target) noexcept {
 
 void Level::render(sf::RenderTarget& target) noexcept {
 	target.setView(camera);
-	for (auto& x : blocks) x.render(target);
 	for (auto& x : rocks) x.render(target);
+	for (auto& x : blocks) x.render(target);
 	for (auto& x : dry_zones) x.render(target);
 	for (auto& x : kill_zones) x.render(target);
 	for (auto& x : next_zones) x.render(target);
-	for (auto& x : dispensers) x->render(target);
+	for (auto& x : dispensers) x.render(target);
 	for (auto& x : projectiles) x.render(target);
 	for (auto& x : prest_sources) x.render(target);
 
@@ -262,64 +272,39 @@ Level::Level() noexcept {
 }
 
 bool Level::test_input(float) noexcept {
-	if (IM::isWindowFocused()) {
-		if (IM::isKeyJustPressed(sf::Keyboard::Quote)) {
-			retry();
-			return true;
-		}
+	if (!IM::isWindowFocused()) return false;
 
-		if (IM::isKeyPressed(sf::Keyboard::Q)) {
-			player.flat_velocities.push_back({ -5, 0 });
-		}
-		if (IM::isKeyPressed(sf::Keyboard::D)) {
-			player.flat_velocities.push_back({ +5, 0 });
-		}
-		if (IM::isKeyJustPressed(sf::Keyboard::Space) && player.floored) {
-			player.velocity += Vector2f{ 0, +7.5 };
-		}
-		if (IM::isMouseJustPressed(sf::Mouse::Left)) {
-			start_drag = IM::getMouseScreenPos();
-			drag_time = seconds();
-		}
-		if (IM::isMouseJustPressed(sf::Mouse::Right)) basic_bindings.clear();
-		if (
-			IM::isKeyPressed(sf::Keyboard::LControl) &&
-			IM::isKeyJustPressed(sf::Keyboard::Z) &&
-			!basic_bindings.empty()
-			) {
-			basic_bindings.pop_back();
-		}
-		if (IM::isKeyJustPressed(sf::Keyboard::Return)) {
-			markers.push_back(player.pos);
-
-			if (IM::isKeyPressed(sf::Keyboard::LShift)) markers.clear();
-		}
-
-		if (start_drag) {
-			if (!IM::isMousePressed(sf::Mouse::Left)) {
-				start_drag.reset();
-			}
-			auto new_pos = IM::getMouseScreenPos();
-			auto dt_vec = new_pos - *start_drag;
-			dt_vec.y *= -1;
-			if (dt_vec.length2() > drag_dead_zone * drag_dead_zone) {
-				auto discrete_angle = dt_vec.angleX();
-				auto angle_step = 2 * PI / Environment.drag_angle_step;
-				discrete_angle = angle_step * std::round(discrete_angle / angle_step);
-
-				auto unit = Vector2f::createUnitVector(discrete_angle);
-				auto prest_gathered =
-					(int)(std::ceil(Environment.gather_speed * (seconds() - drag_time))) *
-					Environment.gather_step;
-				prest_gathered = std::min(prest_gathered, player.prest);
-				if (prest_gathered != 0) {
-					player.prest -= prest_gathered;
-					basic_bindings.push_back(unit * prest_gathered);
-				}
-				start_drag.reset();
-			}
-		}
+	if (IM::isKeyJustPressed(sf::Keyboard::Quote)) {
+		retry();
+		return true;
 	}
+
+	if (IM::isKeyPressed(sf::Keyboard::Q)) {
+		player.flat_velocities.push_back({ -5, 0 });
+	}
+	if (IM::isKeyPressed(sf::Keyboard::D)) {
+		player.flat_velocities.push_back({ +5, 0 });
+	}
+	if (IM::isKeyJustPressed(sf::Keyboard::Space) && player.floored) {
+		player.velocity += Vector2f{ 0, +7.5 };
+	}
+	if (IM::isMouseJustPressed(sf::Mouse::Left)) mouse_start_drag();
+	if (IM::isMouseJustPressed(sf::Mouse::Right)) basic_bindings.clear();
+	if (
+		IM::isKeyPressed(sf::Keyboard::LControl) &&
+		IM::isKeyJustPressed(sf::Keyboard::Z) &&
+		!basic_bindings.empty()
+		) {
+		basic_bindings.pop_back();
+	}
+	if (IM::isKeyJustPressed(sf::Keyboard::Return)) {
+		markers.push_back(player.pos);
+
+		if (IM::isKeyPressed(sf::Keyboard::LShift)) markers.clear();
+	}
+
+	if (start_drag) mouse_on_drag();
+	
 	return false;
 }
 
@@ -347,18 +332,18 @@ void Level::update(float dt) noexcept {
 	
 	auto previous_player = player;
 
-	if (test_input(dt) || in_editor) return;
+	if (in_editor || test_input(dt)) return;
 
 	for (auto& x : dispensers) {
-		x->timer -= dt;
-		if (x->timer <= 0) {
-			x->timer = 1 / x->hz;
+		x.timer -= dt;
+		if (x.timer <= 0) {
+			x.timer = 1 / x.hz;
 
 			Projectile p;
-			p.pos = x->start_pos;
-			p.r = x->proj_r;
-			p.speed = (x->end_pos - x->start_pos).normalize() * x->proj_speed;
-			p.origin = x;
+			p.pos = x.start_pos;
+			p.r = x.proj_r;
+			p.speed = (x.end_pos - x.start_pos).normalize() * x.proj_speed;
+			p.end_pos = x.end_pos;
 
 			projectiles.push_back(p);
 		}
@@ -368,9 +353,11 @@ void Level::update(float dt) noexcept {
 
 		x.pos += x.speed * dt;
 
-		if (x.origin.expired()) continue;
+		Circlef c;
+		c.c = x.end_pos;
+		c.r = x.r;
 
-		if (test(*x.origin.lock(), x)) {
+		if (is_in(x.pos, c)) {
 			projectiles.erase(BEG(projectiles) + i);
 		}
 	}
@@ -418,67 +405,27 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	}
 	
 	for (auto& rock : rocks) {
-		for (const auto& x : rock.bindings) rock.velocity += x * dt / rock.mass;
-		rock.velocity.y -= Environment.gravity * dt;
+		const auto G = Environment.gravity;
+		float length_sum = 0;
+		for (const auto& x : rock.bindings) {
+			rock.velocity += G * x * dt / rock.mass;
+			length_sum += x.length();
+		}
+		rock.velocity.y -= (std::max(0.f, 1.f - length_sum) * Environment.gravity) * dt;
 
 		Circlef circle;
+		Rectanglef rec;
 
-		circle.c = rock.pos;
 		circle.r = rock.r;
+		circle.c = rock.pos + rock.velocity * dt;
 
-		circle.c += rock.velocity * dt;
-
-		Vector2f debug_1;
-		Vector2f debug_2;
-
-		size_t max_loop = 10;
 		for (const auto& block : blocks) {
-			Rectanglef rec;
-
 			rec.pos = block.pos;
 			rec.size = block.size;
 
-			if (auto opt = get_next_velocity(circle, rock.velocity, rec, 0.f); opt) {
-				debug_1 = rock.velocity;
-				debug_2 = *opt;
+			if (auto opt = get_next_velocity(circle, rock.velocity, rec, dt); opt) {
 				rock.velocity = *opt;
-				circle.c = rock.pos;
-				//circle.c = rock.pos + rock.velocity * dt;
-			}
-		}
-
-		debug_vectors.push_back({ rock.pos, debug_1 });
-		debug_vectors.push_back({ rock.pos, debug_2 });
-
-		rock.pos = circle.c;
-		continue;
-		circle.c.x += rock.velocity.x * dt;
-
-		for (auto& block : blocks) {
-			Rectanglef rec;
-
-			rec.pos = block.pos;
-			rec.size = block.size;
-
-			if (is_in(rec, circle)) {
-				circle.c.x = rock.pos.x;
-				rock.velocity.x = 0;
-				break;
-			}
-		}
-
-		circle.c.y += rock.velocity.y * dt;
-
-		for (auto& block : blocks) {
-			Rectanglef rec;
-
-			rec.pos = block.pos;
-			rec.size = block.size;
-
-			if (is_in(rec, circle)) {
-				circle.c.y = rock.pos.y;
-				rock.velocity.y = 0;
-				break;
+				circle.c = rock.pos + rock.velocity * dt;
 			}
 		}
 
@@ -539,9 +486,8 @@ void Level::retry() noexcept {
 		initial_level->initial_level = new Level(*initial_level);
 		auto new_level = *initial_level;
 		*this = new_level;
-	}
-	for (auto& x : dispensers) {
-		x->timer = 1.f / x->hz - x->offset_timer;
+		this->rocks.clear();
+		this->rocks.swap(new_level.rocks);
 	}
 }
 
@@ -551,16 +497,73 @@ void Level::die() noexcept {
 	camera_fade_in_timer = Camera_Fade_Time;
 }
 
+void Level::mouse_start_drag() noexcept {
+	start_drag = IM::getMouseScreenPos();
+	drag_time = seconds();
+
+	for (size_t i = 0; i < rocks.size(); ++i) {
+		auto& r = rocks[i];
+
+		Circlef c = { .c = r.pos, .r = r.r };
+		Circlef range = { .c = player.pos,.r = Environment.binding_range };
+
+		if (is_in(r.pos, range) && is_in(IM::getMousePosInView(camera), c)) {
+			auto temp = std::move(rocks[rock_dragging_i]);
+			rocks[rock_dragging_i++] = std::move(r);
+			r = std::move(temp);
+			break;
+		}
+	}
+}
+
+void Level::mouse_on_drag() noexcept {
+	if (!IM::isMousePressed(sf::Mouse::Left)) {
+		start_drag.reset();
+		rock_dragging_i = 0;
+	}
+
+	auto new_pos = IM::getMouseScreenPos();
+	auto dt_vec = new_pos - *start_drag;
+	dt_vec.y *= -1;
+	if (dt_vec.length2() > drag_dead_zone * drag_dead_zone) {
+		auto discrete_angle = dt_vec.angleX();
+		auto angle_step = 2 * PI / Environment.drag_angle_step;
+		discrete_angle = angle_step * std::round(discrete_angle / angle_step);
+
+		auto unit = Vector2f::createUnitVector(discrete_angle);
+		auto prest_gathered =
+			(int)(std::ceil(Environment.gather_speed * (seconds() - drag_time))) *
+			Environment.gather_step;
+		prest_gathered = std::min(prest_gathered, player.prest);
+
+		if (prest_gathered != 0) {
+			player.prest -= prest_gathered;
+
+			// if we started dragging a rock, then we bind it
+			for (size_t i = 0; i < rock_dragging_i; ++i) {
+				rocks[i].bindings.push_back(unit * prest_gathered);
+			}
+			if (rock_dragging_i == 0) { // if we started dragging nothing, we default to the player.
+				basic_bindings.push_back(unit * prest_gathered);
+			}
+		}
+
+		start_drag.reset();
+		rock_dragging_i = 0;
+	}
+}
 
 void Level::pause() noexcept {}
 void Level::resume() noexcept {
 	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
-	auto iter_ptr = [](auto& x) noexcept { for (auto& y : x) y->editor_selected = false; };
 
+	iter(rocks);
 	iter(blocks);
+	iter(dry_zones);
+	iter(next_zones);
 	iter(kill_zones);
+	iter(dispensers);
 	iter(prest_sources);
-	iter_ptr(dispensers);
 }
 
 void Prest_Source::render(sf::RenderTarget& target) noexcept {
@@ -646,7 +649,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	for (const auto& x : iterate_array(str["prest_sources"]))
 		level.prest_sources.push_back((Prest_Source)x);
 	for (const auto& x : iterate_array(str["dispensers"]))
-		level.dispensers.push_back(std::make_shared<Dispenser>(x));
+		level.dispensers.push_back((Dispenser)x);
 	if (has(str, "markers")) {
 		for (const auto& x : iterate_array(str["markers"]))
 			level.markers.push_back((Vector2f)x);
@@ -679,7 +682,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["prest_sources"] = dyn_struct_array();
 	for (const auto& x : level.prest_sources) str["prest_sources"].push_back(x);
 	str["dispensers"] = dyn_struct_array();
-	for (const auto& x : level.dispensers) str["dispensers"].push_back(*x);
+	for (const auto& x : level.dispensers) str["dispensers"].push_back(x);
 	str["markers"] = dyn_struct_array();
 	for (const auto& x : level.markers) str["markers"].push_back(x);
 	str["rocks"] = dyn_struct_array();

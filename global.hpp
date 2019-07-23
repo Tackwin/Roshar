@@ -11,6 +11,8 @@ struct Environment_t {
 
 	float dead_velocity{ 10 };
 
+	float binding_range{ 1 };
+
 	std::uint32_t window_width;
 	std::uint32_t window_height;
 };

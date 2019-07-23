@@ -43,6 +43,6 @@ struct Rectangle;
 	const Circle<float>& circle,
 	const Vector<2, float> current_velocity,
 	const Rectangle<float>& rec,
-	float bounciness
+	float dt
 ) noexcept;
 

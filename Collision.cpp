@@ -116,11 +116,12 @@ bool test(const Next_Zone& x, const Player& p) noexcept {
 }
 
 std::optional<Vector2f> get_next_velocity(
-	const Circlef& circle, const Vector2f current_velocity, const Rectanglef& rec, float bounciness
+	const Circlef& circle, const Vector2f current_velocity, const Rectanglef& rec, float dt
 ) noexcept {
 	if (!is_in(rec, circle)) return std::nullopt;
+	Vector2f c = circle.c - current_velocity * dt;
 
-	Vector2f p = circle.c + Vector2f{0, 1};
+	Vector2f p = c + Vector2f{0, 1};
 	if (is_in(rec.botLeft(), circle)) {
 		p = rec.botLeft();
 	}
@@ -133,15 +134,14 @@ std::optional<Vector2f> get_next_velocity(
 	else if (is_in(rec.topRight(), circle)) {
 		p = rec.topRight();
 	}
-	else if (circle.c.x < rec.x || rec.x + rec.w < circle.c.x) {
-		p = circle.c + Vector2f{ 1, 0 };
+	else if (c.x < rec.x || rec.x + rec.w < c.x) {
+		p = c + Vector2f{ 1, 0 };
 	}
 	//else if (circle.c.y < rec.y || rec.y + rec.h < circle.c.y)
 
+	Vector2f dt_vec = p - c;
+	Vector2f dtp = dt_vec.rotate90();
 
-	Vector2f dt = (p - circle.c);
-	Vector2f dtp = dt.rotate90();
-
-	return current_velocity.projectTo(dtp) + current_velocity.projectTo(dt) * bounciness;
+	return current_velocity.projectTo(dtp);
 }
 

@@ -64,7 +64,7 @@ struct Projectile {
 	Vector2f pos;
 	Vector2f speed;
 
-	std::weak_ptr<Dispenser> origin{};
+	Vector2f end_pos;
 
 	float r;
 
@@ -111,6 +111,8 @@ struct Player {
 };
 
 struct Level {
+	// >SEE:
+	// >DEBUG:
 	struct Debug_Vector {
 		Vector2f a;
 		Vector2f b;
@@ -124,9 +126,9 @@ struct Level {
 	std::vector<Dry_Zone> dry_zones;
 	std::vector<Kill_Zone> kill_zones;
 	std::vector<Next_Zone> next_zones;
+	std::vector<Dispenser> dispensers;
 	std::vector<Projectile> projectiles;
 	std::vector<Prest_Source> prest_sources;
-	std::vector<std::shared_ptr<Dispenser>> dispensers;
 
 	std::vector<Vector2f> markers;
 
@@ -139,6 +141,7 @@ struct Level {
 	double drag_time{ 0.0 };
 	std::optional<Vector2f> start_drag;
 	float drag_dead_zone{ 50 };
+	size_t rock_dragging_i{ 0 };
 
 	std::vector<Vector2f> basic_bindings;
 
@@ -167,6 +170,9 @@ private:
 	bool test_input(float dt) noexcept;
 
 	void test_collisions(float dt, Player previous_player) noexcept;
+
+	void mouse_start_drag() noexcept;
+	void mouse_on_drag() noexcept;
 
 	void update_camera(float dt) noexcept;
 	void retry() noexcept;

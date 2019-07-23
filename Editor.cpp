@@ -76,7 +76,6 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	require_dragging &= element_creating;
 
 	auto pred = [](auto& x) {return x.editor_selected; };
-	auto pred_ptr = [](auto& x) {return x->editor_selected; };
 	auto n_selected = std::count_if(BEG_END(level_to_edit->prest_sources), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -132,7 +131,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->dispensers), pred_ptr);
+	n_selected = std::count_if(BEG_END(level_to_edit->dispensers), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("dispensers");
@@ -142,35 +141,35 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		float offset_timer{ 0.f };
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(level_to_edit->dispensers), pred_ptr);
-			r = (*it)->proj_r;
-			speed = (*it)->proj_speed;
-			hz = (*it)->hz;
-			offset_timer = (*it)->offset_timer;
+			auto it = std::find_if(BEG_END(level_to_edit->dispensers), pred);
+			r = it->proj_r;
+			speed = it->proj_speed;
+			hz = it->hz;
+			offset_timer = it->offset_timer;
 		}
 
 		ImGui::Text("Radius");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Radius", &r))
-			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_r = r;
+			for (auto& y : level_to_edit->dispensers) if (pred(y)) y.proj_r = r;
 
 		ImGui::Text("Speed");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Speed", &speed))
-			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) y->proj_speed = speed;
+			for (auto& y : level_to_edit->dispensers) if (pred(y)) y.proj_speed = speed;
 
 		ImGui::Text("Cadence");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Cadence", &hz))
-			for (auto& y : level_to_edit->dispensers) if (pred_ptr(y)) {
-				y->hz = hz;
-				y->timer = 1.f / hz;
+			for (auto& y : level_to_edit->dispensers) if (pred(y)) {
+				y.hz = hz;
+				y.timer = 1.f / hz;
 			}
 
 		ImGui::Text("Offset");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Offset", &offset_timer)) for (auto& y : level_to_edit->dispensers)
-				if (pred_ptr(y)) y->offset_timer = offset_timer;
+				if (pred(y)) y.offset_timer = offset_timer;
 	}
 
 	if (element_creating) {
@@ -335,20 +334,14 @@ void Editor::update(float dt) noexcept {
 				b.editor_selected = oring || test(b, rec);
 			}
 		};
-		auto iter_ptr = [cam = level_to_edit->camera, shift, rec](auto& c) noexcept {
-			for (auto& b : c) {
-				bool oring = (shift && b->editor_selected);
-				b->editor_selected = oring || test(*b, rec);
-			}
-		};
 
 		iter(level_to_edit->rocks);
 		iter(level_to_edit->blocks);
 		iter(level_to_edit->dry_zones);
 		iter(level_to_edit->kill_zones);
 		iter(level_to_edit->next_zones);
+		iter(level_to_edit->dispensers);
 		iter(level_to_edit->prest_sources);
-		iter_ptr(level_to_edit->dispensers);
 	}
 	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
 	snap_vertical = IM::isKeyPressed(sf::Keyboard::LShift) && IM::isKeyPressed(sf::Keyboard::V);
@@ -408,14 +401,14 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.proj_speed = 1.f;
 			new_block.timer = 1.f / new_block.hz;
 
-			level_to_edit->dispensers.emplace_back(std::make_shared<Dispenser>(new_block));
+			level_to_edit->dispensers.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Dry_Zone: {
 			Dry_Zone new_block;
 			new_block.rec = { start, end - start };
 
-			level_to_edit->dry_zones.emplace_back(new_block);
+			level_to_edit->dry_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		}
@@ -423,7 +416,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 }
 
 void Editor::delete_all_selected() noexcept {
-	auto delete_in_iterable = [](auto& iter) {
+	auto iter = [](auto& iter) {
 		for (size_t i = iter.size() - 1; i + 1 > 0; --i) {
 			if (iter[i].editor_selected) {
 				iter.erase(BEG(iter) + i);
@@ -431,24 +424,13 @@ void Editor::delete_all_selected() noexcept {
 		}
 	};
 
-	delete_in_iterable(level_to_edit->rocks);
-	delete_in_iterable(level_to_edit->blocks);
-	delete_in_iterable(level_to_edit->dry_zones);
-	delete_in_iterable(level_to_edit->kill_zones);
-	delete_in_iterable(level_to_edit->next_zones);
-	delete_in_iterable(level_to_edit->prest_sources);
-
-	for (size_t i = level_to_edit->dispensers.size() - 1; i + 1 > 0; --i) {
-		if (level_to_edit->dispensers[i]->editor_selected) {
-			level_to_edit->dispensers.erase(BEG(level_to_edit->dispensers) + i);
-
-			for (size_t j = level_to_edit->projectiles.size() - 1; j + 1 > 0; --j) {
-				auto& x = level_to_edit->projectiles[j];
-				if (x.origin.expired())
-					level_to_edit->projectiles.erase(BEG(level_to_edit->projectiles) + j);
-			}
-		}
-	}
+	iter(level_to_edit->rocks);
+	iter(level_to_edit->blocks);
+	iter(level_to_edit->dry_zones);
+	iter(level_to_edit->kill_zones);
+	iter(level_to_edit->next_zones);
+	iter(level_to_edit->dispensers);
+	iter(level_to_edit->prest_sources);
 
 #define S(x) level_to_edit->x.size()
 	auto n_elements =
