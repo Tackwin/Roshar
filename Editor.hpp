@@ -15,6 +15,8 @@ class Editor {
 		Dispenser,
 		Next_Zone,
 		Dry_Zone,
+		Trigger_Zone,
+		Door,
 		Rock,
 		Size
 	};

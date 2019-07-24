@@ -2,8 +2,39 @@
 
 #include <type_traits>
 #include <string>
+#include <vector>
+#include <atomic>
+#include "Time.hpp"
 
 namespace xstd {
+	template<class T>
+	struct is_vector {
+		using type = T;
+		using contained = T;
+		constexpr static bool value = false;
+	};
+
+	template<class T>
+	struct is_vector<std::vector<T>> {
+		using type = std::vector<T>;
+		using contained_t = T;
+		constexpr static bool value = true;
+	};
+
+	template< typename T>
+	inline constexpr bool is_vector_v = is_vector<T>::value;
+
+	template< typename T>
+	using is_vector_contained = typename is_vector<T>::contained_t;
+
+	template< typename T>
+	using is_vector_t = typename is_vector<T>::type;
+
+	inline std::uint64_t uuid() noexcept {
+		static std::atomic<std::uint16_t> counter = 0;
+		return (nanoseconds() << 16) | (counter++);
+	}
+
 	template<typename C, typename P>
 	[[nodiscard]] C filter(const C& c, const P& p) noexcept {
 		C result;

@@ -222,4 +222,13 @@ load_from_json_file(const std::filesystem::path& file) noexcept;
 extern size_t
 save_to_json_file(const dyn_struct& to_save, const std::filesystem::path& file) noexcept;
 
+template<typename T> void
+from_dyn_struct(const dyn_struct& str, std::vector<T>& v) noexcept {
+	for (const auto& x : iterate_array(str)) v.push_back((T)x);
+}
+template<typename T> void
+to_dyn_struct(dyn_struct& str, const std::vector<T>& v) noexcept {
+	str = dyn_struct::array_t{};
+	for (const auto& x : v) str.push_back(x);
+}
 #endif

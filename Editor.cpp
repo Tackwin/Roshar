@@ -89,6 +89,19 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			for (auto& y : level_to_edit->prest_sources) if (pred(y)) y.prest = x;
 	}
 
+	n_selected = std::count_if(BEG_END(level_to_edit->doors), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Doors");
+		bool closed = { true };
+		if (n_selected == 1) closed = std::find_if(BEG_END(level_to_edit->doors), pred)->closed;
+
+		ImGui::Text("Closed");
+		ImGui::SameLine();
+		if (ImGui::Checkbox("Closed", &closed))
+			for (auto& y : level_to_edit->doors) if (pred(y)) y.closed = closed;
+	}
+
 	n_selected = std::count_if(BEG_END(level_to_edit->next_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -203,6 +216,12 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 					break;
 				case Creating_Element::Rock:
 					*out = "Rock";
+					break;
+				case Creating_Element::Door:
+					*out = "Door";
+					break;
+				case Creating_Element::Trigger_Zone:
+					*out = "Trigger_Zone";
 					break;
 				default:
 					assert(false);
@@ -336,11 +355,13 @@ void Editor::update(float dt) noexcept {
 		};
 
 		iter(level_to_edit->rocks);
+		iter(level_to_edit->doors);
 		iter(level_to_edit->blocks);
 		iter(level_to_edit->dry_zones);
 		iter(level_to_edit->kill_zones);
 		iter(level_to_edit->next_zones);
 		iter(level_to_edit->dispensers);
+		iter(level_to_edit->trigger_zones);
 		iter(level_to_edit->prest_sources);
 	}
 	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
@@ -411,6 +432,21 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			level_to_edit->dry_zones.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Trigger_Zone: {
+			Trigger_Zone new_block;
+			new_block.rec = { start, end - start };
+			new_block.id = xstd::uuid();
+
+			level_to_edit->trigger_zones.emplace_back(std::move(new_block));
+			break;
+		}
+		case Creating_Element::Door: {
+			Door new_block;
+			new_block.rec = { start, end - start };
+
+			level_to_edit->doors.emplace_back(std::move(new_block));
+			break;
+		}
 		}
 	}
 }
@@ -425,20 +461,24 @@ void Editor::delete_all_selected() noexcept {
 	};
 
 	iter(level_to_edit->rocks);
+	iter(level_to_edit->doors);
 	iter(level_to_edit->blocks);
 	iter(level_to_edit->dry_zones);
 	iter(level_to_edit->kill_zones);
 	iter(level_to_edit->next_zones);
 	iter(level_to_edit->dispensers);
+	iter(level_to_edit->trigger_zones);
 	iter(level_to_edit->prest_sources);
 
 #define S(x) level_to_edit->x.size()
 	auto n_elements =
 		S(rocks) +
+		S(doors) +
 		S(blocks) +
 		S(dry_zones) +
 		S(kill_zones) +
 		S(next_zones) +
+		S(trigger_zones) +
 		S(prest_sources) +
 		S(dispensers);
 #undef S

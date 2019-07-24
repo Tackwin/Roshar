@@ -15,7 +15,7 @@ struct Block {
 
 	Vector2f pos;
 	Vector2f size;
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Kill_Zone {
@@ -23,7 +23,7 @@ struct Kill_Zone {
 	
 	Vector2f pos;
 	Vector2f size;
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Next_Zone {
@@ -34,7 +34,30 @@ struct Next_Zone {
 	Vector2f pos;
 	Vector2f size;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
+};
+
+struct Trigger_Zone {
+	bool editor_selected{ false };
+
+	std::uint64_t id;
+	Rectanglef rec;
+	bool triggered{ false };
+
+	void render(sf::RenderTarget& target) const noexcept;
+};
+
+struct Door {
+	bool editor_selected{ false };
+	
+	Rectanglef rec;
+
+	bool closed{ true };
+
+	std::vector<std::uint64_t> must_triggered;
+	std::vector<std::uint64_t> mustnt_triggered;
+
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Dry_Zone {
@@ -42,7 +65,7 @@ struct Dry_Zone {
 
 	Rectanglef rec;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Dispenser {
@@ -57,7 +80,7 @@ struct Dispenser {
 	float timer{ 0 };
 	float offset_timer{ 0 };
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Projectile {
@@ -68,7 +91,7 @@ struct Projectile {
 
 	float r;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Prest_Source {
@@ -79,7 +102,7 @@ struct Prest_Source {
 	float prest;
 	Vector2f pos;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Rock {
@@ -92,7 +115,7 @@ struct Rock {
 	std::vector<Vector2f> bindings;
 	float mass;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Player {
@@ -107,7 +130,7 @@ struct Player {
 	bool floored{ false };
 
 	void update(float dt) noexcept;
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Level {
@@ -122,12 +145,14 @@ struct Level {
 	ValuePtr<Level> initial_level;
 
 	std::vector<Rock> rocks;
+	std::vector<Door> doors;
 	std::vector<Block> blocks;
 	std::vector<Dry_Zone> dry_zones;
 	std::vector<Kill_Zone> kill_zones;
 	std::vector<Next_Zone> next_zones;
 	std::vector<Dispenser> dispensers;
 	std::vector<Projectile> projectiles;
+	std::vector<Trigger_Zone> trigger_zones;
 	std::vector<Prest_Source> prest_sources;
 
 	std::vector<Vector2f> markers;
@@ -158,7 +183,7 @@ struct Level {
 	Level(const Level&) = default;
 	Level& operator=(const Level&) = default;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 	void update(float dt) noexcept;
 
 	void pause() noexcept;
@@ -193,5 +218,9 @@ extern void from_dyn_struct(const dyn_struct& str, Prest_Source& prest) noexcept
 extern void to_dyn_struct(dyn_struct& str, const Prest_Source& prest) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Rock& r) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Rock& r) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Trigger_Zone& x) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Trigger_Zone& x) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Door& d) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Door& d) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Level& level) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Level& level) noexcept;

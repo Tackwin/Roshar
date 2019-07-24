@@ -247,7 +247,7 @@ Vector2f InputsManager::getMouseScreenDelta() noexcept {
 	return mouseScreenDelta;
 }
 float InputsManager::getLastScroll() noexcept {
-	return lastScroll;
+	return !mouseCaptured ? lastScroll : 0;
 }
 
 void InputsManager::update(sf::RenderWindow& window, float dt) {

@@ -10,6 +10,8 @@ struct Projectile;
 struct Prest_Source;
 struct Next_Zone;
 struct Dry_Zone;
+struct Trigger_Zone;
+struct Door;
 struct Rock;
 
 template<typename T>
@@ -19,6 +21,9 @@ struct Vector;
 template<typename T>
 struct Rectangle;
 
+[[nodiscard]] extern bool test(const Trigger_Zone& b, const Rectangle<float>& x) noexcept;
+[[nodiscard]] extern bool test(const Door& b, const Rectangle<float>& x) noexcept;
+[[nodiscard]] extern bool test(const Door& b, const Player& x) noexcept;
 [[nodiscard]] extern bool test(const Rock& b, const Rectangle<float>& x) noexcept;
 [[nodiscard]] extern bool test(const Block& b, const Rock& x) noexcept;
 [[nodiscard]] extern bool test(const Block& b, const Vector<2, float>& v) noexcept;

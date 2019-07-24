@@ -145,3 +145,12 @@ std::optional<Vector2f> get_next_velocity(
 	return current_velocity.projectTo(dtp);
 }
 
+bool test(const Trigger_Zone& b, const Rectangle<float>& x) noexcept {
+	return b.rec.intersect(x);
+}
+bool test(const Door& b, const Rectangle<float>& x) noexcept {
+	return b.rec.intersect(x);
+}
+bool test(const Door& b, const Player& x) noexcept {
+	return b.closed && b.rec.intersect(Rectanglef{ x.pos, x.size });
+}

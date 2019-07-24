@@ -9,7 +9,7 @@
 #include "Collision.hpp"
 #include "Time.hpp"
 
-void Block::render(sf::RenderTarget& target) noexcept {
+void Block::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
 	shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
 	shape.setOutlineThickness(0.00f);
@@ -31,7 +31,7 @@ void Block::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
-void Kill_Zone::render(sf::RenderTarget& target) noexcept {
+void Kill_Zone::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
 	shape.setFillColor(Vector4f{ 0.1f, 1.f, 0.5f, 1.f });
 	shape.setOutlineColor(Vector4f{ 1.f, 1.f, 1.f, 1.f });
@@ -55,7 +55,7 @@ void Kill_Zone::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
-void Next_Zone::render(sf::RenderTarget& target) noexcept {
+void Next_Zone::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
 	shape.setFillColor(Vector4f{ 0.1f, 0.1f, 0.1f, 1.f });
 	shape.setOutlineColor(Vector4f{ 1.f, 1.f, 1.f, 1.f });
@@ -78,7 +78,7 @@ void Next_Zone::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
-void Dry_Zone::render(sf::RenderTarget& target) noexcept {
+void Dry_Zone::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(rec.size);
 	shape.setPosition(rec.pos);
 	shape.setFillColor(Vector4d{ 0.5, 0.0, 0.0, 0.5 });
@@ -99,7 +99,7 @@ void Dry_Zone::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
-void Rock::render(sf::RenderTarget& target) noexcept {
+void Rock::render(sf::RenderTarget& target) const noexcept {
 	sf::CircleShape shape(r, 1000);
 	shape.setOrigin(r, r);
 	shape.setPosition(pos);
@@ -127,10 +127,67 @@ void Rock::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
+void Trigger_Zone::render(sf::RenderTarget& target) const noexcept {
+	sf::RectangleShape shape(rec.size);
+	shape.setPosition(rec.pos);
+	shape.setFillColor(sf::Color::Magenta);
+	target.draw(shape);
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		shape.setSize(rec.size);
+		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
+		shape.setOutlineThickness(.01f);
+		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
+		shape.setPosition(rec.pos);
+		target.draw(shape);
+	}
+}
+
+void Door::render(sf::RenderTarget& target) const noexcept {
+	sf::RectangleShape shape(rec.size);
+	shape.setPosition(rec.pos);
+	shape.setFillColor(Vector4d{ 0.9, 0.9, 0.9, closed ? 1.0 : 0.1});
+	target.draw(shape);
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		shape.setSize(rec.size);
+		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
+		shape.setOutlineThickness(.01f);
+		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
+		shape.setPosition(rec.pos);
+		target.draw(shape);
+	}
+}
+
+void Prest_Source::render(sf::RenderTarget& target) const noexcept {
+	auto r = std::sqrt(prest) * Radius_Multiplier;
+
+	sf::CircleShape shape;
+	shape.setRadius(r);
+	shape.setOrigin(r, r);
+	shape.setPosition(pos);
+	shape.setFillColor(sf::Color::Cyan);
+	target.draw(shape);
+
+	if (!editor_selected) return;
+
+	shape.setRadius(r + 0.04f);
+	shape.setOrigin(shape.getRadius(), shape.getRadius());
+	shape.setPosition(pos);
+	shape.setFillColor(Vector4d{ 1.0, 1.0, 1.0, 0.1 });
+	target.draw(shape);
+}
+
 void Player::update(float) noexcept {
 }
 
-void Player::render(sf::RenderTarget& target) noexcept {
+void Player::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
 	shape.setOutlineColor(Vector4f{ 1.0, 0.0, 0.0, 1.0 });
 	shape.setOutlineThickness(0.01f);
@@ -139,7 +196,7 @@ void Player::render(sf::RenderTarget& target) noexcept {
 	target.draw(shape);
 }
 
-void Dispenser::render(sf::RenderTarget& target) noexcept {
+void Dispenser::render(sf::RenderTarget& target) const noexcept {
 	sf::CircleShape shape(proj_r);
 	shape.setFillColor(Vector4f{ 0.4f, 0.3f, 0.2f, 1.f });
 	shape.setOrigin(shape.getRadius(), shape.getRadius());
@@ -173,7 +230,7 @@ void Dispenser::render(sf::RenderTarget& target) noexcept {
 	}
 }
 
-void Projectile::render(sf::RenderTarget& target) noexcept {
+void Projectile::render(sf::RenderTarget& target) const noexcept {
 	sf::CircleShape shape(r);
 	shape.setFillColor(Vector4f{ 0.2f, 0.3f, 0.4f, 1.f });
 	shape.setOrigin(shape.getRadius(), shape.getRadius());
@@ -181,16 +238,20 @@ void Projectile::render(sf::RenderTarget& target) noexcept {
 	target.draw(shape);
 }
 
-void Level::render(sf::RenderTarget& target) noexcept {
+void Level::render(sf::RenderTarget& target) const noexcept {
 	target.setView(camera);
-	for (auto& x : rocks) x.render(target);
-	for (auto& x : blocks) x.render(target);
-	for (auto& x : dry_zones) x.render(target);
-	for (auto& x : kill_zones) x.render(target);
-	for (auto& x : next_zones) x.render(target);
-	for (auto& x : dispensers) x.render(target);
-	for (auto& x : projectiles) x.render(target);
-	for (auto& x : prest_sources) x.render(target);
+	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
+
+	renders(rocks);
+	renders(doors);
+	renders(blocks);
+	renders(dry_zones);
+	renders(kill_zones);
+	renders(next_zones);
+	renders(dispensers);
+	renders(projectiles);
+	renders(trigger_zones);
+	renders(prest_sources);
 
 	for (auto& x : markers) {
 		sf::CircleShape shape(0.05f);
@@ -235,14 +296,9 @@ void Level::render(sf::RenderTarget& target) noexcept {
 		);
 	}
 
-	static bool flag = false;
 	for (const auto& x : debug_vectors) {
 		Vector2f::renderArrow(target, x.a, x.a + x.b, { 1, 1, 0, 1 }, { 1, 1, 0, 1 });
 	}
-	if (flag) {
-		using namespace std::chrono_literals;
-	}
-	flag = !debug_vectors.empty();
 
 
 	auto view = target.getView();
@@ -334,6 +390,26 @@ void Level::update(float dt) noexcept {
 
 	if (in_editor || test_input(dt)) return;
 
+	for (auto& x : trigger_zones)
+		x.triggered = std::any_of(BEG_END(rocks), [&x](const Rock& y) { return test(y, x.rec); });
+
+	for (auto& x : doors) {
+		bool open = true;
+		
+		for (auto& i : x.must_triggered) {
+			open &= std::any_of(
+				BEG_END(trigger_zones), [i](const auto& x) { return x.id == i && x.triggered; }
+			);
+		}
+		for (auto& i : x.mustnt_triggered) {
+			open &= std::any_of(
+				BEG_END(trigger_zones), [i](const auto& x) { return x.id == i && !x.triggered; }
+			);
+		}
+
+		x.closed = !open;
+	}
+
 	for (auto& x : dispensers) {
 		x.timer -= dt;
 		if (x.timer <= 0) {
@@ -388,7 +464,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	float impact = 0;
 
 	player.pos.x += velocities.x * dt;
-	if (test_any_p(blocks)) {
+	if (test_any_p(blocks) || test_any_p(doors)) {
 		impact += std::abs(velocities.x);
 		player.pos.x = previous_player.pos.x;
 		player.velocity.x = 0;
@@ -396,7 +472,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	}
 	player.floored = false;
 	player.pos.y += velocities.y * dt;
-	if (test_any_p(blocks)) {
+	if (test_any_p(blocks) || test_any_p(doors)) {
 		impact += std::abs(velocities.y);
 		player.pos.y = previous_player.pos.y;
 		player.floored = velocities.y < 0;
@@ -558,31 +634,14 @@ void Level::resume() noexcept {
 	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
 
 	iter(rocks);
+	iter(doors);
 	iter(blocks);
 	iter(dry_zones);
 	iter(next_zones);
 	iter(kill_zones);
 	iter(dispensers);
+	iter(trigger_zones);
 	iter(prest_sources);
-}
-
-void Prest_Source::render(sf::RenderTarget& target) noexcept {
-	auto r = std::sqrt(prest) * Radius_Multiplier;
-
-	sf::CircleShape shape;
-	shape.setRadius(r);
-	shape.setOrigin(r, r);
-	shape.setPosition(pos);
-	shape.setFillColor(sf::Color::Cyan);
-	target.draw(shape);
-
-	if (!editor_selected) return;
-
-	shape.setRadius(r + 0.04f);
-	shape.setOrigin(shape.getRadius(), shape.getRadius());
-	shape.setPosition(pos);
-	shape.setFillColor(Vector4d{ 1.0, 1.0, 1.0, 0.1 });
-	target.draw(shape);
 }
 
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
@@ -637,24 +696,18 @@ void to_dyn_struct(dyn_struct& str, const Prest_Source& prest) noexcept {
 	str["prest"] = prest.prest;
 }
 void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
-	for (const auto& x : iterate_array(str["blocks"])) level.blocks.push_back((Block)x);
-	for (const auto& x : iterate_array(str["kill_zones"]))
-		level.kill_zones.push_back((Kill_Zone)x);
-	for (const auto& x : iterate_array(str["next_zones"]))
-		level.next_zones.push_back((Next_Zone)x);
-	if (has(str, "dry_zones")) for (const auto& x : iterate_array(str["dry_zones"]))
-		level.dry_zones.push_back((Dry_Zone)x);
-	if (has(str, "rocks")) for (const auto& x : iterate_array(str["rocks"]))
-		level.rocks.push_back((Rock)x);
-	for (const auto& x : iterate_array(str["prest_sources"]))
-		level.prest_sources.push_back((Prest_Source)x);
-	for (const auto& x : iterate_array(str["dispensers"]))
-		level.dispensers.push_back((Dispenser)x);
-	if (has(str, "markers")) {
-		for (const auto& x : iterate_array(str["markers"]))
-			level.markers.push_back((Vector2f)x);
-	}
-
+#define X(x) level.x = (decltype(level.x))str[#x];
+	X(doors);
+	X(blocks);
+	X(dispensers);
+	X(kill_zones);
+	X(next_zones);
+	X(prest_sources);
+	X(trigger_zones);
+	if (has(str, "dry_zones")) X(dry_zones);
+	if (has(str, "rocks")) X(rocks);
+	if (has(str, "markers")) X(markers);
+#undef X
 
 	Player player;
 	player.forces = {};
@@ -671,22 +724,16 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 }
 void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};
-	str["blocks"] = dyn_struct_array();
-	for (const auto& x : level.blocks) str["blocks"].push_back(x);
-	str["kill_zones"] = dyn_struct_array();
-	for (const auto& x : level.kill_zones) str["kill_zones"].push_back(x);
-	str["next_zones"] = dyn_struct_array();
-	for (const auto& x : level.next_zones) str["next_zones"].push_back(x);
-	str["dry_zones"] = dyn_struct_array();
-	for (const auto& x : level.dry_zones) str["dry_zones"].push_back(x);
-	str["prest_sources"] = dyn_struct_array();
-	for (const auto& x : level.prest_sources) str["prest_sources"].push_back(x);
-	str["dispensers"] = dyn_struct_array();
-	for (const auto& x : level.dispensers) str["dispensers"].push_back(x);
-	str["markers"] = dyn_struct_array();
-	for (const auto& x : level.markers) str["markers"].push_back(x);
-	str["rocks"] = dyn_struct_array();
-	for (const auto& x : level.rocks) str["rocks"].push_back(x);
+	str["blocks"] = level.blocks;
+	str["kill_zones"] = level.kill_zones;
+	str["next_zones"] = level.next_zones;
+	str["dry_zones"] = level.dry_zones;
+	str["prest_sources"] = level.prest_sources;
+	str["dispensers"] = level.dispensers;
+	str["markers"] = level.markers;
+	str["rocks"] = level.rocks;
+	str["doors"] = level.doors;
+	str["trigger_zones"] = level.trigger_zones;
 
 	auto& player = str["player"] = dyn_struct::structure_t{};
 
@@ -709,6 +756,28 @@ void to_dyn_struct(dyn_struct& str, const Next_Zone& x) noexcept {
 	str["pos"] = x.pos;
 	str["size"] = x.size;
 	str["next_level"] = x.next_level;
+}
+void from_dyn_struct(const dyn_struct& str, Trigger_Zone& x) noexcept {
+	x.rec = (Rectanglef)str["rec"];
+	x.id = (std::uint64_t)str["id"];
+}
+void to_dyn_struct(dyn_struct& str, const Trigger_Zone& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["id"] = x.id;
+	str["rec"] = x.rec;
+}
+void from_dyn_struct(const dyn_struct& str, Door& x) noexcept {
+	x.rec = (Rectanglef)str["rec"];
+	x.closed = (bool)str["closed"];
+	x.must_triggered = (decltype(x.must_triggered))str["must_triggered"];
+	x.mustnt_triggered = (decltype(x.mustnt_triggered))str["mustnt_triggered"];
+}
+void to_dyn_struct(dyn_struct& str, const Door& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["rec"] = x.rec;
+	str["closed"] = x.closed;
+	str["must_triggered"] = x.must_triggered;
+	str["mustnt_triggered"] = x.mustnt_triggered;
 }
 void from_dyn_struct(const dyn_struct& str, Rock& x) noexcept {
 	x.pos = (Vector2f)str["pos"];
