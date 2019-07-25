@@ -282,7 +282,7 @@ std::string format_to_json(const dyn_struct& s, std::string_view indent) noexcep
 
 			result += "{";
 			for (auto&[key, value] : v) {
-				result += "\n";
+				result += "";
 				result += indent;
 				result += '"';
 				result += key;
@@ -301,7 +301,7 @@ std::string format_to_json(const dyn_struct& s, std::string_view indent) noexcep
 				result += ',';
 			}
 			result.pop_back();
-			result += "\n}";
+			result += "}";
 
 		}
 		else {
