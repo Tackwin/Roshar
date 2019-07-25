@@ -356,11 +356,11 @@ struct Vector : public __vec_member<D, T> {
 
 
 	template<typename U>
-	Vector<D, T> operator*(const U& scalaire) const {
+	auto operator*(const U& scalaire) const noexcept -> Vector<D, decltype(T{} * scalaire)> {
 		static_assert(std::is_scalar<U>::value, "need to be a scalar");
-		Vector<D, T> result;
+		Vector<D, decltype(T{} *scalaire) > result;
 		for (size_t i = 0; i < getDimension(); ++i) {
-			result[i] = static_cast<T>(this->components[i] * scalaire);
+			result[i] = this->components[i] * scalaire;
 		}
 
 		return result;
@@ -624,7 +624,8 @@ struct Vector : public __vec_member<D, T> {
 };
 
 template<size_t D, typename T, typename U>
-Vector<D, T> operator*(U scalar, const Vector<D, T>& vec) {
+auto operator*(U scalar, const Vector<D, T>& vec) noexcept -> Vector<D, decltype(scalar * vec[0])>
+{
 	return vec * scalar;
 }
 template<size_t D, typename T, typename U>

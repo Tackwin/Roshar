@@ -242,7 +242,6 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	target.setView(camera);
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
-	renders(rocks);
 	renders(doors);
 	renders(blocks);
 	renders(dry_zones);
@@ -252,6 +251,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(projectiles);
 	renders(trigger_zones);
 	renders(prest_sources);
+	renders(rocks);
 
 	for (auto& x : markers) {
 		sf::CircleShape shape(0.05f);
@@ -390,8 +390,11 @@ void Level::update(float dt) noexcept {
 
 	if (in_editor || test_input(dt)) return;
 
-	for (auto& x : trigger_zones)
-		x.triggered = std::any_of(BEG_END(rocks), [&x](const Rock& y) { return test(y, x.rec); });
+	for (auto& x : trigger_zones) {
+		x.triggered =
+			test(x, { player.pos, player.size }) ||
+			std::any_of(BEG_END(rocks), [&x](const Rock& y) { return test(y, x.rec); });
+	}
 
 	for (auto& x : doors) {
 		bool open = true;
@@ -504,6 +507,13 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 				circle.c = rock.pos + rock.velocity * dt;
 			}
 		}
+		for (const auto& door : doors) {
+			if (!door.closed) continue;
+			if (auto opt = get_next_velocity(circle, rock.velocity, door.rec, dt); opt) {
+				rock.velocity = *opt;
+				circle.c = rock.pos + rock.velocity * dt;
+			}
+		}
 
 		rock.pos = circle.c;
 	}
@@ -565,6 +575,10 @@ void Level::retry() noexcept {
 		this->rocks.clear();
 		this->rocks.swap(new_level.rocks);
 	}
+
+	for (auto& x : dispensers) {
+		x.timer = (1 / x.hz) - std::fmodf(x.offset_timer, 1 / x.hz);
+	}
 }
 
 void Level::die() noexcept {
@@ -580,10 +594,9 @@ void Level::mouse_start_drag() noexcept {
 	for (size_t i = 0; i < rocks.size(); ++i) {
 		auto& r = rocks[i];
 
-		Circlef c = { .c = r.pos, .r = r.r };
-		Circlef range = { .c = player.pos,.r = Environment.binding_range };
+		Circlef c = { .c = r.pos, .r = r.r + Environment.binding_range };
 
-		if (is_in(r.pos, range) && is_in(IM::getMousePosInView(camera), c)) {
+		if (is_in({ player.pos, player.size }, c) && is_in(IM::getMousePosInView(camera), c)) {
 			auto temp = std::move(rocks[rock_dragging_i]);
 			rocks[rock_dragging_i++] = std::move(r);
 			r = std::move(temp);
@@ -696,17 +709,17 @@ void to_dyn_struct(dyn_struct& str, const Prest_Source& prest) noexcept {
 	str["prest"] = prest.prest;
 }
 void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
-#define X(x) level.x = (decltype(level.x))str[#x];
-	X(doors);
+#define X(x) if (has(str, #x)) level.x = (decltype(level.x))str[#x];
 	X(blocks);
 	X(dispensers);
 	X(kill_zones);
 	X(next_zones);
 	X(prest_sources);
+	X(dry_zones);
+	X(doors);
 	X(trigger_zones);
-	if (has(str, "dry_zones")) X(dry_zones);
-	if (has(str, "rocks")) X(rocks);
-	if (has(str, "markers")) X(markers);
+	X(rocks);
+	X(markers);
 #undef X
 
 	Player player;

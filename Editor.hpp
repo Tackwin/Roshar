@@ -30,6 +30,8 @@ class Editor {
 
 	float sin_time{ 0.f };
 
+	float snap_grid{ 0.f };
+
 	bool snap_horizontal{ false };
 	bool snap_vertical{ false };
 
@@ -40,6 +42,8 @@ class Editor {
 	void delete_all_selected() noexcept;
 
 	void save(const std::filesystem::path& path) noexcept;
+
+	Vector2f get_mouse_pos() const noexcept;
 public:
 	Level* level_to_edit{ nullptr };
 

@@ -44,7 +44,7 @@ int main(int, char**) {
 			}
 		}
 
-		window.clear();
+		window.clear({ 153, 78, 102, 255 });
 
 		ImGui::Begin("Environment");
 		ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
@@ -56,6 +56,7 @@ int main(int, char**) {
 		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
 		ImGui::End();
 
+		level.render(window);
 		if (run_editor) {
 			editor.update(dt);
 			editor.render(window);
@@ -63,7 +64,6 @@ int main(int, char**) {
 		else {
 			level.update(dt);
 		}
-		level.render(window);
 
 		ImGui::SFML::Render(window);
 		window.display();
