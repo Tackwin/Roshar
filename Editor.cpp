@@ -212,8 +212,11 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 
 		ImGui::Text("Offset");
 		ImGui::SameLine();
-		if (ImGui::InputFloat("Offset", &offset_timer)) for (auto& y : level_to_edit->dispensers)
-				if (pred(y)) y.offset_timer = offset_timer;
+		if (ImGui::InputFloat("Offset", &offset_timer))
+			for (auto& y : level_to_edit->dispensers) if (pred(y)) {
+				std::puts("Test\n");
+				y.offset_timer = offset_timer;
+			}
 	}
 
 	if (element_creating) {

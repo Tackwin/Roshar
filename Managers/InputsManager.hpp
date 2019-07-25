@@ -2,8 +2,32 @@
 #include <SFML/Graphics.hpp>
 #include <optional>
 #include <vector>
+#include <array>
 
 #include "./../Math/Vector.hpp"
+
+struct Inputs_Info {
+	struct Action_Info {
+		bool pressed : 1;
+		bool just_pressed : 1;
+		bool just_released : 1;
+	};
+
+	std::array<Action_Info, sf::Keyboard::KeyCount> key_infos;
+	std::array<Action_Info, sf::Mouse::ButtonCount> mouse_infos;
+
+	Vector2f mouse_screen_pos;
+	Vector2f mouse_screen_delta;
+	Vector2u windows_size;
+
+	float scroll;
+
+	struct {
+		bool mouse_captured : 1;
+		bool key_captured : 1;
+		bool focused : 1;
+	};
+};
 
 class InputsManager {
 private:
@@ -11,37 +35,7 @@ private:
 	~InputsManager();
 
 private:
-	static bool wasKeyJustPressed;
-	static bool wasKeyJustReleased;
-	static int nKeyPressed;
-
-	static float lastScroll;
-
-	static sf::Uint32 textEntered;
-
-	static bool keyPressed[sf::Keyboard::KeyCount];
-	static bool keyJustPressed[sf::Keyboard::KeyCount];
-	static bool keyJustReleased[sf::Keyboard::KeyCount];
-	
-	static bool mousePressed[sf::Mouse::ButtonCount];
-	static bool mouseJustPressed[sf::Mouse::ButtonCount];
-	static bool mouseJustReleased[sf::Mouse::ButtonCount];
-
-	static Vector2f mouseScreenPos;
-	static Vector2f mouseScreenDelta;
-	static std::optional<Vector2f> mouseStartDragPos;
-
-	static Vector2u windowsSize;
-
-	static constexpr auto MAX_SEQUENCE = 4;
-	static std::vector<sf::Keyboard::Key> currentSequence;
-
-	static sf::Keyboard::Key lastKey;
-
-	static bool mouseCaptured;
-	static bool keyCaptured;
-	static bool focused;
-
+	static std::list<Inputs_Info> records;
 public:
 	static std::string nameOfKey(sf::Keyboard::Key) noexcept;
 
@@ -53,8 +47,8 @@ public:
 	static sf::Uint32 getTextEntered() noexcept;
 
 	static bool isLastSequence(
-		std::initializer_list<sf::Keyboard::Key> keys,
-		std::initializer_list<sf::Keyboard::Key> modifiers = {}
+		const std::vector<sf::Keyboard::Key>& keys,
+		const std::vector<sf::Keyboard::Key>& modifiers = {}
 	) noexcept;
 	static bool isLastSequenceJustFinished(
 		std::initializer_list<sf::Keyboard::Key> keys,

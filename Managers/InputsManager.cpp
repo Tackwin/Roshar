@@ -7,35 +7,7 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
-
-sf::Uint32 InputsManager::textEntered;
-
-bool InputsManager::wasKeyJustPressed = false;
-bool InputsManager::wasKeyJustReleased = false;
-int InputsManager::nKeyPressed = 0;
-
-bool IM::mouseCaptured = false;
-bool IM::keyCaptured = false;
-bool IM::focused = false;
-
-float InputsManager::lastScroll = 0.f;
-
-bool InputsManager::keyPressed[sf::Keyboard::KeyCount];
-bool InputsManager::keyJustPressed[sf::Keyboard::KeyCount];
-bool InputsManager::keyJustReleased[sf::Keyboard::KeyCount];
-
-bool InputsManager::mousePressed[sf::Mouse::ButtonCount];
-bool InputsManager::mouseJustPressed[sf::Mouse::ButtonCount];
-bool InputsManager::mouseJustReleased[sf::Mouse::ButtonCount];
-
-Vector2f InputsManager::mouseScreenPos;
-Vector2f InputsManager::mouseScreenDelta;
-
-Vector2u InputsManager::windowsSize;
-
-std::vector<sf::Keyboard::Key> InputsManager::currentSequence;
-
-sf::Keyboard::Key InputsManager::lastKey;
+std::list<Inputs_Info> IM::records;
 
 void print_sequence(const std::vector<sf::Keyboard::Key>& x) {
 	for (auto& k : x) {
@@ -160,30 +132,42 @@ std::string InputsManager::nameOfKey(sf::Keyboard::Key k) noexcept {
 }
 
 sf::Keyboard::Key InputsManager::getLastKeyPressed() noexcept {
-	return lastKey;
-}
+	for (auto it = records.rbegin(); it != records.rend(); ++it) {
+		for (size_t i = 0; i < it->key_infos.size(); ++i)
+			if (it->key_infos[i].just_pressed) return (sf::Keyboard::Key)i;
+	}
 
-bool InputsManager::isTextJustEntered() noexcept {
-	return textEntered != 0;
-}
-sf::Uint32 InputsManager::getTextEntered() noexcept {
-	return textEntered;
+	return (sf::Keyboard::Key)0;
 }
 
 bool InputsManager::isLastSequence(
-	std::initializer_list<sf::Keyboard::Key> keys,
-	std::initializer_list<sf::Keyboard::Key> modifiers
+	const std::vector<sf::Keyboard::Key>& keys,
+	const std::vector<sf::Keyboard::Key>& modifiers
 ) noexcept {
-	if (!keyCaptured) return false;
-	if (keys.size() > currentSequence.size()) return false;
+	if (records.empty()) return false;
 
-	auto end_pair = std::pair{ std::end(keys), std::end(currentSequence) };
-	for (
-		auto& [i, j] = end_pair;
-		i != std::begin(keys);
-		--i, --j
-	) {
-		if (*(i - 1) != *(j - 1)) return false;
+	const auto& last_record = records.back();
+
+	if (!last_record.key_captured) return false;
+	if (keys.size() > records.size()) return false;
+
+	auto it = records.rbegin();
+	for (size_t i = keys.size() - 1; i + 1 > 0; --i) {
+		const auto& current_key = keys[i];
+
+		bool flag = false;
+		for (; it != records.rend(); ++it) {
+			for (size_t j = 0; j < it->key_infos.size(); ++j) {
+				if (it->key_infos[j].just_pressed) {
+					if (current_key != (sf::Keyboard::Key)j) return false;
+					flag = true;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+
+		if (!flag) return false;
 	}
 
 	for (auto& x : modifiers) if (!isKeyPressed(x)) return false;
@@ -194,41 +178,80 @@ bool InputsManager::isLastSequenceJustFinished(
 	std::initializer_list<sf::Keyboard::Key> keys,
 	std::initializer_list<sf::Keyboard::Key> modifiers
 ) noexcept {
-	return (!keyCaptured&& wasKeyJustPressed && isLastSequence(keys, modifiers));
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+	return (!last_record.key_captured && isKeyJustPressed() && isLastSequence(keys, modifiers));
 }
 
 bool InputsManager::isKeyJustPressed() noexcept {
-	return wasKeyJustPressed;
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	for (const auto& x : last_record.key_infos) if (x.just_pressed) return true;
+	return false;
 }
 bool InputsManager::isKeyJustReleased() noexcept {
-	return wasKeyJustReleased;
-}
+	if (records.empty()) return false;
 
-int InputsManager::countKeyPressed() noexcept {
-	return nKeyPressed;
+	const auto& last_record = records.back();
+
+	for (const auto& x : last_record.key_infos) if (x.just_released) return true;
+	return false;
 }
 
 bool InputsManager::isKeyPressed() noexcept {
-	return nKeyPressed != 0;
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	for (const auto& x : last_record.key_infos) if (x.pressed) return true;
+	return false;
 }
 bool InputsManager::isKeyPressed(const sf::Keyboard::Key &key) {
-	return keyPressed[key];
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return !last_record.key_captured && last_record.key_infos[key].pressed;
 }
 bool InputsManager::isKeyJustPressed(const sf::Keyboard::Key &key) {
-	return !keyCaptured && keyJustPressed[key];
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return !last_record.key_captured && last_record.key_infos[key].just_pressed;
 }
 bool InputsManager::isKeyJustReleased(const sf::Keyboard::Key &key) {
-	return !keyCaptured && keyJustReleased[key];
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return !last_record.key_captured && last_record.key_infos[key].just_released;
 }
 
 bool InputsManager::isMousePressed(const sf::Mouse::Button &button) {
-	return !mouseCaptured && mousePressed[button];
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return !last_record.mouse_captured && last_record.mouse_infos[button].pressed;
 }
 bool InputsManager::isMouseJustPressed(const sf::Mouse::Button &button) {
-	return !mouseCaptured && mouseJustPressed[button];
+
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return !last_record.mouse_captured && last_record.mouse_infos[button].just_pressed;
 }
 bool InputsManager::isMouseJustReleased(const sf::Mouse::Button &button) {
-	return mouseJustReleased[button];
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return !last_record.mouse_captured && last_record.mouse_infos[button].just_released;
 }
 
 Vector2f InputsManager::getMousePosInView(const sf::View& view) {
@@ -241,59 +264,46 @@ Vector2f InputsManager::getMouseDeltaInView(const sf::View& view) noexcept {
 	return applyInverseView(view, A) - applyInverseView(view, B);
 }
 Vector2f InputsManager::getMouseScreenPos() {
-	return mouseScreenPos;
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+	return last_record.mouse_screen_pos;
 }
 Vector2f InputsManager::getMouseScreenDelta() noexcept {
-	return mouseScreenDelta;
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+	return last_record.mouse_screen_delta;
 }
 float InputsManager::getLastScroll() noexcept {
-	return !mouseCaptured ? lastScroll : 0;
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+	return last_record.scroll;
 }
 
 void InputsManager::update(sf::RenderWindow& window, float dt) {
-	wasKeyJustPressed = false;
-	wasKeyJustReleased = false;
-	nKeyPressed = std::max(nKeyPressed, 0);
-	
-	textEntered = 0;
-	lastScroll = 0;
-
-	memset(keyJustPressed   , 0, sizeof(keyJustPressed));
-	memset(keyJustReleased  , 0, sizeof(keyJustReleased));
-	memset(mouseJustPressed , 0, sizeof(mouseJustPressed));
-	memset(mouseJustReleased, 0, sizeof(mouseJustReleased));
+	Inputs_Info new_record = {};
 
 	for (size_t i = 0; i < sf::Keyboard::KeyCount; ++i) {
 		auto pressed = sf::Keyboard::isKeyPressed((sf::Keyboard::Key)i);
+		auto last_pressed = records.empty() ? false : records.back().key_infos[i].pressed;
 
-		keyJustPressed[i] = !keyPressed[i] && pressed;
-		wasKeyJustPressed |= keyJustPressed[i];
-		keyJustReleased[i] = keyPressed[i] && !pressed;
-		wasKeyJustReleased |= keyJustReleased[i];
-		keyPressed[i] = pressed;
-
-		if (keyJustPressed[i]) {
-			if (currentSequence.size() == MAX_SEQUENCE) {
-				std::rotate(
-					std::begin(currentSequence),
-					std::begin(currentSequence) + 1,
-					std::end(currentSequence)
-				);
-				currentSequence.back() = (sf::Keyboard::Key)i;
-			}
-			else {
-				currentSequence.push_back((sf::Keyboard::Key)i);
-			}
-
-		}
+		new_record.key_infos[i].just_pressed = !last_pressed && pressed;
+		new_record.key_infos[i].just_released = last_pressed && !pressed;
+		new_record.key_infos[i].pressed = pressed;
 	}
 
 	for (size_t i = 0; i < sf::Mouse::ButtonCount; ++i) {
 		auto pressed = sf::Mouse::isButtonPressed((sf::Mouse::Button)i);
+		auto last_pressed = records.empty() ? false : records.back().mouse_infos[i].pressed;
 
-		mouseJustPressed[i] = !mousePressed[i] && pressed;
-		mouseJustReleased[i] = mousePressed[i] && !pressed;
-		mousePressed[i] = pressed;
+		new_record.mouse_infos[i].just_pressed = !last_pressed && pressed;
+		new_record.mouse_infos[i].just_released = last_pressed && !pressed;
+		new_record.mouse_infos[i].pressed = pressed;
 	}
 
 	sf::Event event;
@@ -305,47 +315,37 @@ void InputsManager::update(sf::RenderWindow& window, float dt) {
 		
 		if(event.type == sf::Event::Closed)
 			window.close();
-
-		if(event.type == sf::Event::KeyPressed) {
-			nKeyPressed++;
-			if (event.key.code == sf::Keyboard::Unknown)
-				continue;
-
-			lastKey = event.key.code;
-		}
-		if(event.type == sf::Event::KeyReleased) {
-			nKeyPressed--;
-			if (event.key.code == sf::Keyboard::Unknown)
-				continue;
-		}
-		if (event.type == sf::Event::TextEntered) {
-			textEntered = event.text.unicode;
-		}
 		if (event.type == sf::Event::MouseWheelScrolled) {
-			lastScroll = event.mouseWheelScroll.delta;
+			new_record.scroll = event.mouseWheelScroll.delta;
 		}
 	}
 
-	focused = window.hasFocus();
+	new_record.focused = window.hasFocus();
+	Vector2f last_mouse_screen_pos =
+		records.empty() ? Vector2f{} : records.back().mouse_screen_pos;
 
-	mouseScreenDelta = (Vector2f)sf::Mouse::getPosition(window) - mouseScreenPos;
-	mouseScreenPos = sf::Mouse::getPosition(window);
+	new_record.mouse_screen_pos = sf::Mouse::getPosition(window);
+	new_record.mouse_screen_delta = new_record.mouse_screen_pos - last_mouse_screen_pos;
 
-	windowsSize = window.getSize();
+	new_record.windows_size = window.getSize();
 
 	ImGui::SFML::Update(window, sf::seconds(dt));
-	keyCaptured = ImGui::GetIO().WantCaptureKeyboard;
-	mouseCaptured = ImGui::GetIO().WantCaptureMouse;
+	new_record.key_captured = ImGui::GetIO().WantCaptureKeyboard;
+	new_record.mouse_captured = ImGui::GetIO().WantCaptureMouse;
+
+	records.push_back(new_record);
 }
 
 
 Vector2f InputsManager::applyInverseView(const sf::View& view, Vector2f p) noexcept {
 	const auto& viewScope = view.getViewport();
+	const auto& window_size = getWindowSize();
+
 	auto viewPort = sf::IntRect(
-		(int)std::ceil(windowsSize.x * viewScope.left),
-		(int)std::ceil(windowsSize.y * viewScope.top),
-		(int)std::ceil(windowsSize.x * viewScope.width),
-		(int)std::ceil(windowsSize.y * viewScope.height)
+		(int)std::ceil(window_size.x * viewScope.left),
+		(int)std::ceil(window_size.y * viewScope.top),
+		(int)std::ceil(window_size.x * viewScope.width),
+		(int)std::ceil(window_size.y * viewScope.height)
 	);
 
 	Vector2f normalized;
@@ -357,10 +357,18 @@ Vector2f InputsManager::applyInverseView(const sf::View& view, Vector2f p) noexc
 }
 
 bool IM::isWindowFocused() noexcept {
-	return focused;
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+	return last_record.focused;
 }
 
 Vector2u IM::getWindowSize() noexcept {
-	return windowsSize;
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+	return last_record.windows_size;
 }
 

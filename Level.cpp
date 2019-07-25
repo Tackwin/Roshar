@@ -196,6 +196,10 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 	target.draw(shape);
 }
 
+void Dispenser::set_start_timer() noexcept {
+	timer = (1 / hz) - std::fmodf(offset_timer, 1 / hz);
+}
+
 void Dispenser::render(sf::RenderTarget& target) const noexcept {
 	sf::CircleShape shape(proj_r);
 	shape.setFillColor(Vector4f{ 0.4f, 0.3f, 0.2f, 1.f });
@@ -366,12 +370,14 @@ bool Level::test_input(float) noexcept {
 
 void Level::update(float dt) noexcept {
 	debug_vectors.clear();
+
 	update_camera(dt);
 
 	if (camera_fade_out_timer > 0) {
 		camera_fade_out_timer -= dt;
 		if (camera_fade_out_timer <= 0.f) {
 			retry();
+			input_active_timer = Input_Active_Time;
 			camera_fade_in_timer = Camera_Fade_Time;
 			return;
 		}
@@ -576,15 +582,12 @@ void Level::retry() noexcept {
 		this->rocks.swap(new_level.rocks);
 	}
 
-	for (auto& x : dispensers) {
-		x.timer = (1 / x.hz) - std::fmodf(x.offset_timer, 1 / x.hz);
-	}
+	for (auto& x : dispensers) x.set_start_timer();
+	speedrun_clock_start = nanoseconds();
 }
 
 void Level::die() noexcept {
-	input_active_timer = Input_Active_Time;
 	camera_fade_out_timer = Camera_Fade_Time;
-	camera_fade_in_timer = Camera_Fade_Time;
 }
 
 void Level::mouse_start_drag() noexcept {

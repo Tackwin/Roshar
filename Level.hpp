@@ -81,6 +81,8 @@ struct Dispenser {
 	float offset_timer{ 0 };
 
 	void render(sf::RenderTarget& target) const noexcept;
+
+	void set_start_timer() noexcept;
 };
 
 struct Projectile {
@@ -190,6 +192,8 @@ struct Level {
 	void resume() noexcept;
 
 private:
+	std::uint64_t speedrun_clock_start;
+
 	std::optional<Vector2f> camera_target;
 
 	bool test_input(float dt) noexcept;
