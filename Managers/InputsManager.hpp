@@ -18,15 +18,22 @@ struct Inputs_Info {
 
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_screen_delta;
-	Vector2u windows_size;
+	Vector2u window_size;
 
 	float scroll;
+	float dt;
 
 	struct {
 		bool mouse_captured : 1;
 		bool key_captured : 1;
 		bool focused : 1;
 	};
+
+	[[nodiscard]] Vector2f mouse_world_pos(sf::View& v) const noexcept;
+	[[nodiscard]] bool is_just_pressed(sf::Keyboard::Key k) const noexcept;
+	[[nodiscard]] bool is_just_pressed(sf::Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_pressed(sf::Keyboard::Key k) const noexcept;
+	[[nodiscard]] bool is_pressed(sf::Mouse::Button b) const noexcept;
 };
 
 class InputsManager {
@@ -37,6 +44,10 @@ private:
 private:
 	static std::list<Inputs_Info> records;
 public:
+	using Input_Iterator = decltype(records)::iterator;
+
+	static decltype(records)::iterator get_iterator() noexcept;
+
 	static std::string nameOfKey(sf::Keyboard::Key) noexcept;
 
 	static void update(sf::RenderWindow &window, float dt);
@@ -99,6 +110,8 @@ public:
 	static Vector2f getMouseScreenPos();
 	static Vector2f getMouseScreenDelta() noexcept;
 	static Vector2f getMouseDeltaInView(const sf::View& view) noexcept;
+
+	static float get_dt() noexcept;
 
 private:
 	// For now i'll put that here, but it needs to be in his own stuff

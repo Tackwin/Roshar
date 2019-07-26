@@ -5,6 +5,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "Managers/InputsManager.hpp"
 #include "Math/Rectangle.hpp"
 #include "Math/Vector.hpp"
 #include "Memory/ValuePtr.hpp"
@@ -144,8 +145,6 @@ struct Level {
 	};
 	std::vector<Debug_Vector> debug_vectors;
 
-	ValuePtr<Level> initial_level;
-
 	std::vector<Rock> rocks;
 	std::vector<Door> doors;
 	std::vector<Block> blocks;
@@ -186,15 +185,25 @@ struct Level {
 	Level& operator=(const Level&) = default;
 
 	void render(sf::RenderTarget& target) const noexcept;
-	void update(float dt) noexcept;
+	void update() noexcept;
 
 	void pause() noexcept;
 	void resume() noexcept;
 
 private:
+	bool in_replay{ false };
+	IM::Input_Iterator this_record;
+	IM::Input_Iterator curr_record;
+	std::optional<IM::Input_Iterator> end_record;
+	std::optional<IM::Input_Iterator> start_record;
+
 	std::uint64_t speedrun_clock_start;
 
 	std::optional<Vector2f> camera_target;
+
+	Vector2f mouse_screen_pos;
+	Vector2f mouse_world_pos;
+	Vector2u window_size;
 
 	bool test_input(float dt) noexcept;
 
@@ -206,7 +215,17 @@ private:
 	void update_camera(float dt) noexcept;
 	void retry() noexcept;
 	void die() noexcept;
+
+	void finnish() noexcept;
+
+	void set_new_level(const Level& l) noexcept;
 };
+
+struct Level_Store_t {
+	std::optional<Level> initial_level;
+	std::optional<Level> next_level;
+};
+extern Level_Store_t Level_Store;
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;

@@ -1,11 +1,41 @@
-// This is an open source non-commercial project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "InputsManager.hpp"
 
 #include <cassert>
 
 #include "imgui.h"
 #include "imgui-SFML.h"
+
+
+[[nodiscard]] Vector2f Inputs_Info::mouse_world_pos(sf::View& v) const noexcept {
+	const auto& viewScope = v.getViewport();
+
+	auto viewPort = sf::IntRect(
+		(int)std::ceil(window_size.x * viewScope.left),
+		(int)std::ceil(window_size.y * viewScope.top),
+		(int)std::ceil(window_size.x * viewScope.width),
+		(int)std::ceil(window_size.y * viewScope.height)
+	);
+
+	Vector2f normalized;
+
+	normalized.x = -1.f + 2.f * (mouse_screen_pos.x - viewPort.left) / viewPort.width;
+	normalized.y = +1.f - 2.f * (mouse_screen_pos.y - viewPort.top) / viewPort.height;
+
+	return v.getInverseTransform().transformPoint(normalized);
+}
+[[nodiscard]] bool Inputs_Info::is_just_pressed(sf::Keyboard::Key k) const noexcept {
+	return key_infos[k].just_pressed;
+}
+[[nodiscard]] bool Inputs_Info::is_just_pressed(sf::Mouse::Button b) const noexcept {
+	return mouse_infos[b].just_pressed;
+}
+[[nodiscard]] bool Inputs_Info::is_pressed(sf::Keyboard::Key k) const noexcept {
+	return key_infos[k].pressed;
+}
+[[nodiscard]] bool Inputs_Info::is_pressed(sf::Mouse::Button b) const noexcept {
+	return mouse_infos[b].pressed;
+}
+
 
 std::list<Inputs_Info> IM::records;
 
@@ -285,8 +315,22 @@ float InputsManager::getLastScroll() noexcept {
 	return last_record.scroll;
 }
 
+float IM::get_dt() noexcept {
+	if (records.size() < 1) return 0;
+
+	const auto& last_record = records.back();
+
+	return last_record.dt;
+}
+
+auto IM::get_iterator() noexcept -> decltype(records)::iterator {
+	return records.empty() ? records.end() : --records.end();
+}
+
 void InputsManager::update(sf::RenderWindow& window, float dt) {
 	Inputs_Info new_record = {};
+
+	new_record.dt = dt;
 
 	for (size_t i = 0; i < sf::Keyboard::KeyCount; ++i) {
 		auto pressed = sf::Keyboard::isKeyPressed((sf::Keyboard::Key)i);
@@ -327,7 +371,7 @@ void InputsManager::update(sf::RenderWindow& window, float dt) {
 	new_record.mouse_screen_pos = sf::Mouse::getPosition(window);
 	new_record.mouse_screen_delta = new_record.mouse_screen_pos - last_mouse_screen_pos;
 
-	new_record.windows_size = window.getSize();
+	new_record.window_size = window.getSize();
 
 	ImGui::SFML::Update(window, sf::seconds(dt));
 	new_record.key_captured = ImGui::GetIO().WantCaptureKeyboard;
@@ -369,6 +413,6 @@ Vector2u IM::getWindowSize() noexcept {
 
 	const auto& last_record = records.back();
 
-	return last_record.windows_size;
+	return last_record.window_size;
 }
 

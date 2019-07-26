@@ -5,9 +5,10 @@
 #include <thread>
 
 #include "Math/Circle.hpp"
-#include "Managers/InputsManager.hpp"
 #include "Collision.hpp"
 #include "Time.hpp"
+
+Level_Store_t Level_Store;
 
 void Block::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
@@ -274,7 +275,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 		sf::CircleShape shape;
 		shape.setRadius(prest_gathered);
 		shape.setOrigin(prest_gathered, prest_gathered);
-		shape.setPosition(IM::getMousePosInView(camera));
+		shape.setPosition(mouse_world_pos);
 		shape.setFillColor(sf::Color::Green);
 		shape.setOutlineThickness(0.01f);
 		shape.setOutlineColor(sf::Color::White);
@@ -295,7 +296,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 		Vector2f::renderLine(
 			target,
 			target.mapPixelToCoords(*start_drag),
-			IM::getMousePosInView(camera),
+			mouse_world_pos,
 			{ 0, 1, 0, 1 }
 		);
 	}
@@ -328,47 +329,74 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 }
 
 Level::Level() noexcept {
-	camera.setSize({ 10, -(IM::getWindowSize().y / (float)IM::getWindowSize().x) });
+	camera.setSize({ 10, -(window_size.y / (float)window_size.x) });
 }
 
 bool Level::test_input(float) noexcept {
-	if (!IM::isWindowFocused()) return false;
+	if (in_replay && Level_Store.next_level && IM::isKeyJustPressed(sf::Keyboard::Return)) {
+		set_new_level(*Level_Store.next_level);
+		return true;
+	}
 
-	if (IM::isKeyJustPressed(sf::Keyboard::Quote)) {
+	if (!this_record->focused) return false;
+
+	mouse_screen_pos = this_record->mouse_screen_pos;
+	mouse_world_pos = this_record->mouse_world_pos(camera);
+	window_size = this_record->window_size;
+
+	if (!in_replay && this_record->is_just_pressed(sf::Keyboard::Quote)) {
 		retry();
 		return true;
 	}
 
-	if (IM::isKeyPressed(sf::Keyboard::Q)) {
+	if (this_record->is_pressed(sf::Keyboard::Q)) {
 		player.flat_velocities.push_back({ -5, 0 });
 	}
-	if (IM::isKeyPressed(sf::Keyboard::D)) {
+	if (this_record->is_pressed(sf::Keyboard::D)) {
 		player.flat_velocities.push_back({ +5, 0 });
 	}
-	if (IM::isKeyJustPressed(sf::Keyboard::Space) && player.floored) {
+	if (this_record->is_just_pressed(sf::Keyboard::Space) && player.floored) {
 		player.velocity += Vector2f{ 0, +7.5 };
 	}
-	if (IM::isMouseJustPressed(sf::Mouse::Left)) mouse_start_drag();
-	if (IM::isMouseJustPressed(sf::Mouse::Right)) basic_bindings.clear();
+	if (this_record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
+	if (this_record->is_just_pressed(sf::Mouse::Right)) basic_bindings.clear();
 	if (
-		IM::isKeyPressed(sf::Keyboard::LControl) &&
-		IM::isKeyJustPressed(sf::Keyboard::Z) &&
+		this_record->is_pressed(sf::Keyboard::LControl) &&
+		this_record->is_just_pressed(sf::Keyboard::Z) &&
 		!basic_bindings.empty()
 		) {
 		basic_bindings.pop_back();
 	}
-	if (IM::isKeyJustPressed(sf::Keyboard::Return)) {
+	if (this_record->is_just_pressed(sf::Keyboard::Return)) {
 		markers.push_back(player.pos);
 
-		if (IM::isKeyPressed(sf::Keyboard::LShift)) markers.clear();
+		if (this_record->is_pressed(sf::Keyboard::LShift)) markers.clear();
 	}
 
-	if (start_drag) mouse_on_drag();
+	if (start_drag) {
+		if (!this_record->is_pressed(sf::Mouse::Left)) {
+			start_drag.reset();
+			rock_dragging_i = 0;
+		}
+
+		mouse_on_drag();
+	}
 	
 	return false;
 }
 
-void Level::update(float dt) noexcept {
+void Level::update() noexcept {
+	this_record = IM::get_iterator();
+	if (in_replay && start_record && end_record) {
+		if (curr_record == *end_record) {
+			curr_record = *start_record;
+		}
+		else {
+			this_record = curr_record++;
+		}
+	}
+
+	auto dt = this_record->dt;
 	debug_vectors.clear();
 
 	update_camera(dt);
@@ -544,7 +572,10 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 			continue;
 		}
 
-		*this = (Level)*opt_dyn;
+		finnish();
+
+		Level_Store.next_level = (Level)*opt_dyn;
+
 		return;
 	}
 
@@ -574,16 +605,22 @@ void Level::update_camera(float dt) noexcept {
 }
 
 void Level::retry() noexcept {
-	if (initial_level) {
-		initial_level->initial_level = new Level(*initial_level);
-		auto new_level = *initial_level;
-		*this = new_level;
-		this->rocks.clear();
-		this->rocks.swap(new_level.rocks);
-	}
+	if (Level_Store.initial_level) set_new_level(*Level_Store.initial_level);
 
 	for (auto& x : dispensers) x.set_start_timer();
 	speedrun_clock_start = nanoseconds();
+}
+
+void Level::finnish() noexcept {
+	auto local_start_record = start_record;
+	auto local_end_record = in_replay ? end_record : IM::get_iterator();
+
+	retry();
+
+	start_record = local_start_record;
+	if (local_start_record) curr_record = *local_start_record;
+	end_record = local_end_record;
+	in_replay = true;
 }
 
 void Level::die() noexcept {
@@ -591,7 +628,7 @@ void Level::die() noexcept {
 }
 
 void Level::mouse_start_drag() noexcept {
-	start_drag = IM::getMouseScreenPos();
+	start_drag = mouse_screen_pos;
 	drag_time = seconds();
 
 	for (size_t i = 0; i < rocks.size(); ++i) {
@@ -599,7 +636,7 @@ void Level::mouse_start_drag() noexcept {
 
 		Circlef c = { .c = r.pos, .r = r.r + Environment.binding_range };
 
-		if (is_in({ player.pos, player.size }, c) && is_in(IM::getMousePosInView(camera), c)) {
+		if (is_in({ player.pos, player.size }, c) && is_in(mouse_world_pos, c)) {
 			auto temp = std::move(rocks[rock_dragging_i]);
 			rocks[rock_dragging_i++] = std::move(r);
 			r = std::move(temp);
@@ -609,12 +646,7 @@ void Level::mouse_start_drag() noexcept {
 }
 
 void Level::mouse_on_drag() noexcept {
-	if (!IM::isMousePressed(sf::Mouse::Left)) {
-		start_drag.reset();
-		rock_dragging_i = 0;
-	}
-
-	auto new_pos = IM::getMouseScreenPos();
+	auto new_pos = mouse_screen_pos;
 	auto dt_vec = new_pos - *start_drag;
 	dt_vec.y *= -1;
 	if (dt_vec.length2() > drag_dead_zone * drag_dead_zone) {
@@ -645,8 +677,18 @@ void Level::mouse_on_drag() noexcept {
 	}
 }
 
+void Level::set_new_level(const Level& l) noexcept {
+	*this = l;
+	Level_Store.initial_level = l;
+
+	start_record = IM::get_iterator();
+	end_record = start_record;
+}
+
 void Level::pause() noexcept {}
 void Level::resume() noexcept {
+	if (start_record == end_record) start_record = IM::get_iterator();
+
 	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
 
 	iter(rocks);
@@ -735,8 +777,6 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 
 	level.camera.setCenter((Vector2f)str["camera"]["pos"]);
 	level.camera.setSize((Vector2f)str["camera"]["size"]);
-
-	level.initial_level = new Level(level);
 }
 void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};

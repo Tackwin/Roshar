@@ -62,7 +62,7 @@ int main(int, char**) {
 			editor.render(window);
 		}
 		else {
-			level.update(dt);
+			level.update();
 		}
 
 		ImGui::SFML::Render(window);

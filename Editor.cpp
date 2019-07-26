@@ -50,7 +50,8 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			if (!result.succeded) return;
 			auto opt_dyn = load_from_json_file(result.filepath);
 			if (!opt_dyn) return;
-			*l = (Level)* opt_dyn;
+			*l = (Level)*opt_dyn;
+			Level_Store.initial_level = (Level)*opt_dyn;
 			s = result.filepath.string();
 		}, opts);
 	}
@@ -61,6 +62,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		auto opt_dyn = load_from_json_file(save_path);
 		if (!opt_dyn) return;
 		*level_to_edit = (Level)* opt_dyn;
+		Level_Store.initial_level = (Level)* opt_dyn;
 		level_to_edit->markers = std::move(old_markers);
 	}
 	char buffer[512];
