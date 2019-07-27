@@ -243,6 +243,26 @@ void Projectile::render(sf::RenderTarget& target) const noexcept {
 	target.draw(shape);
 }
 
+void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
+	sprite.setPosition(rec.pos.x, rec.pos.y + rec.size.y);
+	sprite.setScale(
+		rec.size.x / sprite.getTextureRect().width,
+		-rec.size.y / sprite.getTextureRect().height
+	);
+	target.draw(sprite);
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		sf::RectangleShape shape;
+		shape.setPosition(rec.pos);
+		shape.setSize(rec.size);
+		shape.setFillColor(Vector4d{ alpha, alpha, alpha, alpha });
+		target.draw(shape);
+	}
+}
+
 void Level::render(sf::RenderTarget& target) const noexcept {
 	target.setView(camera);
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
@@ -253,9 +273,12 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(kill_zones);
 	renders(next_zones);
 	renders(dispensers);
-	renders(projectiles);
 	renders(trigger_zones);
+
+	renders(decor_sprites);
+
 	renders(prest_sources);
+	renders(projectiles);
 	renders(rocks);
 
 	for (auto& x : markers) {
@@ -329,7 +352,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 }
 
 Level::Level() noexcept {
-	camera.setSize({ 10, -(window_size.y / (float)window_size.x) });
+	camera.setSize({ 10, -10 * (window_size.y / (float)window_size.x) });
 }
 
 bool Level::test_input(float) noexcept {
@@ -407,8 +430,8 @@ void Level::update() noexcept {
 			retry();
 			input_active_timer = Input_Active_Time;
 			camera_fade_in_timer = Camera_Fade_Time;
-			return;
 		}
+		return;
 	}
 	if (camera_fade_out_timer <= 0.f && camera_fade_in_timer > 0) {
 		camera_fade_in_timer -= dt;
@@ -502,7 +525,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 
 	player.pos.x += velocities.x * dt;
 	if (test_any_p(blocks) || test_any_p(doors)) {
-		impact += std::abs(velocities.x);
+		impact += velocities.x * velocities.x;
 		player.pos.x = previous_player.pos.x;
 		player.velocity.x = 0;
 		player.forces.x = 0;
@@ -510,7 +533,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	player.floored = false;
 	player.pos.y += velocities.y * dt;
 	if (test_any_p(blocks) || test_any_p(doors)) {
-		impact += std::abs(velocities.y);
+		impact += velocities.y * velocities.y;
 		player.pos.y = previous_player.pos.y;
 		player.floored = velocities.y < 0;
 		player.velocity.y = 0;
@@ -552,7 +575,10 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 		rock.pos = circle.c;
 	}
 
-	if (impact > Environment.dead_velocity || test_any_p(kill_zones) || test_any_p(projectiles)) {
+	if (
+		std::sqrtf(impact) > Environment.dead_velocity ||
+		test_any_p(kill_zones) || test_any_p(projectiles)
+	) {
 		return die();
 	}
 
@@ -698,6 +724,7 @@ void Level::resume() noexcept {
 	iter(next_zones);
 	iter(kill_zones);
 	iter(dispensers);
+	iter(decor_sprites);
 	iter(trigger_zones);
 	iter(prest_sources);
 }
@@ -760,6 +787,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(kill_zones);
 	X(next_zones);
 	X(prest_sources);
+	X(decor_sprites);
 	X(dry_zones);
 	X(doors);
 	X(trigger_zones);
@@ -786,6 +814,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["dry_zones"] = level.dry_zones;
 	str["prest_sources"] = level.prest_sources;
 	str["dispensers"] = level.dispensers;
+	str["decor_sprites"] = level.decor_sprites;
 	str["markers"] = level.markers;
 	str["rocks"] = level.rocks;
 	str["doors"] = level.doors;
@@ -848,5 +877,16 @@ void to_dyn_struct(dyn_struct& str, const Rock& x) noexcept {
 	str["mass"] = x.mass;
 	str["r"] = x.r;
 }
-
-
+void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
+	x.rec = (Rectanglef)str["rec"];
+	x.texture_path = (std::string)str["texture_path"];
+	if (!asset::Store.textures_loaded.count(x.texture_path.string())) {
+		auto key = asset::Store.load_texture(x.texture_path);
+		if (key) x.sprite.setTexture(asset::Store.textures.at(*key).asset);
+	}
+}
+void to_dyn_struct(dyn_struct& str, const Decor_Sprite& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["rec"] = x.rec;
+	str["texture_path"] = std::filesystem::canonical(x.texture_path).string();
+}

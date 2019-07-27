@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "Managers/InputsManager.hpp"
+#include "Managers/AssetsManager.hpp"
 #include "Math/Vector.hpp"
 #include "Math/Rectangle.hpp"
 #include "os/file.hpp"
@@ -31,6 +32,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
 	if (ImGui::Button("Open")) {
 		file::open_dir_async([&s = save_path](std::optional<std::filesystem::path> path) {
+			std::lock_guard guard{ Main_Mutex };
 			if (path) s = path->string();
 		});
 	}
@@ -50,6 +52,8 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			if (!result.succeded) return;
 			auto opt_dyn = load_from_json_file(result.filepath);
 			if (!opt_dyn) return;
+			
+			std::lock_guard guard{ Main_Mutex };
 			*l = (Level)*opt_dyn;
 			Level_Store.initial_level = (Level)*opt_dyn;
 			s = result.filepath.string();
@@ -71,14 +75,43 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	ImGui::InputText("", buffer, 512);
 	save_path = buffer;
 	ImGui::Separator();
+	if (ImGui::Button("Import a texture")) {
+		file::OpenFileOpts opts;
+		opts.allow_multiple = false;
+		opts.ext_filters["images"] = { "*.png" };
+		file::OpenFileResult result = file::open_file(opts);
+
+		auto key = asset::Store.load_texture(result.filepath);
+		if (!key) {
+			printf("Couldn't load your texture.\n");
+			return;
+		}
+
+		auto& texture = asset::Store.textures.at(*key);
+
+		Decor_Sprite decor;
+		decor.texture_path = std::filesystem::canonical(result.filepath);
+		decor.rec = { level_to_edit->camera.getCenter(), texture.asset.getSize() };
+		decor.rec.pos -= decor.rec.size / 2;
+		decor.sprite.setTexture(texture.asset);
+		level_to_edit->decor_sprites.push_back(decor);
+	}
+
+	if (ImGui::Checkbox("Edit texture", &edit_texture) && edit_texture) {
+		placing_player = false;
+		element_creating = false;
+		require_dragging = false;
+	}
+
+	ImGui::Separator();
 	ImGui::Text("Selected");
 	if (ImGui::Button("Delete (Suppr)")) delete_all_selected();
-
 
 	placing_player |= ImGui::Button("Place player");
 	element_creating &= !placing_player;
 	require_dragging &= !placing_player;
 	require_dragging &= element_creating;
+	require_dragging |= edit_texture;
 
 	auto pred = [](auto& x) {return x.editor_selected; };
 	auto n_selected = std::count_if(BEG_END(level_to_edit->prest_sources), pred);
@@ -216,7 +249,6 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Offset", &offset_timer))
 			for (auto& y : level_to_edit->dispensers) if (pred(y)) {
-				std::puts("Test\n");
 				y.offset_timer = offset_timer;
 			}
 	}
@@ -290,7 +322,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::Button("No")) ImGui::CloseCurrentPopup();
 	}
 
-	if (pos_start_drag) {
+	if (pos_start_drag && !edit_texture) {
 
 		Vector2f start = *pos_start_drag;
 		Vector2f end = get_mouse_pos();
@@ -305,24 +337,6 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		auto view = target.getView();
 		defer{ target.setView(view); };
 		target.setView(target.getDefaultView());
-
-		if (snap_horizontal) {
-			auto pos = Vector2f{ pos_start_drag->x, (float)IM::getMouseScreenPos().y };
-			sf::CircleShape mark(3);
-			mark.setFillColor(Vector4f{ 1.f, 1.f, 1.f, 0.5f });
-			mark.setPosition(pos);
-			target.draw(mark);
-			Vector2f::renderLine(target, *pos_start_drag, pos, { 1.0, 1.0, 1.0, 0.2 });
-		}
-		if (snap_vertical) {
-			auto pos = Vector2f{ (float)IM::getMouseScreenPos().x, pos_start_drag->y };
-			sf::CircleShape mark(3);
-			mark.setFillColor(Vector4f{ 1.f, 1.f, 1.f, 0.5f });
-			mark.setPosition(pos);
-			target.draw(mark);
-			Vector2f::renderLine(target, *pos_start_drag, pos, { 1.0, 1.0, 1.0, 0.2 });
-		}
-
 	}
 
 	if (start_selection) {
@@ -407,11 +421,35 @@ void Editor::update(float dt) noexcept {
 	if (!level_to_edit) return;
 	if (!IM::isWindowFocused()) return;
 
-	level_to_edit->camera.zoom(math::scale_zoom(-IM::getLastScroll() + 1));
+	if (!edit_texture) level_to_edit->camera.zoom(math::scale_zoom(-IM::getLastScroll() + 1));
+	else {
+		bool shift = IM::isKeyPressed(sf::Keyboard::LShift);
+		for (auto& b : level_to_edit->decor_sprites) {
+			if (b.editor_selected) {
+				auto center = b.rec.pos + b.rec.size / 2;
+
+				auto scale = IM::getLastScroll();
+				if (shift) scale /= 10;
+				b.rec.size *= math::scale_zoom(-scale + 1);
+				b.rec.setCenter(center);
+			}
+		}
+	}
 
 	if (require_dragging) {
 		if (IM::isMouseJustPressed(sf::Mouse::Left) && !pos_start_drag) {
 			pos_start_drag = get_mouse_pos();
+			drag_offset.clear();
+			for (auto& b : level_to_edit->decor_sprites)
+				if (b.editor_selected) drag_offset.push_back(get_mouse_pos() - b.rec.pos);
+		}
+		if (edit_texture && IM::isMousePressed(sf::Mouse::Left)) {
+			size_t i = 0;
+			for (auto& b : level_to_edit->decor_sprites) {
+				if (b.editor_selected) {
+					b.rec.pos = get_mouse_pos() - drag_offset[i++];
+				}
+			}
 		}
 		if (IM::isMouseJustReleased(sf::Mouse::Left) && pos_start_drag) {
 			Vector2f pos_end_drag = get_mouse_pos();
@@ -450,6 +488,9 @@ void Editor::update(float dt) noexcept {
 			level_to_edit->player.pos = get_mouse_pos();
 			level_to_edit->player.velocity = {};
 		}
+		if (edit_texture) {
+			require_dragging = true;
+		}
 	}
 	if (IM::isMouseJustPressed(sf::Mouse::Right)) {
 		start_selection = get_mouse_pos();
@@ -479,6 +520,17 @@ void Editor::update(float dt) noexcept {
 		iter(level_to_edit->dispensers);
 		iter(level_to_edit->trigger_zones);
 		iter(level_to_edit->prest_sources);
+
+		drag_offset.clear();
+		if (edit_texture) {
+			for (auto& b : level_to_edit->decor_sprites) {
+				b.editor_selected = b.rec.intersect(rec);
+
+			}
+		}
+		else {
+			for (auto& b : level_to_edit->decor_sprites) b.editor_selected = false;
+		}
 	}
 	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
 	snap_vertical = IM::isKeyPressed(sf::Keyboard::LShift) && IM::isKeyPressed(sf::Keyboard::V);
@@ -592,6 +644,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(level_to_edit->dispensers);
 	iter(level_to_edit->trigger_zones);
 	iter(level_to_edit->prest_sources);
+	iter(level_to_edit->decor_sprites);
 
 #define S(x) level_to_edit->x.size()
 	auto n_elements =
@@ -603,6 +656,7 @@ void Editor::delete_all_selected() noexcept {
 		S(next_zones) +
 		S(trigger_zones) +
 		S(prest_sources) +
+		S(decor_sprites) +
 		S(dispensers);
 #undef S
 

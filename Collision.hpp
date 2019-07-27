@@ -13,6 +13,7 @@ struct Dry_Zone;
 struct Trigger_Zone;
 struct Door;
 struct Rock;
+struct Decor_Sprite;
 
 template<typename T>
 struct Circle;
@@ -43,6 +44,7 @@ struct Rectangle;
 [[nodiscard]] extern bool test(const Projectile& x, const Player& p) noexcept;
 [[nodiscard]] extern bool test(const Dispenser& x, const Vector<2, float>& p) noexcept;
 [[nodiscard]] extern bool test(const Dispenser& x, const Rectangle<float>& r) noexcept;
+[[nodiscard]] extern bool test(const Decor_Sprite& x, const Rectangle<float>& r) noexcept;
 [[nodiscard]] extern bool test(const Dispenser& x, const Projectile& p) noexcept;
 [[nodiscard]] extern std::optional<Vector<2, float>> get_next_velocity(
 	const Circle<float>& circle,

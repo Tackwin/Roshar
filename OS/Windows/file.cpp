@@ -1,4 +1,5 @@
 #include "OS/file.hpp"
+#include <thread>
 #include <cassert>
 #include <Windows.h>
 #include <ShObjIdl_core.h>
@@ -262,4 +263,35 @@ std::optional<std::filesystem::path> file::open_dir() noexcept {
 	return result;
 }
 
+void file::monitor_file(std::filesystem::path path, std::function<void()> f) noexcept {
+	std::thread t{ [f, path] {
+	bool bRC = false;
+	HANDLE  hNotify;
+	DWORD   dwWaitResult;
 
+	auto path_str = path.parent_path().string();
+
+	hNotify = FindFirstChangeNotification(
+		path_str.data(),
+		FALSE,
+		FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE
+	);
+
+	for (;;) {
+		dwWaitResult = WaitForSingleObject(hNotify, INFINITE);
+
+		if (dwWaitResult != WAIT_OBJECT_0) break;
+
+		if (GetFileAttributes(path_str.data()) == INVALID_FILE_ATTRIBUTES) {
+			bRC = true;
+			break;
+		}
+
+		f();
+	}
+
+	FindClose(hNotify);
+	} };
+
+	t.detach();
+}

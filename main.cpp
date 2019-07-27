@@ -5,6 +5,7 @@
 #include "Math/Vector.hpp"
 
 #include "Managers/InputsManager.hpp"
+#include "Managers/AssetsManager.hpp"
 
 #include "imgui-SFML.h"
 #include "imgui.h"
@@ -19,6 +20,8 @@ int main(int, char**) {
 		sf::VideoMode(Environment.window_width, Environment.window_height), "Roshar"
 	);
 
+	defer{ asset::Store.textures.clear(); };
+
 	ImGui::SFML::Init(window);
 	defer{ ImGui::SFML::Shutdown(); };
 
@@ -32,6 +35,8 @@ int main(int, char**) {
 
 	while (window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
+		Main_Mutex.lock();
+		defer{ Main_Mutex.unlock(); };
 		IM::update(window, dt);
 
 		if (IM::isKeyJustPressed(sf::Keyboard::E)) {

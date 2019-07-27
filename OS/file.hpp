@@ -46,4 +46,6 @@ namespace file {
 	extern std::optional<std::filesystem::path> open_dir() noexcept;
 	extern OpenFileResult open_file(OpenFileOpts opts = OpenFileOpts{}) noexcept;
 
+
+	extern void monitor_file(std::filesystem::path path, std::function<void()> f) noexcept;
 }

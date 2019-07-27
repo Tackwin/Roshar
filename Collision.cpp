@@ -154,3 +154,6 @@ bool test(const Door& b, const Rectangle<float>& x) noexcept {
 bool test(const Door& b, const Player& x) noexcept {
 	return b.closed && b.rec.intersect(Rectanglef{ x.pos, x.size });
 }
+bool test(const Decor_Sprite& b, const Player& x) noexcept {
+	return b.rec.intersect(Rectanglef{ x.pos, x.size });
+}

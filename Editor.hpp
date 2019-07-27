@@ -36,6 +36,9 @@ class Editor {
 	bool snap_vertical{ false };
 
 	bool ask_to_save{ false };
+	bool edit_texture{ false };
+
+	std::vector<Vector2f> drag_offset;
 
 	std::string save_path;
 

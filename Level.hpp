@@ -6,6 +6,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "Managers/InputsManager.hpp"
+#include "Managers/AssetsManager.hpp"
 #include "Math/Rectangle.hpp"
 #include "Math/Vector.hpp"
 #include "Memory/ValuePtr.hpp"
@@ -121,6 +122,17 @@ struct Rock {
 	void render(sf::RenderTarget& target) const noexcept;
 };
 
+struct Decor_Sprite {
+	bool editor_selected;
+
+	mutable sf::Sprite sprite;
+	std::filesystem::path texture_path;
+
+	Rectanglef rec;
+
+	void render(sf::RenderTarget& target) const noexcept;
+};
+
 struct Player {
 	Vector2f pos;
 	Vector2f size{ 0.5f, 1 };
@@ -170,6 +182,8 @@ struct Level {
 	size_t rock_dragging_i{ 0 };
 
 	std::vector<Vector2f> basic_bindings;
+
+	std::vector<Decor_Sprite> decor_sprites;
 
 	static constexpr float Input_Active_Time = 0.5f;
 	float input_active_timer = Input_Active_Time;
@@ -245,5 +259,7 @@ extern void from_dyn_struct(const dyn_struct& str, Trigger_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Trigger_Zone& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Door& d) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Door& d) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Decor_Sprite& level) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Decor_Sprite& level) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Level& level) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Level& level) noexcept;

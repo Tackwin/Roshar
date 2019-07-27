@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <mutex>
 
 struct Environment_t {
 	float gravity{ 9.81f };
@@ -18,5 +19,5 @@ struct Environment_t {
 };
 
 extern std::filesystem::path Exe_Path;
-
+extern std::mutex Main_Mutex;
 extern Environment_t Environment;

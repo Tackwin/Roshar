@@ -1,54 +1,29 @@
 #pragma once
-#include <unordered_map>
-#include <memory>
 
 #include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
+#include <unordered_map>
+#include <filesystem>
+#include <functional>
+#include <optional>
 
-#include "./../3rd/json.hpp"
+namespace asset {
+	using Key = std::uint64_t;
+	using Texture_Callback = std::function<void(sf::Texture&)>;
 
-class AssetsManager {
-private:
-	AssetsManager();
-	~AssetsManager();
+	template<typename T>
+	struct Asset_t {
+		T asset;
+		std::filesystem::path path;
+	};
 
-public:
-	static bool haveTexture(const std::string& key);
-	static bool loadTexture(const std::string& key, const std::string& path);
-	static /*const*/ sf::Texture& getTexture(const std::string& key);  // TODO
-															// is const really nedded here ?
-															// i don't want somebody to change a texture for everyone else
-															// but then i can't set the smoothness of a texture for instance
-	static bool haveImage(const std::string& key);
-	static bool loadImage(const std::string& key, const std::string& path);
-	static const sf::Image& getImage(const std::string& key);
+	struct Store_t {
+		std::unordered_map<std::string, std::uint64_t> textures_loaded;
+		std::unordered_map<std::uint64_t, Asset_t<sf::Texture>> textures;
+	
+		[[nodiscard]] std::optional<Key> load_texture(std::filesystem::path path) noexcept;
+		void monitor_texture(Key k, Texture_Callback F) noexcept;
+	};
+	extern Store_t Store;
 
-	static bool haveFont(const std::string& key);
-	static bool loadFont(const std::string& key, const std::string& path);
-	static const sf::Font& getFont(const std::string& key);
+}
 
-	static bool haveSound(const std::string& key);
-	static bool loadSound(const std::string& key, const std::string& path);
-	static const sf::SoundBuffer& getSound(const std::string& key);
-
-	static void invalidateJson(const std::string& key) noexcept;
-	static bool haveJson(const std::string& key);
-	static bool loadJson(const std::string& key, const std::string& path);
-	static const nlohmann::json& getJson(const std::string& key);
-
-	static bool haveMusic(const std::string& key);
-	static bool openMusic(const std::string& key, const std::string& path);
-	static sf::Music& getMusic(const std::string& key);
-
-	static size_t getSize();
-
-private:
-	static std::unordered_map<std::string, sf::SoundBuffer> _sounds;
-	static std::unordered_map<std::string, nlohmann::json> _jsons;
-	static std::unordered_map<std::string, sf::Texture> _textures;
-	static std::unordered_map<std::string, sf::Music> _musics;
-	static std::unordered_map<std::string, sf::Image> _images;
-	static std::unordered_map<std::string, sf::Font> _fonts;
-};
-
-using AM = AssetsManager;

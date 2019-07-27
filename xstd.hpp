@@ -7,6 +7,12 @@
 #include "Time.hpp"
 
 namespace xstd {
+	template<typename T>
+	void type_id() {};
+
+	using type_id_t = void(*)();
+
+
 	template<class T>
 	struct is_vector {
 		using type = T;
@@ -80,6 +86,12 @@ namespace xstd {
 	template<typename T>
 	using std_expected = expected<T, const char* const>;
 
+	constexpr inline std::size_t hash(std::size_t h, const char* str) noexcept {
+		return !*str ? 0 : hash((h << 5) + h + *str, str + 1);
+	}
+	constexpr inline std::size_t hash(const char* str) noexcept {
+		return !str ? 0 : hash(5381, str);
+	}
 
 	template<typename T>
 	constexpr inline std::size_t hash_combine(std::size_t seed, const T& v) noexcept {

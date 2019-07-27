@@ -77,6 +77,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
@@ -134,11 +137,17 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <PreprocessorDefinitions>SFML_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;</ForcedIncludeFiles>
+      <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>sfml-graphics-s.lib;sfml-window-s.lib;sfml-system-s.lib;opengl32.lib;winmm.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -149,6 +158,7 @@
     <ClCompile Include="imgui-SFML.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Managers\AssetsManager.cpp" />
     <ClCompile Include="Managers\InputsManager.cpp" />
     <ClCompile Include="OS\Windows\file.cpp" />
     <ClCompile Include="Time.cpp" />
@@ -164,6 +174,7 @@
     <ClInclude Include="imgui-SFML_export.h" />
     <ClInclude Include="Level.hpp" />
     <ClInclude Include="macros.hpp" />
+    <ClInclude Include="Managers\AssetsManager.hpp" />
     <ClInclude Include="Managers\InputsManager.hpp" />
     <ClInclude Include="Math\Circle.hpp" />
     <ClInclude Include="Math\RandomData.hpp" />
