@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <memory>
 
 namespace asset {
 	using Key = std::uint64_t;
@@ -20,7 +21,9 @@ namespace asset {
 		std::unordered_map<std::string, std::uint64_t> textures_loaded;
 		std::unordered_map<std::uint64_t, Asset_t<sf::Texture>> textures;
 	
+		[[nodiscard]] Key make_texture() noexcept;
 		[[nodiscard]] std::optional<Key> load_texture(std::filesystem::path path) noexcept;
+		[[nodiscard]] bool load_texture(Key k,  std::filesystem::path path) noexcept;
 		void monitor_texture(Key k, Texture_Callback F) noexcept;
 	};
 	extern Store_t Store;

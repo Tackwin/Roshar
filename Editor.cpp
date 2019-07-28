@@ -54,8 +54,12 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			if (!opt_dyn) return;
 			
 			std::lock_guard guard{ Main_Mutex };
-			*l = (Level)*opt_dyn;
-			Level_Store.initial_level = (Level)*opt_dyn;
+			
+			Level new_level = (Level)* opt_dyn;
+
+			*l = new_level;
+			Level_Store.initial_level = new_level;
+
 			s = result.filepath.string();
 		}, opts);
 	}

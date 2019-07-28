@@ -7,6 +7,7 @@
 #include "Math/Circle.hpp"
 #include "Collision.hpp"
 #include "Time.hpp"
+#include "OS/file.hpp"
 
 Level_Store_t Level_Store;
 
@@ -245,15 +246,17 @@ void Projectile::render(sf::RenderTarget& target) const noexcept {
 
 void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
 	sprite.setPosition(rec.pos.x, rec.pos.y + rec.size.y);
-	sprite.setScale(
-		rec.size.x / sprite.getTextureRect().width,
-		-rec.size.y / sprite.getTextureRect().height
-	);
+	if (sprite.getTexture()) {
+		sprite.setScale(
+			rec.size.x / sprite.getTextureRect().width,
+			-rec.size.y / sprite.getTextureRect().height
+		);
+	}
 	target.draw(sprite);
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
-		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+		auto alpha = std::sinf((sin_time += 1) * 0.001f) * 0.5 + 0.25;
 
 		sf::RectangleShape shape;
 		shape.setPosition(rec.pos);
@@ -409,9 +412,25 @@ bool Level::test_input(float) noexcept {
 }
 
 void Level::update() noexcept {
+	for (size_t i = 0; i < decor_sprites.size(); ++i) {
+		auto& x = decor_sprites[i];
+		if (!x.texture_loaded) {
+			// >TODO
+			(void)asset::Store.load_texture(x.texture_key, x.texture_path);
+			auto texture_size = asset::Store.textures.at(x.texture_key).asset.getSize();
+
+			x.sprite.setTextureRect({ 0, 0, (int)texture_size.x, (int)texture_size.y });
+			file::monitor_file(x.texture_path, [i, l = this]() {
+				std::lock_guard goard{ Main_Mutex };
+				l->decor_sprites[i].texture_loaded = false;
+			});
+			x.texture_loaded = true;
+		}
+	}
+
 	this_record = IM::get_iterator();
 	if (in_replay && start_record && end_record) {
-		if (curr_record == *end_record) {
+		if (curr_record == std::next(*end_record)) {
 			curr_record = *start_record;
 		}
 		else {
@@ -880,10 +899,17 @@ void to_dyn_struct(dyn_struct& str, const Rock& x) noexcept {
 void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
 	x.texture_path = (std::string)str["texture_path"];
-	if (!asset::Store.textures_loaded.count(x.texture_path.string())) {
-		auto key = asset::Store.load_texture(x.texture_path);
-		if (key) x.sprite.setTexture(asset::Store.textures.at(*key).asset);
+
+	auto& texture_loaded = asset::Store.textures_loaded;
+	if (!texture_loaded.count(x.texture_path.string())) {
+		x.texture_key = asset::Store.make_texture();
 	}
+	else {
+		x.texture_key = std::find_if(
+			BEG_END(texture_loaded), [p = x.texture_path.string()](auto x) {return x.first == p; }
+		)->second;
+	}
+	x.sprite.setTexture(asset::Store.textures.at(x.texture_key).asset);
 }
 void to_dyn_struct(dyn_struct& str, const Decor_Sprite& x) noexcept {
 	str = dyn_struct::structure_t{};

@@ -25,6 +25,28 @@ namespace asset {
 		return false;
 	}
 }
+
+[[nodiscard]] bool Store_t::load_texture(Key k, std::filesystem::path path) noexcept {
+	auto& new_texture = textures.at(k);
+	new_texture.path = path;
+	bool loaded = new_texture.asset.loadFromFile(path.string());
+
+	if (loaded) {
+		textures_loaded[std::filesystem::canonical(path).string()] = k;
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+[[nodiscard]] Key Store_t::make_texture() noexcept {
+	auto k = xstd::uuid();
+
+	textures.emplace(k, Asset_t<sf::Texture>{});
+
+	return k;
+}
+
 void Store_t::monitor_texture(Key k, Texture_Callback F) noexcept {
 	file::monitor_file(textures.at(k).path, [&] { F(textures.at(k).asset); });
 }

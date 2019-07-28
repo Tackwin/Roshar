@@ -123,10 +123,13 @@ struct Rock {
 };
 
 struct Decor_Sprite {
-	bool editor_selected;
+	bool editor_selected{ false };
 
 	mutable sf::Sprite sprite;
+
 	std::filesystem::path texture_path;
+	asset::Key texture_key;
+	bool texture_loaded{ false };
 
 	Rectanglef rec;
 
