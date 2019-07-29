@@ -94,6 +94,8 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		auto& texture = asset::Store.textures.at(*key);
 
 		Decor_Sprite decor;
+		decor.texture_key = *key;
+		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
 		decor.rec = { level_to_edit->camera.getCenter(), texture.asset.getSize() };
 		decor.rec.pos -= decor.rec.size / 2;
