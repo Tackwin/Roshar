@@ -312,7 +312,7 @@ float InputsManager::getLastScroll() noexcept {
 
 	const auto& last_record = records.back();
 
-	return last_record.scroll;
+	return !last_record.mouse_captured ? last_record.scroll : 0;
 }
 
 float IM::get_dt() noexcept {
