@@ -22,7 +22,7 @@ namespace asset {
 		return k;
 	}
 	else {
-		return false;
+		return std::nullopt;
 	}
 }
 
