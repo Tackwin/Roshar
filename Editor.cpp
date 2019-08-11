@@ -112,6 +112,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	ImGui::Separator();
 	ImGui::Text("Selected");
 	if (ImGui::Button("Delete (Suppr)")) delete_all_selected();
+	if (ImGui::Button("Set Camera Bound")) set_camera_bound();
 
 	placing_player |= ImGui::Button("Place player");
 	element_creating &= !placing_player;
@@ -214,6 +215,23 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::InputFloat("Radius", &radius)) {
 			for (auto& y : level_to_edit->rocks) if (pred(y)) y.r = radius;
 		}
+	}
+
+	n_selected = std::count_if(BEG_END(level_to_edit->decor_sprites), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Texture");
+
+		float opacity{ 1 };
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(level_to_edit->decor_sprites), pred);
+			opacity = it->opacity;
+		}
+
+		ImGui::Text("Opacity");
+		ImGui::SameLine();
+		if (ImGui::InputFloat("Opacity", &opacity))
+			for (auto& x : level_to_edit->decor_sprites) if (pred(x)) x.opacity = opacity;
 	}
 
 	n_selected = std::count_if(BEG_END(level_to_edit->dispensers), pred);
@@ -427,19 +445,22 @@ void Editor::update(float dt) noexcept {
 	if (!level_to_edit) return;
 	if (!IM::isWindowFocused()) return;
 
-	if (!edit_texture) level_to_edit->camera.zoom(math::scale_zoom(-IM::getLastScroll() + 1));
-	else {
-		bool shift = IM::isKeyPressed(sf::Keyboard::LShift);
-		for (auto& b : level_to_edit->decor_sprites) {
-			if (b.editor_selected) {
-				auto center = b.rec.pos + b.rec.size / 2;
+	bool shift = IM::isKeyPressed(sf::Keyboard::LShift);
+	auto ctrl = IM::isKeyPressed(sf::Keyboard::LControl);
+	auto scale = IM::getLastScroll();
+	if (shift) scale /= 10;
 
-				auto scale = IM::getLastScroll();
-				if (shift) scale /= 10;
-				b.rec.size *= math::scale_zoom(-scale + 1);
-				b.rec.setCenter(center);
-			}
+	if (!edit_texture) level_to_edit->camera.zoom(math::scale_zoom(-scale + 1));
+	else for (auto& b : level_to_edit->decor_sprites) {
+		if (b.editor_selected) {
+			auto center = b.rec.pos + b.rec.size / 2;
+			b.rec.size *= math::scale_zoom(-scale + 1);
+			b.rec.setCenter(center);
 		}
+	}
+
+	if (IM::isKeyJustPressed(sf::Keyboard::F12)) {
+		set_camera_bound();
 	}
 
 	if (require_dragging) {
@@ -504,9 +525,6 @@ void Editor::update(float dt) noexcept {
 	else if (start_selection && IM::isMouseJustReleased(sf::Mouse::Right)) {
 		defer{ start_selection.reset(); };
 		Rectanglef rec{*start_selection, get_mouse_pos() - *start_selection};
-
-		auto shift = IM::isKeyPressed(sf::Keyboard::LShift);
-		auto ctrl = IM::isKeyPressed(sf::Keyboard::LControl);
 
 		auto iter = [cam = level_to_edit->camera, shift, ctrl, rec](auto& c) noexcept {
 			for (auto& b : c) {
@@ -630,6 +648,13 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 		}
 		}
 	}
+}
+
+void Editor::set_camera_bound() noexcept {
+	auto& cam = level_to_edit->camera;
+	Vector2f center = cam.getCenter();
+	Vector2f size = cam.getSize();
+	level_to_edit->camera_bound = { center - size / 2, size };
 }
 
 void Editor::delete_all_selected() noexcept {

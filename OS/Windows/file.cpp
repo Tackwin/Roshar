@@ -295,3 +295,50 @@ void file::monitor_file(std::filesystem::path path, std::function<void()> f) noe
 
 	t.detach();
 }
+
+void file::monitor_dir(
+	std::filesystem::path dir, std::function<void(std::filesystem::path)> f
+) noexcept {
+	std::thread t{ [f, dir] {
+		auto handle = CreateFile(
+			dir.string().c_str(),
+			GENERIC_READ,
+			FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
+			NULL,
+			OPEN_EXISTING,
+			FILE_FLAG_BACKUP_SEMANTICS,
+			NULL
+		);
+		DWORD buffer[1024];
+		DWORD byte_returned;
+
+		while (true) {
+			auto result = ReadDirectoryChangesW(
+				handle,
+				buffer,
+				sizeof(buffer),
+				TRUE,
+				FILE_NOTIFY_CHANGE_LAST_WRITE,
+				&byte_returned,
+				NULL,
+				NULL
+			);
+
+			if (!result) {
+				// >TODO: error
+				continue;
+			}
+
+
+			for (size_t i = 0; i < byte_returned;) {
+				auto* info = (FILE_NOTIFY_INFORMATION*)(buffer + i);
+				if (info->Action == FILE_ACTION_MODIFIED)
+					f(std::wstring(info->FileName, info->FileNameLength / sizeof(WCHAR)));
+
+				i += info->NextEntryOffset;
+				if (info->NextEntryOffset == 0) break;
+			}
+		}
+	} };
+	t.detach();
+}

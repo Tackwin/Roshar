@@ -9,7 +9,6 @@
 
 namespace asset {
 	using Key = std::uint64_t;
-	using Texture_Callback = std::function<void(sf::Texture&)>;
 
 	template<typename T>
 	struct Asset_t {
@@ -24,7 +23,7 @@ namespace asset {
 		[[nodiscard]] Key make_texture() noexcept;
 		[[nodiscard]] std::optional<Key> load_texture(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_texture(Key k,  std::filesystem::path path) noexcept;
-		void monitor_texture(Key k, Texture_Callback F) noexcept;
+		void monitor_path(std::filesystem::path dir) noexcept;
 	};
 	extern Store_t Store;
 

@@ -48,4 +48,7 @@ namespace file {
 
 
 	extern void monitor_file(std::filesystem::path path, std::function<void()> f) noexcept;
+	extern void monitor_dir(
+		std::filesystem::path dir, std::function<void(std::filesystem::path)> f
+	) noexcept;
 }

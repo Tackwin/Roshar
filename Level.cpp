@@ -198,6 +198,10 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 	target.draw(shape);
 }
 
+void Player::jump() noexcept {
+	velocity += Vector2f{ 0, +7.5 };
+}
+
 void Dispenser::set_start_timer() noexcept {
 	timer = (1 / hz) - std::fmodf(offset_timer, 1 / hz);
 }
@@ -252,6 +256,7 @@ void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
 			-rec.size.y / sprite.getTextureRect().height
 		);
 	}
+	sprite.setColor(Vector4d{ 1, 1, 1, opacity * 1. });
 	target.draw(sprite);
 
 	if (editor_selected) {
@@ -283,6 +288,8 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(prest_sources);
 	renders(projectiles);
 	renders(rocks);
+
+	if (in_editor) camera_bound.render(target, { 1, 0, 0, 1 }, { 0, 0, 0, 0 }, 1);
 
 	for (auto& x : markers) {
 		sf::CircleShape shape(0.05f);
@@ -381,8 +388,13 @@ bool Level::test_input(float) noexcept {
 	if (this_record->is_pressed(sf::Keyboard::D)) {
 		player.flat_velocities.push_back({ +5, 0 });
 	}
-	if (this_record->is_just_pressed(sf::Keyboard::Space) && player.floored) {
-		player.velocity += Vector2f{ 0, +7.5 };
+	if (this_record->is_just_pressed(sf::Keyboard::Space)) {
+		if (player.floored || player.coyotee_timer > 0) {
+			player.jump();
+		}
+		else {
+			player.preshot_timer = Player::Preshot_Time;
+		}
 	}
 	if (this_record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
 	if (this_record->is_just_pressed(sf::Mouse::Right)) basic_bindings.clear();
@@ -420,10 +432,6 @@ void Level::update() noexcept {
 			auto texture_size = asset::Store.textures.at(x.texture_key).asset.getSize();
 
 			x.sprite.setTextureRect({ 0, 0, (int)texture_size.x, (int)texture_size.y });
-			file::monitor_file(x.texture_path, [i, l = this]() {
-				std::lock_guard goard{ Main_Mutex };
-				l->decor_sprites[i].texture_loaded = false;
-			});
 			x.texture_loaded = true;
 		}
 	}
@@ -461,10 +469,10 @@ void Level::update() noexcept {
 		if (input_active_timer > 0.f) return;
 	}
 
-	
-	auto previous_player = player;
-
 	if (in_editor || test_input(dt)) return;
+
+	player.coyotee_timer -= dt;
+	player.preshot_timer -= dt;
 
 	for (auto& x : trigger_zones) {
 		x.triggered =
@@ -517,8 +525,9 @@ void Level::update() noexcept {
 		}
 	}
 
-	player.forces.y -= Environment.gravity;
+	auto previous_player = player;
 	for (const auto& x : basic_bindings) player.forces += x * Environment.gravity;
+	player.forces.y -= Environment.gravity;
 
 	player.velocity += player.forces * dt;
 	player.velocity *= std::powf(Environment.drag * (player.floored ? 0.1f : 1.f), dt);
@@ -541,6 +550,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 
 	const auto velocities = flat_velocities + player.velocity;
 	float impact = 0;
+	bool new_floored = false;
 
 	player.pos.x += velocities.x * dt;
 	if (test_any_p(blocks) || test_any_p(doors)) {
@@ -549,15 +559,22 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 		player.velocity.x = 0;
 		player.forces.x = 0;
 	}
-	player.floored = false;
 	player.pos.y += velocities.y * dt;
 	if (test_any_p(blocks) || test_any_p(doors)) {
 		impact += velocities.y * velocities.y;
 		player.pos.y = previous_player.pos.y;
-		player.floored = velocities.y < 0;
+		new_floored = velocities.y < 0;
 		player.velocity.y = 0;
 		player.forces.y = 0;
 	}
+
+	if (player.floored && !new_floored) {
+		player.coyotee_timer = Player::Coyotee_Time;
+	}
+	if (!player.floored && new_floored && player.preshot_timer > 0) {
+		player.jump();
+	}
+	player.floored = new_floored;
 	
 	for (auto& rock : rocks) {
 		const auto G = Environment.gravity;
@@ -645,8 +662,15 @@ void Level::update_camera(float dt) noexcept {
 		camera.move(dt * camera_speed * dt_pos.normalize());
 	}
 	Vector2f pos = camera.getCenter();
+	Vector2f size = camera.getSize();
 	Vector2f target = player.pos;
 	if ((target - pos).length2() > camera_idle_radius_2) camera_target = target;
+
+	if (camera_bound.area() > 0) {
+		Rectanglef camera_rect = { pos - size / 2, size };
+		camera_rect = camera_rect.restrict_in(camera_bound);
+		camera.setCenter(camera_rect.center());
+	}
 }
 
 void Level::retry() noexcept {
@@ -812,6 +836,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(trigger_zones);
 	X(rocks);
 	X(markers);
+	X(camera_bound)
 #undef X
 
 	Player player;
@@ -838,6 +863,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["rocks"] = level.rocks;
 	str["doors"] = level.doors;
 	str["trigger_zones"] = level.trigger_zones;
+	str["camera_bound"] = level.camera_bound;
 
 	auto& player = str["player"] = dyn_struct::structure_t{};
 

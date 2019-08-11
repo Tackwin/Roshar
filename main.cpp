@@ -31,6 +31,8 @@ int main(int, char**) {
 	Editor editor;
 	editor.level_to_edit = &level;
 
+	asset::Store.monitor_path("textures/");
+
 	bool run_editor = false;
 
 	while (window.isOpen()) {

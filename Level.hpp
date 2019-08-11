@@ -123,6 +123,7 @@ struct Rock {
 };
 
 struct Decor_Sprite {
+	float opacity{ 1 };
 	bool editor_selected{ false };
 
 	mutable sf::Sprite sprite;
@@ -147,8 +148,16 @@ struct Player {
 
 	bool floored{ false };
 
+	static constexpr float Coyotee_Time = 0.1f;
+	float coyotee_timer = Coyotee_Time;
+
+	static constexpr float Preshot_Time = 0.1f;
+	float preshot_timer = 0;
+
 	void update(float dt) noexcept;
 	void render(sf::RenderTarget& target) const noexcept;
+
+	void jump() noexcept;
 };
 
 struct Level {
@@ -178,6 +187,8 @@ struct Level {
 	sf::View camera;
 
 	Player player;
+
+	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
 
 	double drag_time{ 0.0 };
 	std::optional<Vector2f> start_drag;

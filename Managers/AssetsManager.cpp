@@ -47,6 +47,14 @@ namespace asset {
 	return k;
 }
 
-void Store_t::monitor_texture(Key k, Texture_Callback F) noexcept {
-	file::monitor_file(textures.at(k).path, [&] { F(textures.at(k).asset); });
+void Store_t::monitor_path(std::filesystem::path dir) noexcept {
+	file::monitor_dir(dir, [&, d = dir] (auto path) {
+		std::lock_guard guard{ Main_Mutex };
+		path = std::filesystem::canonical(Exe_Path / d / path);
+
+		auto it = textures_loaded.find(path.string());
+		if (it != END(textures_loaded)) {
+			textures.at(it->second).asset.loadFromFile(path.string());
+		}
+	});
 }

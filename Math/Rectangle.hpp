@@ -50,7 +50,7 @@ struct Rectangle {
 
 	Rectangle(const Vector<2, T>& pos, const Vector<2, T>& size) :
 		pos(pos),
-		size(size) 
+		size(size)
 	{
 		if (this->size.x < 0) {
 			this->pos.x += this->size.x;
@@ -177,7 +177,7 @@ struct Rectangle {
 		}
 	}
 
-	Rectangle<T> restrictIn(Rectangle<T> area) const noexcept {
+	Rectangle<T> restrict_in(Rectangle<T> area) const noexcept {
 		Rectangle<T> result = *this;
 
 		if (w > area.w) {

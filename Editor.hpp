@@ -43,6 +43,7 @@ class Editor {
 	std::string save_path;
 
 	void delete_all_selected() noexcept;
+	void set_camera_bound() noexcept;
 
 	void save(const std::filesystem::path& path) noexcept;
 
