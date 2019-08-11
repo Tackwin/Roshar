@@ -41,7 +41,7 @@ int main(int, char**) {
 		defer{ Main_Mutex.unlock(); };
 		IM::update(window, dt);
 
-		if (IM::isKeyJustPressed(sf::Keyboard::E)) {
+		if (IM::isWindowFocused() && IM::isKeyJustPressed(sf::Keyboard::E)) {
 			run_editor = !run_editor;
 			if (!run_editor) {
 				level.resume();

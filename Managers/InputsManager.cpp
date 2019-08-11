@@ -23,6 +23,12 @@
 
 	return v.getInverseTransform().transformPoint(normalized);
 }
+[[nodiscard]] bool Inputs_Info::is_just_released(sf::Keyboard::Key k) const noexcept {
+	return key_infos[k].just_released;
+}
+[[nodiscard]] bool Inputs_Info::is_just_released(sf::Mouse::Button b) const noexcept {
+	return mouse_infos[b].just_released;
+}
 [[nodiscard]] bool Inputs_Info::is_just_pressed(sf::Keyboard::Key k) const noexcept {
 	return key_infos[k].just_pressed;
 }

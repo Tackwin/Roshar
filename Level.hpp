@@ -139,9 +139,15 @@ struct Decor_Sprite {
 
 struct Player {
 	Vector2f pos;
-	Vector2f size{ 0.5f, 1 };
+	Vector2f size{ 0.4f, 0.6f };
 	Vector2f velocity;
 	Vector2f forces;
+
+	enum Dir {
+		Right,
+		Left,
+		None
+	};
 
 	std::vector<Vector2f> flat_velocities;
 	float prest{ 0.f };
@@ -154,10 +160,26 @@ struct Player {
 	static constexpr float Preshot_Time = 0.1f;
 	float preshot_timer = 0;
 
+	static constexpr float Jump_Strength_Modifier_Time = 0.3f;
+	float jump_strength_modifier_timer = 0;
+
+	static constexpr float Speed_Up_Time = 0.5f;
+	float speed_up_timer = 0;
+
+	static constexpr float Speed_Down_Time = 0.1f;
+	float speed_down_timer = 0;
+
+	Dir last_dir{ None };
+
 	void update(float dt) noexcept;
 	void render(sf::RenderTarget& target) const noexcept;
 
 	void jump() noexcept;
+	void maintain_jump() noexcept;
+	void directional_up() noexcept;
+	void start_move_sideway() noexcept;
+	void stop_move_sideway() noexcept;
+	void move_sideway(Dir dir) noexcept;
 };
 
 struct Level {

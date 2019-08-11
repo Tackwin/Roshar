@@ -30,6 +30,8 @@ struct Inputs_Info {
 	};
 
 	[[nodiscard]] Vector2f mouse_world_pos(sf::View& v) const noexcept;
+	[[nodiscard]] bool is_just_released(sf::Keyboard::Key k) const noexcept;
+	[[nodiscard]] bool is_just_released(sf::Mouse::Button b) const noexcept;
 	[[nodiscard]] bool is_just_pressed(sf::Keyboard::Key k) const noexcept;
 	[[nodiscard]] bool is_just_pressed(sf::Mouse::Button b) const noexcept;
 	[[nodiscard]] bool is_pressed(sf::Keyboard::Key k) const noexcept;

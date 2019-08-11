@@ -186,7 +186,20 @@ void Prest_Source::render(sf::RenderTarget& target) const noexcept {
 	target.draw(shape);
 }
 
-void Player::update(float) noexcept {
+void Player::update(float dt) noexcept {
+	coyotee_timer -= dt;
+	preshot_timer -= dt;
+	speed_up_timer -= dt;
+	speed_down_timer -= dt;
+	jump_strength_modifier_timer -= dt;
+
+	if (last_dir != None && speed_down_timer > 0) {
+		auto slow_down = std::clamp(speed_down_timer / Speed_Down_Time, 0.f, 1.f);
+		if (last_dir == Right) slow_down *= -5;
+		else slow_down *= 5;
+
+		flat_velocities.push_back({ slow_down, 0 });
+	}
 }
 
 void Player::render(sf::RenderTarget& target) const noexcept {
@@ -198,8 +211,30 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 	target.draw(shape);
 }
 
+void Player::start_move_sideway() noexcept {
+	if (speed_up_timer <= 0) speed_up_timer = Speed_Up_Time;
+}
+void Player::stop_move_sideway() noexcept {
+	speed_down_timer = Speed_Down_Time;
+}
+void Player::move_sideway(Player::Dir dir) noexcept {
+	auto top_speed = std::sqrtf(std::clamp(1.f - speed_up_timer / Speed_Up_Time, 0.f, 1.f));
+	if (dir == Right) top_speed *= -5;
+	else if (dir == Left) top_speed *= 5;
+	else assert(false); // Logic error.
+	flat_velocities.push_back({ top_speed, 0 });
+	last_dir = dir;
+}
+
 void Player::jump() noexcept {
-	velocity += Vector2f{ 0, +7.5 };
+	velocity += Vector2f{ 0, 6.5 };
+	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
+}
+void Player::maintain_jump() noexcept {
+	flat_velocities.push_back({ 0, 1.5 });
+}
+void Player::directional_up() noexcept {
+	flat_velocities.push_back({ 0, 0.75 });
 }
 
 void Dispenser::set_start_timer() noexcept {
@@ -383,10 +418,18 @@ bool Level::test_input(float) noexcept {
 	}
 
 	if (this_record->is_pressed(sf::Keyboard::Q)) {
-		player.flat_velocities.push_back({ -5, 0 });
+		if (this_record->is_just_pressed(sf::Keyboard::Q)) player.start_move_sideway();
+		player.move_sideway(Player::Right);
+	}
+	else if (this_record->is_just_released(sf::Keyboard::Q)) {
+		player.stop_move_sideway();
 	}
 	if (this_record->is_pressed(sf::Keyboard::D)) {
-		player.flat_velocities.push_back({ +5, 0 });
+		if (this_record->is_just_pressed(sf::Keyboard::D)) player.start_move_sideway();
+		player.move_sideway(Player::Left);
+	}
+	else if (this_record->is_just_released(sf::Keyboard::D)) {
+		player.stop_move_sideway();
 	}
 	if (this_record->is_just_pressed(sf::Keyboard::Space)) {
 		if (player.floored || player.coyotee_timer > 0) {
@@ -395,6 +438,10 @@ bool Level::test_input(float) noexcept {
 		else {
 			player.preshot_timer = Player::Preshot_Time;
 		}
+	}
+	if (player.jump_strength_modifier_timer > 0) {
+		if (this_record->is_pressed(sf::Keyboard::Space)) player.maintain_jump();
+		if (this_record->is_pressed(sf::Keyboard::Z)) player.directional_up();
 	}
 	if (this_record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
 	if (this_record->is_just_pressed(sf::Mouse::Right)) basic_bindings.clear();
@@ -471,8 +518,7 @@ void Level::update() noexcept {
 
 	if (in_editor || test_input(dt)) return;
 
-	player.coyotee_timer -= dt;
-	player.preshot_timer -= dt;
+	player.update(dt);
 
 	for (auto& x : trigger_zones) {
 		x.triggered =
@@ -844,7 +890,6 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	player.velocity = {};
 	player.prest = (float)str["player"]["prest"];
 	player.pos = (Vector2f)str["player"]["pos"];
-	player.size = (Vector2f)str["player"]["size"];
 	level.player = player;
 
 	level.camera.setCenter((Vector2f)str["camera"]["pos"]);
@@ -869,7 +914,6 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 
 	player["prest"] = level.player.prest;
 	player["pos"] = level.player.pos;
-	player["size"] = level.player.size;
 
 	auto& camera = str["camera"] = dyn_struct::structure_t{};
 
