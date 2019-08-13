@@ -37,7 +37,7 @@ file::read_whole_text(const std::filesystem::path& path) noexcept {
 	return buffer;
 }
 
-xstd::std_expected<std::vector<char>>
+xstd::std_expected<std::vector<std::uint8_t>>
 file::read_whole_file(const std::filesystem::path& path) noexcept {
 	auto handle = CreateFile(
 		path.string().c_str(),
@@ -59,7 +59,7 @@ file::read_whole_file(const std::filesystem::path& path) noexcept {
 		return Error::Win_File_Size;
 	}
 
-	std::vector<char> buffer;
+	std::vector<std::uint8_t> buffer;
 	buffer.resize((std::size_t)large_int.QuadPart);
 
 	DWORD read;
@@ -68,6 +68,21 @@ file::read_whole_file(const std::filesystem::path& path) noexcept {
 	}
 
 	return buffer;
+}
+
+size_t file::overwrite_file_byte(
+	std::filesystem::path path, const std::vector<std::uint8_t>& bytes
+) noexcept {
+	FILE* f;
+	auto err = fopen_s(&f, path.generic_string().c_str(), "wb");
+	if (!f || err) return Error::Win_File_Write;
+
+	defer{ fclose(f); };
+
+	auto wrote = fwrite(bytes.data(), 1, bytes.size(), f);
+	if (wrote != bytes.size()) return Error::Win_File_Incomplete_Write;
+
+	return Error::No_Error;
 }
 
 bool file::overwrite_file(const std::filesystem::path& path, std::string_view str) noexcept {
@@ -82,7 +97,6 @@ bool file::overwrite_file(const std::filesystem::path& path, std::string_view st
 
 	return true;
 }
-
 const char* create_cstr_extension_label_map(
 	decltype(file::OpenFileOpts::ext_filters) filters
 ) noexcept {

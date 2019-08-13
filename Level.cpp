@@ -186,55 +186,31 @@ void Prest_Source::render(sf::RenderTarget& target) const noexcept {
 	target.draw(shape);
 }
 
-void Player::update(float dt) noexcept {
-	coyotee_timer -= dt;
-	preshot_timer -= dt;
-	speed_up_timer -= dt;
-	speed_down_timer -= dt;
-	jump_strength_modifier_timer -= dt;
-
-	if (last_dir != None && speed_down_timer > 0) {
-		auto slow_down = std::clamp(speed_down_timer / Speed_Down_Time, 0.f, 1.f);
-		if (last_dir == Right) slow_down *= -5;
-		else slow_down *= 5;
-
-		flat_velocities.push_back({ slow_down, 0 });
-	}
-}
-
-void Player::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(size);
-	shape.setOutlineColor(Vector4f{ 1.0, 0.0, 0.0, 1.0 });
-	shape.setOutlineThickness(0.01f);
-	shape.setPosition(pos);
-	shape.setFillColor(sf::Color::Cyan);
+void Auto_Binding_Zone::render(sf::RenderTarget& target) const noexcept {
+	sf::RectangleShape shape(rec.size);
+	shape.setPosition(rec.pos);
+	shape.setFillColor(Vector4d{ 0.9, 0.1, 0.9, 1.0 });
 	target.draw(shape);
-}
 
-void Player::start_move_sideway() noexcept {
-	if (speed_up_timer <= 0) speed_up_timer = Speed_Up_Time;
-}
-void Player::stop_move_sideway() noexcept {
-	speed_down_timer = Speed_Down_Time;
-}
-void Player::move_sideway(Player::Dir dir) noexcept {
-	auto top_speed = std::sqrtf(std::clamp(1.f - speed_up_timer / Speed_Up_Time, 0.f, 1.f));
-	if (dir == Right) top_speed *= -5;
-	else if (dir == Left) top_speed *= 5;
-	else assert(false); // Logic error.
-	flat_velocities.push_back({ top_speed, 0 });
-	last_dir = dir;
-}
+	Vector2f::renderArrow(
+		target,
+		rec.center() - binding / 2,
+		rec.center() + binding / 2,
+		{ 1, 1, 1, 1 },
+		{ 1, 1,1, 1 }
+	);
 
-void Player::jump() noexcept {
-	velocity += Vector2f{ 0, 6.5 };
-	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
-}
-void Player::maintain_jump() noexcept {
-	flat_velocities.push_back({ 0, 1.5 });
-}
-void Player::directional_up() noexcept {
-	flat_velocities.push_back({ 0, 0.75 });
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		shape.setSize(rec.size);
+		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
+		shape.setOutlineThickness(.01f);
+		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
+		shape.setPosition(rec.pos);
+		target.draw(shape);
+	}
 }
 
 void Dispenser::set_start_timer() noexcept {
@@ -317,6 +293,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(next_zones);
 	renders(dispensers);
 	renders(trigger_zones);
+	renders(auto_binding_zones);
 
 	renders(decor_sprites);
 
@@ -350,16 +327,6 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 		target.draw(shape);
 	}
 
-	for (auto& binding : basic_bindings) {
-		Vector2f::renderArrow(
-			target,
-			player.pos + player.size / 2,
-			player.pos + player.size / 2 + binding,
-			{ 1, 0, 1, 1 },
-			{ 1, 0, 1, 1 }
-		);
-	}
-
 	if (start_drag) {
 		Vector2f::renderLine(
 			target,
@@ -372,7 +339,6 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	for (const auto& x : debug_vectors) {
 		Vector2f::renderArrow(target, x.a, x.a + x.b, { 1, 1, 0, 1 }, { 1, 1, 0, 1 });
 	}
-
 
 	auto view = target.getView();
 	defer{ target.setView(view); };
@@ -398,12 +364,39 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 
 Level::Level() noexcept {
 	camera.setSize({ 10, -10 * (window_size.y / (float)window_size.x) });
+	for (auto& x : dispensers) x.set_start_timer();
+	speedrun_clock_start = nanoseconds();
 }
 
 bool Level::test_input(float) noexcept {
 	if (in_replay && Level_Store.next_level && IM::isKeyJustPressed(sf::Keyboard::Return)) {
 		set_new_level(*Level_Store.next_level);
 		return true;
+	}
+	if (in_replay && Level_Store.initial_level && IM::isKeyJustPressed(sf::Keyboard::Escape)) {
+		set_new_level(*Level_Store.initial_level);
+		return true;
+	}
+	if (in_test && IM::isKeyJustPressed(sf::Keyboard::Return)) {
+		in_test = false;
+	}
+
+	if (in_replay && IM::isKeyJustPressed(sf::Keyboard::F11)) {
+		IM::save_range(save_path.replace_extension(".test"), *start_record, *end_record);
+	}
+	if (!in_replay && IM::isKeyJustPressed(sf::Keyboard::F11) && Level_Store.initial_level) {
+		auto local_test_record_id = IM::load_record(save_path.replace_extension(".test"));
+		if (local_test_record_id != 0) {
+			retry();
+
+			test_record_id = local_test_record_id;
+			in_test = true;
+			start_record = IM::begin(test_record_id);
+			curr_record = *start_record;
+			end_record = IM::end(test_record_id);
+
+			return true;
+		}
 	}
 
 	if (!this_record->focused) return false;
@@ -417,41 +410,8 @@ bool Level::test_input(float) noexcept {
 		return true;
 	}
 
-	if (this_record->is_pressed(sf::Keyboard::Q)) {
-		if (this_record->is_just_pressed(sf::Keyboard::Q)) player.start_move_sideway();
-		player.move_sideway(Player::Right);
-	}
-	else if (this_record->is_just_released(sf::Keyboard::Q)) {
-		player.stop_move_sideway();
-	}
-	if (this_record->is_pressed(sf::Keyboard::D)) {
-		if (this_record->is_just_pressed(sf::Keyboard::D)) player.start_move_sideway();
-		player.move_sideway(Player::Left);
-	}
-	else if (this_record->is_just_released(sf::Keyboard::D)) {
-		player.stop_move_sideway();
-	}
-	if (this_record->is_just_pressed(sf::Keyboard::Space)) {
-		if (player.floored || player.coyotee_timer > 0) {
-			player.jump();
-		}
-		else {
-			player.preshot_timer = Player::Preshot_Time;
-		}
-	}
-	if (player.jump_strength_modifier_timer > 0) {
-		if (this_record->is_pressed(sf::Keyboard::Space)) player.maintain_jump();
-		if (this_record->is_pressed(sf::Keyboard::Z)) player.directional_up();
-	}
+	player.input(this_record);
 	if (this_record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
-	if (this_record->is_just_pressed(sf::Mouse::Right)) basic_bindings.clear();
-	if (
-		this_record->is_pressed(sf::Keyboard::LControl) &&
-		this_record->is_just_pressed(sf::Keyboard::Z) &&
-		!basic_bindings.empty()
-		) {
-		basic_bindings.pop_back();
-	}
 	if (this_record->is_just_pressed(sf::Keyboard::Return)) {
 		markers.push_back(player.pos);
 
@@ -484,9 +444,10 @@ void Level::update() noexcept {
 	}
 
 	this_record = IM::get_iterator();
-	if (in_replay && start_record && end_record) {
+	if ((in_replay || in_test) && start_record && end_record) {
 		if (curr_record == std::next(*end_record)) {
 			curr_record = *start_record;
+			this_record = curr_record;
 		}
 		else {
 			this_record = curr_record++;
@@ -517,8 +478,6 @@ void Level::update() noexcept {
 	}
 
 	if (in_editor || test_input(dt)) return;
-
-	player.update(dt);
 
 	for (auto& x : trigger_zones) {
 		x.triggered =
@@ -571,19 +530,13 @@ void Level::update() noexcept {
 		}
 	}
 
-	auto previous_player = player;
-	for (const auto& x : basic_bindings) player.forces += x * Environment.gravity;
-	player.forces.y -= Environment.gravity;
+	auto previous_player_pos = player.pos;
+	player.update(dt);
 
-	player.velocity += player.forces * dt;
-	player.velocity *= std::powf(Environment.drag * (player.floored ? 0.1f : 1.f), dt);
-
-	player.forces = {};
-
-	test_collisions(dt, previous_player);
+	test_collisions(dt, previous_player_pos);
 }
 
-void Level::test_collisions(float dt, Player previous_player) noexcept {
+void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	const auto dead_velocity_2 = Environment.dead_velocity * Environment.dead_velocity;
 	auto test_any = [](const auto& cont, const auto& to_test) {
 		return std::any_of(BEG_END(cont), [&](auto x) {return test(x, to_test); });
@@ -601,14 +554,14 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	player.pos.x += velocities.x * dt;
 	if (test_any_p(blocks) || test_any_p(doors)) {
 		impact += velocities.x * velocities.x;
-		player.pos.x = previous_player.pos.x;
+		player.pos.x = previous_player_pos.x;
 		player.velocity.x = 0;
 		player.forces.x = 0;
 	}
 	player.pos.y += velocities.y * dt;
 	if (test_any_p(blocks) || test_any_p(doors)) {
 		impact += velocities.y * velocities.y;
-		player.pos.y = previous_player.pos.y;
+		player.pos.y = previous_player_pos.y;
 		new_floored = velocities.y < 0;
 		player.velocity.y = 0;
 		player.forces.y = 0;
@@ -621,7 +574,7 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 		player.jump();
 	}
 	player.floored = new_floored;
-	
+
 	for (auto& rock : rocks) {
 		const auto G = Environment.gravity;
 		float length_sum = 0;
@@ -665,10 +618,8 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 	}
 
 	for (const auto& d : dry_zones) {
-		if (test(d, player)) basic_bindings.clear();
-		for (auto& r : rocks) {
-			if (test(d, r)) r.bindings.clear();
-		}
+		if (test(d, player)) player.clear_all_basic_bindings();
+		for (auto& r : rocks) if (test(d, r)) r.bindings.clear();
 	}
 
 	for (auto& x : next_zones) {
@@ -680,11 +631,30 @@ void Level::test_collisions(float dt, Player previous_player) noexcept {
 			continue;
 		}
 
-		finnish();
+		Level new_level = (Level)* opt_dyn;
+		new_level.save_path = Exe_Path / LEVEL_PATH / x.next_level;
 
-		Level_Store.next_level = (Level)*opt_dyn;
+		if (!in_test) {
+			finnish();
+
+			Level_Store.next_level = std::move(new_level);
+		}
+		else {
+			set_new_level(std::move(new_level));
+		}
 
 		return;
+	}
+
+	for (auto& x : auto_binding_zones) {
+		if (player.auto_binded_from_zones.count(x.uuid)) continue;
+
+		if (
+			x.rec.intersect({ player.pos, player.size }) &&
+			!player.auto_binded_from_zones.contains(x.uuid)
+		) {
+			player.add_forced_binding(x.binding, x.uuid);
+		}
 	}
 
 	for (size_t i = prest_sources.size() - 1; i + 1 > 0; --i) {
@@ -721,9 +691,6 @@ void Level::update_camera(float dt) noexcept {
 
 void Level::retry() noexcept {
 	if (Level_Store.initial_level) set_new_level(*Level_Store.initial_level);
-
-	for (auto& x : dispensers) x.set_start_timer();
-	speedrun_clock_start = nanoseconds();
 }
 
 void Level::finnish() noexcept {
@@ -782,8 +749,9 @@ void Level::mouse_on_drag() noexcept {
 			for (size_t i = 0; i < rock_dragging_i; ++i) {
 				rocks[i].bindings.push_back(unit * prest_gathered);
 			}
-			if (rock_dragging_i == 0) { // if we started dragging nothing, we default to the player.
-				basic_bindings.push_back(unit * prest_gathered);
+			if (rock_dragging_i == 0) {
+				// if we started dragging nothing, we default to the player.
+				player.add_own_binding(unit * prest_gathered);
 			}
 		}
 
@@ -793,6 +761,7 @@ void Level::mouse_on_drag() noexcept {
 }
 
 void Level::set_new_level(const Level& l) noexcept {
+	IM::forget_record(test_record_id);
 	*this = l;
 	Level_Store.initial_level = l;
 
@@ -816,6 +785,7 @@ void Level::resume() noexcept {
 	iter(decor_sprites);
 	iter(trigger_zones);
 	iter(prest_sources);
+	iter(auto_binding_zones);
 }
 
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
@@ -826,6 +796,17 @@ void to_dyn_struct(dyn_struct& str, const Block& block) noexcept {
 	str = dyn_struct::structure_t{};
 	str["pos"] = block.pos;
 	str["size"] = block.size;
+}
+void from_dyn_struct(const dyn_struct& str, Auto_Binding_Zone& zone) noexcept {
+	zone.rec = (Rectanglef)str["rec"];
+	zone.binding = (Vector2f)str["binding"];
+	zone.uuid = (size_t)str["uuid"];
+}
+void to_dyn_struct(dyn_struct& str, const Auto_Binding_Zone& zone) noexcept {
+	str = dyn_struct::structure_t{};
+	str["rec"] = zone.rec;
+	str["binding"] = zone.binding;
+	str["uuid"] = zone.uuid;
 }
 void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
@@ -882,6 +863,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(trigger_zones);
 	X(rocks);
 	X(markers);
+	X(auto_binding_zones);
 	X(camera_bound)
 #undef X
 
@@ -907,6 +889,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["markers"] = level.markers;
 	str["rocks"] = level.rocks;
 	str["doors"] = level.doors;
+	str["auto_binding_zones"] = level.auto_binding_zones;
 	str["trigger_zones"] = level.trigger_zones;
 	str["camera_bound"] = level.camera_bound;
 

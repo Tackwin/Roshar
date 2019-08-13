@@ -44,7 +44,8 @@ private:
 	~InputsManager();
 
 private:
-	static std::list<Inputs_Info> records;
+	inline static std::list<Inputs_Info> records{};
+	inline static std::unordered_map<std::uint64_t, std::list<Inputs_Info>> loaded_record{};
 public:
 	using Input_Iterator = decltype(records)::iterator;
 
@@ -115,6 +116,14 @@ public:
 
 	static float get_dt() noexcept;
 
+	static bool save_range(
+		std::filesystem::path path, Input_Iterator begin, Input_Iterator end
+	) noexcept;
+	static std::uint64_t load_record(std::filesystem::path path) noexcept;
+	static void forget_record(std::uint64_t id) noexcept;
+
+	static Input_Iterator begin(std::uint64_t id) noexcept;
+	static Input_Iterator end(std::uint64_t id) noexcept;
 private:
 	// For now i'll put that here, but it needs to be in his own stuff
 	// Maybe when i'll make a custom renderer i'll look into matrix, view and whatnot.
@@ -123,3 +132,4 @@ private:
 };
 
 using IM = InputsManager;
+using Input_Iterator = std::list<Inputs_Info>::iterator;

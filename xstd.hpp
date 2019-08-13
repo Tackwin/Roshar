@@ -60,7 +60,6 @@ namespace xstd {
 		expected(E e) noexcept : e(std::move(e)), is_error(true) {}
 		~expected() noexcept {
 			if (is_error) {
-				std::string s;
 				if constexpr (std::is_class_v<E>) e.~E();
 			}
 			else if constexpr (std::is_class_v<T>) {
@@ -84,7 +83,7 @@ namespace xstd {
 	};
 
 	template<typename T>
-	using std_expected = expected<T, const char* const>;
+	using std_expected = expected<T, size_t>;
 
 	constexpr inline std::size_t hash(std::size_t h, const char* str) noexcept {
 		return !*str ? 0 : hash((h << 5) + h + *str, str + 1);

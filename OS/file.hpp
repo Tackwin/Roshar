@@ -10,8 +10,12 @@
 namespace file {
 	[[nodiscard]] extern xstd::std_expected<std::string>
 		read_whole_text(const std::filesystem::path& path) noexcept;
-	[[nodiscard]] extern xstd::std_expected<std::vector<char>>
+	[[nodiscard]] extern xstd::std_expected<std::vector<std::uint8_t>>
 		read_whole_file(const std::filesystem::path& path) noexcept;
+
+	[[nodiscard]] extern size_t overwrite_file_byte(
+		std::filesystem::path path, const std::vector<std::uint8_t>& bytes
+	) noexcept;
 
 	extern bool
 		overwrite_file(const std::filesystem::path& path, std::string_view str) noexcept;

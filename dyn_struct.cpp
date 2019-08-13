@@ -373,7 +373,7 @@ std::optional<dyn_struct> load_from_json_file(const std::filesystem::path& file)
 			(c >= '0' && c <= '9');
 	};
 
-	auto get_string_from_escape_seq = [](const std::vector<char>& seq, size_t idx)
+	auto get_string_from_escape_seq = [](const std::vector<std::uint8_t>& seq, size_t idx)
 		-> std::optional<std::pair<std::string, size_t>> {
 		switch (seq[idx])
 		{
@@ -398,7 +398,7 @@ std::optional<dyn_struct> load_from_json_file(const std::filesystem::path& file)
 		}
 	};
 
-	auto advance_token = [=](const std::vector<char>& str, size_t idx)
+	auto advance_token = [=](const std::vector<std::uint8_t>& str, size_t idx)
 		-> std::pair<token, size_t>
 	{
 		if (idx >= str.size()) return { { token_type::UNKNOWN }, idx + 1 };

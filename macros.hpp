@@ -18,3 +18,12 @@ namespace details {
 #define END(x) std::end(x)
 #define BEG_END(x) BEG(x), END(x)
 #define V2F(x) Vector2f{(x), (x)}
+
+#define IF(cond, foo) IF_IMPL(cond, foo)
+#define IF_NOT(cond, foo) IF_NOT_IMPL(cond, foo)
+#define IF_IMPL(cond, foo) IF_##cond (foo)
+#define IF_NOT_IMPL(cond, foo) IF_NOT_##cond (foo)
+#define IF_0(foo)
+#define IF_1(foo) foo
+#define IF_NOT_1(foo)
+#define IF_NOT_0(foo) foo

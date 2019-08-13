@@ -4,7 +4,7 @@
 
 #include "imgui.h"
 #include "imgui-SFML.h"
-
+#include "../OS/file.hpp"
 
 [[nodiscard]] Vector2f Inputs_Info::mouse_world_pos(sf::View& v) const noexcept {
 	const auto& viewScope = v.getViewport();
@@ -41,9 +41,6 @@
 [[nodiscard]] bool Inputs_Info::is_pressed(sf::Mouse::Button b) const noexcept {
 	return mouse_infos[b].pressed;
 }
-
-
-std::list<Inputs_Info> IM::records;
 
 void print_sequence(const std::vector<sf::Keyboard::Key>& x) {
 	for (auto& k : x) {
@@ -421,4 +418,57 @@ Vector2u IM::getWindowSize() noexcept {
 
 	return last_record.window_size;
 }
+
+
+// We don't care about cross machine permanence so our work is greatly reduced
+bool IM::save_range(
+	std::filesystem::path path, Input_Iterator begin, Input_Iterator end
+) noexcept {
+	std::vector<std::uint8_t> bytes;
+	bytes.push_back(0); // Version
+
+	for (auto it = begin; it != end; ++it) {
+		auto buffer = reinterpret_cast<const std::uint8_t*>(&(*it));
+		for (size_t i = 0; i < sizeof(Inputs_Info); ++i) {
+			bytes.push_back(buffer[i]);
+		}
+	}
+
+	return file::overwrite_file_byte(path, bytes) == Error::No_Error;
+}
+
+std::uint64_t IM::load_record(std::filesystem::path path) noexcept {
+	auto expected = file::read_whole_file(path);
+	if (!expected) return 0;
+	auto bytes = *expected;
+
+	std::uint8_t version = bytes[0];
+	switch (version) {
+	case 0: {
+		auto id = xstd::uuid();
+		for (size_t i = 1; i < bytes.size();) {
+			Inputs_Info info;
+			for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
+				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
+			}
+			loaded_record[id].push_back(info);
+		}
+		return id;
+	}
+	default: assert("Logic error");
+	}
+	return 0;
+}
+
+Input_Iterator IM::begin(std::uint64_t id) noexcept {
+	return std::begin(loaded_record[id]);
+}
+Input_Iterator IM::end(std::uint64_t id) noexcept {
+	return --std::end(loaded_record[id]);
+}
+
+void IM::forget_record(std::uint64_t id) noexcept {
+	if (loaded_record.count(id)) loaded_record.erase(id);
+}
+
 

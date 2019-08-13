@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_set>
 #include <optional>
 #include <vector>
 
@@ -11,6 +12,8 @@
 #include "Math/Vector.hpp"
 #include "Memory/ValuePtr.hpp"
 #include "dyn_struct.hpp"
+
+#include "Player.hpp"
 
 struct Block {
 	bool editor_selected{ false };
@@ -122,6 +125,17 @@ struct Rock {
 	void render(sf::RenderTarget& target) const noexcept;
 };
 
+struct Auto_Binding_Zone {
+	bool editor_selected{ false };
+
+	Rectanglef rec;
+
+	Vector2f binding;
+	std::uint64_t uuid;
+
+	void render(sf::RenderTarget& target) const noexcept;
+};
+
 struct Decor_Sprite {
 	float opacity{ 1 };
 	bool editor_selected{ false };
@@ -137,51 +151,6 @@ struct Decor_Sprite {
 	void render(sf::RenderTarget& target) const noexcept;
 };
 
-struct Player {
-	Vector2f pos;
-	Vector2f size{ 0.4f, 0.6f };
-	Vector2f velocity;
-	Vector2f forces;
-
-	enum Dir {
-		Right,
-		Left,
-		None
-	};
-
-	std::vector<Vector2f> flat_velocities;
-	float prest{ 0.f };
-
-	bool floored{ false };
-
-	static constexpr float Coyotee_Time = 0.1f;
-	float coyotee_timer = Coyotee_Time;
-
-	static constexpr float Preshot_Time = 0.1f;
-	float preshot_timer = 0;
-
-	static constexpr float Jump_Strength_Modifier_Time = 0.3f;
-	float jump_strength_modifier_timer = 0;
-
-	static constexpr float Speed_Up_Time = 0.5f;
-	float speed_up_timer = 0;
-
-	static constexpr float Speed_Down_Time = 0.1f;
-	float speed_down_timer = 0;
-
-	Dir last_dir{ None };
-
-	void update(float dt) noexcept;
-	void render(sf::RenderTarget& target) const noexcept;
-
-	void jump() noexcept;
-	void maintain_jump() noexcept;
-	void directional_up() noexcept;
-	void start_move_sideway() noexcept;
-	void stop_move_sideway() noexcept;
-	void move_sideway(Dir dir) noexcept;
-};
-
 struct Level {
 	// >SEE:
 	// >DEBUG:
@@ -191,18 +160,21 @@ struct Level {
 	};
 	std::vector<Debug_Vector> debug_vectors;
 
-	std::vector<Rock> rocks;
-	std::vector<Door> doors;
-	std::vector<Block> blocks;
-	std::vector<Dry_Zone> dry_zones;
-	std::vector<Kill_Zone> kill_zones;
-	std::vector<Next_Zone> next_zones;
-	std::vector<Dispenser> dispensers;
-	std::vector<Projectile> projectiles;
-	std::vector<Trigger_Zone> trigger_zones;
-	std::vector<Prest_Source> prest_sources;
+	std::vector<Rock>               rocks                ;
+	std::vector<Door>               doors                ;
+	std::vector<Block>              blocks               ;
+	std::vector<Dry_Zone>           dry_zones            ;
+	std::vector<Kill_Zone>          kill_zones           ;
+	std::vector<Next_Zone>          next_zones           ;
+	std::vector<Dispenser>          dispensers           ;
+	std::vector<Projectile>         projectiles          ;
+	std::vector<Trigger_Zone>       trigger_zones        ;
+	std::vector<Prest_Source>       prest_sources        ;
+	std::vector<Auto_Binding_Zone>  auto_binding_zones   ;
 
 	std::vector<Vector2f> markers;
+
+	std::filesystem::path save_path;
 
 	float camera_speed{ 10 };
 	float camera_idle_radius{ 0.3f };
@@ -216,8 +188,6 @@ struct Level {
 	std::optional<Vector2f> start_drag;
 	float drag_dead_zone{ 50 };
 	size_t rock_dragging_i{ 0 };
-
-	std::vector<Vector2f> basic_bindings;
 
 	std::vector<Decor_Sprite> decor_sprites;
 
@@ -242,10 +212,13 @@ struct Level {
 
 private:
 	bool in_replay{ false };
+	bool in_test{ false };
 	IM::Input_Iterator this_record;
 	IM::Input_Iterator curr_record;
 	std::optional<IM::Input_Iterator> end_record;
 	std::optional<IM::Input_Iterator> start_record;
+
+	std::uint64_t test_record_id;
 
 	std::uint64_t speedrun_clock_start;
 
@@ -257,7 +230,7 @@ private:
 
 	bool test_input(float dt) noexcept;
 
-	void test_collisions(float dt, Player previous_player) noexcept;
+	void test_collisions(float dt, Vector2f previous_player_pos) noexcept;
 
 	void mouse_start_drag() noexcept;
 	void mouse_on_drag() noexcept;
@@ -267,7 +240,6 @@ private:
 	void die() noexcept;
 
 	void finnish() noexcept;
-
 	void set_new_level(const Level& l) noexcept;
 };
 
@@ -297,5 +269,7 @@ extern void from_dyn_struct(const dyn_struct& str, Door& d) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Door& d) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Decor_Sprite& level) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Decor_Sprite& level) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Auto_Binding_Zone& level) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Auto_Binding_Zone& level) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Level& level) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Level& level) noexcept;

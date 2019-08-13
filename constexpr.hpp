@@ -17,7 +17,8 @@ namespace math {
 }
 
 namespace Error {
-#define X(x) constexpr auto x = #x
+	constexpr auto No_Error = 0;
+#define X(x) constexpr auto x = 1 + __COUNTER__
 	X(Shader_Fragment_Load);
 	X(Shader_Vertex_Load);
 	X(Win_Create_File);

@@ -78,6 +78,10 @@ bool test(const Prest_Source& b, const Vector2f& p) noexcept {
 	return (b.pos - p).length2() < b.prest * mult;
 }
 
+bool test(const Auto_Binding_Zone& b, const Rectangle<float>& x) noexcept {
+	return b.rec.intersect(x);
+}
+
 bool test(const Projectile& x, const Player& p) noexcept {
 	Circlef c;
 	c.c = x.pos;

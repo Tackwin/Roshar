@@ -18,6 +18,7 @@ class Editor {
 		Trigger_Zone,
 		Door,
 		Rock,
+		Auto_Binding_Zone,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;

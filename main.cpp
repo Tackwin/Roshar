@@ -35,8 +35,16 @@ int main(int, char**) {
 
 	bool run_editor = false;
 
+	float max_dt = 0;
+	size_t last_dt_count = 5;
+	std::vector<float> last_dt;
+
 	while (window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
+		max_dt = std::max(dt, max_dt);
+		last_dt.insert(BEG(last_dt), dt);
+		last_dt.resize(last_dt_count);
+
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
 		IM::update(window, dt);
@@ -61,6 +69,23 @@ int main(int, char**) {
 		ImGui::InputFloat("Binding range", &Environment.binding_range);
 		ImGui::InputFloat("Gravity", &Environment.gravity);
 		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
+		ImGui::End();
+
+		ImGui::Begin("Perf");
+
+		float avg = 0;
+		for (auto x : last_dt) avg += x;
+		avg /= last_dt_count;
+
+		ImGui::Text(
+			"current dt: %4.2f ms, avg(%u): %4.2f ms, max: %4.2f",
+			1000 * dt,
+			last_dt_count,
+			1000 * avg,
+			1000 * max_dt
+		);
+		ImGui::Text("Fps: %d", (size_t)(1 / dt));
+
 		ImGui::End();
 
 		level.render(window);

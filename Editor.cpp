@@ -56,9 +56,10 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			std::lock_guard guard{ Main_Mutex };
 			
 			Level new_level = (Level)* opt_dyn;
+			new_level.save_path = result.filepath;
 
 			*l = new_level;
-			Level_Store.initial_level = new_level;
+			Level_Store.initial_level = std::move(new_level);
 
 			s = result.filepath.string();
 		}, opts);
@@ -69,8 +70,11 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		auto old_markers = std::move(level_to_edit->markers);
 		auto opt_dyn = load_from_json_file(save_path);
 		if (!opt_dyn) return;
-		*level_to_edit = (Level)* opt_dyn;
-		Level_Store.initial_level = (Level)* opt_dyn;
+		Level new_level = (Level)* opt_dyn;
+		new_level.save_path = save_path;
+
+		*level_to_edit = new_level;
+		Level_Store.initial_level = std::move(new_level);
 		level_to_edit->markers = std::move(old_markers);
 	}
 	char buffer[512];
@@ -190,6 +194,30 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::InputText("Next", next, sizeof(next))) {
 			for (auto& y : level_to_edit->next_zones) if (pred(y)) y.next_level = next;
 		}
+	}
+
+	n_selected = std::count_if(BEG_END(level_to_edit->auto_binding_zones), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Auto bindings zones");
+
+		float x;
+		float y;
+
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(level_to_edit->auto_binding_zones), pred);
+			x = it->binding.x;
+			y = it->binding.y;
+		}
+
+		ImGui::Text("X");
+		ImGui::SameLine();
+		ImGui::PushItemWidth(0.7f);
+		defer{ ImGui::PopItemWidth(); };
+		if (ImGui::InputFloat("X", &x, 0.05f))
+			for (auto& a : level_to_edit->auto_binding_zones) if (pred(a)) a.binding.x = x;
+		if (ImGui::InputFloat("Y", &y, 0.05f))
+			for (auto& a : level_to_edit->auto_binding_zones) if (pred(a)) a.binding.y = y;
 	}
 
 	n_selected = std::count_if(BEG_END(level_to_edit->rocks), pred);
@@ -314,6 +342,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 					break;
 				case Creating_Element::Trigger_Zone:
 					*out = "Trigger_Zone";
+					break;
+				case Creating_Element::Auto_Binding_Zone:
+					*out = "Auto_Binding_Zone";
 					break;
 				default:
 					assert(false);
@@ -544,12 +575,12 @@ void Editor::update(float dt) noexcept {
 		iter(level_to_edit->dispensers);
 		iter(level_to_edit->trigger_zones);
 		iter(level_to_edit->prest_sources);
+		iter(level_to_edit->auto_binding_zones);
 
 		drag_offset.clear();
 		if (edit_texture) {
 			for (auto& b : level_to_edit->decor_sprites) {
 				b.editor_selected = b.rec.intersect(rec);
-
 			}
 		}
 		else {
@@ -646,6 +677,14 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			level_to_edit->doors.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Auto_Binding_Zone: {
+			Auto_Binding_Zone new_block;
+			new_block.rec = { start, end - start };
+			new_block.uuid = xstd::uuid();
+
+			level_to_edit->auto_binding_zones.emplace_back(std::move(new_block));
+			break;
+		}
 		}
 	}
 }
@@ -676,6 +715,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(level_to_edit->trigger_zones);
 	iter(level_to_edit->prest_sources);
 	iter(level_to_edit->decor_sprites);
+	iter(level_to_edit->auto_binding_zones);
 
 #define S(x) level_to_edit->x.size()
 	auto n_elements =
@@ -688,6 +728,7 @@ void Editor::delete_all_selected() noexcept {
 		S(trigger_zones) +
 		S(prest_sources) +
 		S(decor_sprites) +
+		S(auto_binding_zones) +
 		S(dispensers);
 #undef S
 
