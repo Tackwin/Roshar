@@ -846,7 +846,7 @@ void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept {
 }
 void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
-	x.friction = (float)str["float"];
+	x.friction = (float)str["friction"];
 }
 void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept {
 	str = dyn_struct::structure_t{};
