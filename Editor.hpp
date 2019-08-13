@@ -19,6 +19,7 @@ class Editor {
 		Door,
 		Rock,
 		Auto_Binding_Zone,
+		Friction_Zone,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;

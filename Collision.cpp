@@ -81,6 +81,9 @@ bool test(const Prest_Source& b, const Vector2f& p) noexcept {
 bool test(const Auto_Binding_Zone& b, const Rectangle<float>& x) noexcept {
 	return b.rec.intersect(x);
 }
+bool test(const Friction_Zone& b, const Rectangle<float>& x) noexcept {
+	return b.rec.intersect(x);
+}
 
 bool test(const Projectile& x, const Player& p) noexcept {
 	Circlef c;

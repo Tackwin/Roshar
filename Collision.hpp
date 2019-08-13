@@ -15,6 +15,7 @@ struct Door;
 struct Rock;
 struct Decor_Sprite;
 struct Auto_Binding_Zone;
+struct Friction_Zone;
 
 template<typename T>
 struct Circle;
@@ -23,6 +24,7 @@ struct Vector;
 template<typename T>
 struct Rectangle;
 
+[[nodiscard]] extern bool test(const Friction_Zone& b, const Rectangle<float>& x) noexcept;
 [[nodiscard]] extern bool test(const Auto_Binding_Zone& b, const Rectangle<float>& x) noexcept;
 [[nodiscard]] extern bool test(const Trigger_Zone& b, const Rectangle<float>& x) noexcept;
 [[nodiscard]] extern bool test(const Door& b, const Rectangle<float>& x) noexcept;

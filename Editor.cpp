@@ -138,6 +138,20 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			for (auto& y : level_to_edit->prest_sources) if (pred(y)) y.prest = x;
 	}
 
+	n_selected = std::count_if(BEG_END(level_to_edit->friction_zones), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Friction zones");
+		float friction = { 0 };
+		if (n_selected == 1)
+			friction = std::find_if(BEG_END(level_to_edit->friction_zones), pred)->friction;
+
+		ImGui::Text("Friction");
+		ImGui::SameLine();
+		if (ImGui::InputFloat("Friction", &friction))
+			for (auto& y : level_to_edit->friction_zones) if (pred(y)) y.friction = friction;
+	}
+
 	n_selected = std::count_if(BEG_END(level_to_edit->doors), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -345,6 +359,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 					break;
 				case Creating_Element::Auto_Binding_Zone:
 					*out = "Auto_Binding_Zone";
+					break;
+				case Creating_Element::Friction_Zone:
+					*out = "Friction_Zone";
 					break;
 				default:
 					assert(false);
@@ -575,6 +592,7 @@ void Editor::update(float dt) noexcept {
 		iter(level_to_edit->dispensers);
 		iter(level_to_edit->trigger_zones);
 		iter(level_to_edit->prest_sources);
+		iter(level_to_edit->friction_zones);
 		iter(level_to_edit->auto_binding_zones);
 
 		drag_offset.clear();
@@ -662,6 +680,13 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			level_to_edit->dry_zones.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Friction_Zone: {
+			Friction_Zone new_block;
+			new_block.rec = { start, end - start };
+
+			level_to_edit->friction_zones.emplace_back(std::move(new_block));
+			break;
+		}
 		case Creating_Element::Trigger_Zone: {
 			Trigger_Zone new_block;
 			new_block.rec = { start, end - start };
@@ -715,6 +740,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(level_to_edit->trigger_zones);
 	iter(level_to_edit->prest_sources);
 	iter(level_to_edit->decor_sprites);
+	iter(level_to_edit->friction_zones);
 	iter(level_to_edit->auto_binding_zones);
 
 #define S(x) level_to_edit->x.size()
@@ -728,6 +754,7 @@ void Editor::delete_all_selected() noexcept {
 		S(trigger_zones) +
 		S(prest_sources) +
 		S(decor_sprites) +
+		S(friction_zones) +
 		S(auto_binding_zones) +
 		S(dispensers);
 #undef S

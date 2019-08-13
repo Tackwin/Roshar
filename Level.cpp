@@ -151,7 +151,28 @@ void Trigger_Zone::render(sf::RenderTarget& target) const noexcept {
 void Door::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(rec.size);
 	shape.setPosition(rec.pos);
-	shape.setFillColor(Vector4d{ 0.9, 0.9, 0.9, closed ? 1.0 : 0.1});
+	shape.setFillColor(Vector4d{ 0.9, 0.9, 0.9, closed ? 1.0 : 0.1 });
+	target.draw(shape);
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		shape.setSize(rec.size);
+		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
+		shape.setOutlineThickness(.01f);
+		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
+		shape.setPosition(rec.pos);
+		target.draw(shape);
+	}
+}
+
+void Friction_Zone::render(sf::RenderTarget& target) const noexcept {
+	sf::RectangleShape shape(rec.size);
+	shape.setPosition(rec.pos);
+	shape.setFillColor(
+		Vector4d{ std::atan(friction) * 0.9, std::atan(friction) * 0.9, 0.1, 1}
+	);
 	target.draw(shape);
 
 	if (editor_selected) {
@@ -294,6 +315,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(dispensers);
 	renders(trigger_zones);
 	renders(auto_binding_zones);
+	renders(friction_zones);
 
 	renders(decor_sprites);
 
@@ -547,7 +569,13 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	for (const auto& x : player.flat_velocities) flat_velocities += x;
 	player.flat_velocities.clear();
 
-	const auto velocities = flat_velocities + player.velocity;
+	auto velocities = flat_velocities + player.velocity;
+	for (const auto& x : friction_zones) {
+		if (x.rec.intersect({ player.pos, player.size })) {
+			velocities *= x.friction;
+			player.velocity *= std::powf(x.friction, dt);
+		}
+	}
 	float impact = 0;
 	bool new_floored = false;
 
@@ -785,6 +813,7 @@ void Level::resume() noexcept {
 	iter(decor_sprites);
 	iter(trigger_zones);
 	iter(prest_sources);
+	iter(friction_zones);
 	iter(auto_binding_zones);
 }
 
@@ -813,6 +842,15 @@ void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept {
 }
 void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept {
 	str = dyn_struct::structure_t{};
+	str["rec"] = x.rec;
+}
+void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept {
+	x.rec = (Rectanglef)str["rec"];
+	x.friction = (float)str["float"];
+}
+void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["friction"] = x.friction;
 	str["rec"] = x.rec;
 }
 void from_dyn_struct(const dyn_struct& str, Dispenser& dispenser) noexcept {
@@ -853,6 +891,7 @@ void to_dyn_struct(dyn_struct& str, const Prest_Source& prest) noexcept {
 void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 #define X(x) if (has(str, #x)) level.x = (decltype(level.x))str[#x];
 	X(blocks);
+	X(friction_zones);
 	X(dispensers);
 	X(kill_zones);
 	X(next_zones);
@@ -885,6 +924,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["dry_zones"] = level.dry_zones;
 	str["prest_sources"] = level.prest_sources;
 	str["dispensers"] = level.dispensers;
+	str["friction_zones"] = level.friction_zones;
 	str["decor_sprites"] = level.decor_sprites;
 	str["markers"] = level.markers;
 	str["rocks"] = level.rocks;

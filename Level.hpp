@@ -136,6 +136,16 @@ struct Auto_Binding_Zone {
 	void render(sf::RenderTarget& target) const noexcept;
 };
 
+struct Friction_Zone {
+	bool editor_selected{ false };
+
+	Rectanglef rec;
+
+	float friction{ 1 };
+
+	void render(sf::RenderTarget& target) const noexcept;
+};
+
 struct Decor_Sprite {
 	float opacity{ 1 };
 	bool editor_selected{ false };
@@ -170,6 +180,7 @@ struct Level {
 	std::vector<Projectile>         projectiles          ;
 	std::vector<Trigger_Zone>       trigger_zones        ;
 	std::vector<Prest_Source>       prest_sources        ;
+	std::vector<Friction_Zone>      friction_zones       ;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones   ;
 
 	std::vector<Vector2f> markers;
@@ -253,6 +264,8 @@ extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Next_Zone& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Block& block) noexcept;
