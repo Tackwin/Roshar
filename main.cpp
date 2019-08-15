@@ -11,7 +11,7 @@
 #include "imgui.h"
 
 #include "Editor.hpp"
-#include "Level.hpp"
+#include "Game.hpp"
 
 int main(int, char**) {
 	Environment.window_width = 1280;
@@ -25,20 +25,16 @@ int main(int, char**) {
 	ImGui::SFML::Init(window);
 	defer{ ImGui::SFML::Shutdown(); };
 
-	sf::Clock dtClock;
-
-	Level level;
-	Editor editor;
-	editor.level_to_edit = &level;
-
 	asset::Store.monitor_path("textures/");
-
-	bool run_editor = false;
 
 	float max_dt = 0;
 	size_t last_dt_count = 5;
 	std::vector<float> last_dt;
 
+	game = new Game;
+	defer{ delete game; };
+
+	sf::Clock dtClock;
 	while (window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
 		max_dt = std::max(dt, max_dt);
@@ -48,16 +44,6 @@ int main(int, char**) {
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
 		IM::update(window, dt);
-
-		if (IM::isWindowFocused() && IM::isKeyJustPressed(sf::Keyboard::E)) {
-			run_editor = !run_editor;
-			if (!run_editor) {
-				level.resume();
-			}
-			else {
-				level.pause();
-			}
-		}
 
 		window.clear({ 153, 78, 102, 255 });
 
@@ -88,14 +74,9 @@ int main(int, char**) {
 
 		ImGui::End();
 
-		level.render(window);
-		if (run_editor) {
-			editor.update(dt);
-			editor.render(window);
-		}
-		else {
-			level.update();
-		}
+		game->input();
+		game->update();
+		game->render(window);
 
 		ImGui::SFML::Render(window);
 		window.display();

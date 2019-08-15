@@ -85,9 +85,9 @@ struct Dispenser {
 	float timer{ 0 };
 	float offset_timer{ 0 };
 
-	void render(sf::RenderTarget& target) const noexcept;
+	Dispenser() noexcept;
 
-	void set_start_timer() noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
 };
 
 struct Projectile {
@@ -170,18 +170,18 @@ struct Level {
 	};
 	std::vector<Debug_Vector> debug_vectors;
 
-	std::vector<Rock>               rocks                ;
-	std::vector<Door>               doors                ;
-	std::vector<Block>              blocks               ;
-	std::vector<Dry_Zone>           dry_zones            ;
-	std::vector<Kill_Zone>          kill_zones           ;
-	std::vector<Next_Zone>          next_zones           ;
-	std::vector<Dispenser>          dispensers           ;
-	std::vector<Projectile>         projectiles          ;
-	std::vector<Trigger_Zone>       trigger_zones        ;
-	std::vector<Prest_Source>       prest_sources        ;
-	std::vector<Friction_Zone>      friction_zones       ;
-	std::vector<Auto_Binding_Zone>  auto_binding_zones   ;
+	std::vector<Rock>               rocks;
+	std::vector<Door>               doors;
+	std::vector<Block>              blocks;
+	std::vector<Dry_Zone>           dry_zones;
+	std::vector<Kill_Zone>          kill_zones;
+	std::vector<Next_Zone>          next_zones;
+	std::vector<Dispenser>          dispensers;
+	std::vector<Projectile>         projectiles;
+	std::vector<Trigger_Zone>       trigger_zones;
+	std::vector<Prest_Source>       prest_sources;
+	std::vector<Friction_Zone>      friction_zones;
+	std::vector<Auto_Binding_Zone>  auto_binding_zones;
 
 	std::vector<Vector2f> markers;
 
@@ -202,32 +202,17 @@ struct Level {
 
 	std::vector<Decor_Sprite> decor_sprites;
 
-	static constexpr float Input_Active_Time = 0.5f;
-	float input_active_timer = Input_Active_Time;
-
-	static constexpr float Camera_Fade_Time = 0.5f;
-	float camera_fade_out_timer = 0;
-	float camera_fade_in_timer = 0;
-
-	bool in_editor{ false };
-
-	Level() noexcept;
-	Level(const Level&) = default;
-	Level& operator=(const Level&) = default;
-
+	void input(IM::Input_Iterator record) noexcept;
+	void update(float dt) noexcept;
 	void render(sf::RenderTarget& target) const noexcept;
-	void update() noexcept;
 
 	void pause() noexcept;
 	void resume() noexcept;
 
 private:
+	bool full_test{ false };
 	bool in_replay{ false };
 	bool in_test{ false };
-	IM::Input_Iterator this_record;
-	IM::Input_Iterator curr_record;
-	std::optional<IM::Input_Iterator> end_record;
-	std::optional<IM::Input_Iterator> start_record;
 
 	std::uint64_t test_record_id;
 
@@ -239,26 +224,13 @@ private:
 	Vector2f mouse_world_pos;
 	Vector2u window_size;
 
-	bool test_input(float dt) noexcept;
-
 	void test_collisions(float dt, Vector2f previous_player_pos) noexcept;
 
 	void mouse_start_drag() noexcept;
 	void mouse_on_drag() noexcept;
 
 	void update_camera(float dt) noexcept;
-	void retry() noexcept;
-	void die() noexcept;
-
-	void finnish() noexcept;
-	void set_new_level(const Level& l) noexcept;
 };
-
-struct Level_Store_t {
-	std::optional<Level> initial_level;
-	std::optional<Level> next_level;
-};
-extern Level_Store_t Level_Store;
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;

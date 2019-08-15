@@ -438,14 +438,20 @@ bool IM::save_range(
 }
 
 std::uint64_t IM::load_record(std::filesystem::path path) noexcept {
+	auto id = xstd::uuid();
+
+	return load_record_at(path, id) ? id : 0;
+}
+
+bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 	auto expected = file::read_whole_file(path);
 	if (!expected) return 0;
+	loaded_record[id].clear();
 	auto bytes = *expected;
 
 	std::uint8_t version = bytes[0];
 	switch (version) {
 	case 0: {
-		auto id = xstd::uuid();
 		for (size_t i = 1; i < bytes.size();) {
 			Inputs_Info info;
 			for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
@@ -453,18 +459,18 @@ std::uint64_t IM::load_record(std::filesystem::path path) noexcept {
 			}
 			loaded_record[id].push_back(info);
 		}
-		return id;
+		return true;
 	}
 	default: assert("Logic error");
 	}
-	return 0;
+	return false;
 }
 
 Input_Iterator IM::begin(std::uint64_t id) noexcept {
 	return std::begin(loaded_record[id]);
 }
 Input_Iterator IM::end(std::uint64_t id) noexcept {
-	return --std::end(loaded_record[id]);
+	return std::end(loaded_record[id]);
 }
 
 void IM::forget_record(std::uint64_t id) noexcept {

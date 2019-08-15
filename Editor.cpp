@@ -8,6 +8,7 @@
 #include "os/file.hpp"
 
 #include "Level.hpp"
+#include "Game.hpp"
 
 #include <cstdio>
 #include <array>
@@ -38,44 +39,40 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	}
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
-	if (level_to_edit && ImGui::Button("Save")) {
+	if (ImGui::Button("Save")) {
 		if (ask_to_save) ImGui::OpenPopup("Sure ?");
 		else save(save_path);
 	}
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
-	if (level_to_edit && ImGui::Button("Load")) {
+	if (ImGui::Button("Load")) {
 		file::OpenFileOpts opts;
 		opts.allow_multiple = false;
 		opts.ext_filters["all"] = { "*.json" };
-		file::open_file_async([&s = save_path, l = level_to_edit](file::OpenFileResult result) {
+		file::open_file_async([&s = save_path](file::OpenFileResult result) {
 			if (!result.succeded) return;
 			auto opt_dyn = load_from_json_file(result.filepath);
 			if (!opt_dyn) return;
 			
 			std::lock_guard guard{ Main_Mutex };
-			
-			Level new_level = (Level)* opt_dyn;
-			new_level.save_path = result.filepath;
 
-			*l = new_level;
-			Level_Store.initial_level = std::move(new_level);
+			game->to_swap_level = (Level)* opt_dyn;
+			game->to_swap_level->save_path = result.filepath;
 
 			s = result.filepath.string();
 		}, opts);
 	}
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
-	if (level_to_edit && ImGui::Button("Reload")) {
-		auto old_markers = std::move(level_to_edit->markers);
+	if (ImGui::Button("Reload")) {
+		auto old_markers = std::move(game->current_level.markers);
 		auto opt_dyn = load_from_json_file(save_path);
 		if (!opt_dyn) return;
 		Level new_level = (Level)* opt_dyn;
 		new_level.save_path = save_path;
 
-		*level_to_edit = new_level;
-		Level_Store.initial_level = std::move(new_level);
-		level_to_edit->markers = std::move(old_markers);
+		game->to_swap_level = std::move(new_level);
+		game->current_level.markers = std::move(old_markers);
 	}
 	char buffer[512];
 	strcpy_s(buffer, save_path.data());
@@ -101,10 +98,10 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		decor.texture_key = *key;
 		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
-		decor.rec = { level_to_edit->camera.getCenter(), texture.asset.getSize() };
+		decor.rec = { game->current_level.camera.getCenter(), texture.asset.getSize() };
 		decor.rec.pos -= decor.rec.size / 2;
 		decor.sprite.setTexture(texture.asset);
-		level_to_edit->decor_sprites.push_back(decor);
+		game->current_level.decor_sprites.push_back(decor);
 	}
 
 	if (ImGui::Checkbox("Edit texture", &edit_texture) && edit_texture) {
@@ -125,54 +122,56 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	require_dragging |= edit_texture;
 
 	auto pred = [](auto& x) {return x.editor_selected; };
-	auto n_selected = std::count_if(BEG_END(level_to_edit->prest_sources), pred);
+	auto n_selected = std::count_if(BEG_END(game->current_level.prest_sources), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Prest sources");
 		float x = { 0 };
-		if (n_selected == 1) x = std::find_if(BEG_END(level_to_edit->prest_sources), pred)->prest;
+		if (n_selected == 1)
+			x = std::find_if(BEG_END(game->current_level.prest_sources), pred)->prest;
 
 		ImGui::Text("Prest");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Prest", &x))
-			for (auto& y : level_to_edit->prest_sources) if (pred(y)) y.prest = x;
+			for (auto& y : game->current_level.prest_sources) if (pred(y)) y.prest = x;
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->friction_zones), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.friction_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Friction zones");
 		float friction = { 0 };
 		if (n_selected == 1)
-			friction = std::find_if(BEG_END(level_to_edit->friction_zones), pred)->friction;
+			friction = std::find_if(BEG_END(game->current_level.friction_zones), pred)->friction;
 
 		ImGui::Text("Friction");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Friction", &friction))
-			for (auto& y : level_to_edit->friction_zones) if (pred(y)) y.friction = friction;
+			for (auto& y : game->current_level.friction_zones) if (pred(y)) y.friction = friction;
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->doors), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.doors), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Doors");
 		bool closed = { true };
-		if (n_selected == 1) closed = std::find_if(BEG_END(level_to_edit->doors), pred)->closed;
+		if (n_selected == 1)
+			closed = std::find_if(BEG_END(game->current_level.doors), pred)->closed;
 
 		ImGui::Text("Closed");
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Closed", &closed))
-			for (auto& y : level_to_edit->doors) if (pred(y)) y.closed = closed;
+			for (auto& y : game->current_level.doors) if (pred(y)) y.closed = closed;
 
 		thread_local bool must_list{ false };
 		ImGui::Checkbox(must_list ? "must list" : "mustnt_list", &must_list);
 
 		if (ImGui::Button("Add Selection to list")) {
-			for (auto& y : level_to_edit->doors) {
+			for (auto& y : game->current_level.doors) {
 				if (!pred(y)) continue;
 				auto& list = must_list ? y.must_triggered : y.mustnt_triggered;
 
-				for (const auto& z : level_to_edit->trigger_zones) {
+				for (const auto& z : game->current_level.trigger_zones) {
 					if (pred(z)) list.push_back(z.id);
 				}
 
@@ -181,11 +180,11 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Remove selection from list")) {
-			for (auto& y : level_to_edit->doors) {
+			for (auto& y : game->current_level.doors) {
 				if (!pred(y)) continue;
 				auto& list = must_list ? y.must_triggered : y.mustnt_triggered;
 
-				for (const auto& z : level_to_edit->trigger_zones) {
+				for (const auto& z : game->current_level.trigger_zones) {
 					if (!pred(z)) continue;
 					if (auto it = std::find(BEG_END(list), z.id); it != END(list)) list.erase(it);
 				}
@@ -193,24 +192,24 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->next_zones), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.next_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Next zones");
 		char next[512];
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(level_to_edit->next_zones), pred);
+			auto it = std::find_if(BEG_END(game->current_level.next_zones), pred);
 			strcpy_s(next, 512, it->next_level.c_str());
 		}
 
 		ImGui::Text("Next");
 		ImGui::SameLine();
 		if (ImGui::InputText("Next", next, sizeof(next))) {
-			for (auto& y : level_to_edit->next_zones) if (pred(y)) y.next_level = next;
+			for (auto& y : game->current_level.next_zones) if (pred(y)) y.next_level = next;
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->auto_binding_zones), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.auto_binding_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Auto bindings zones");
@@ -219,7 +218,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		float y;
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(level_to_edit->auto_binding_zones), pred);
+			auto it = std::find_if(BEG_END(game->current_level.auto_binding_zones), pred);
 			x = it->binding.x;
 			y = it->binding.y;
 		}
@@ -229,12 +228,12 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::PushItemWidth(0.7f);
 		defer{ ImGui::PopItemWidth(); };
 		if (ImGui::InputFloat("X", &x, 0.05f))
-			for (auto& a : level_to_edit->auto_binding_zones) if (pred(a)) a.binding.x = x;
+			for (auto& a : game->current_level.auto_binding_zones) if (pred(a)) a.binding.x = x;
 		if (ImGui::InputFloat("Y", &y, 0.05f))
-			for (auto& a : level_to_edit->auto_binding_zones) if (pred(a)) a.binding.y = y;
+			for (auto& a : game->current_level.auto_binding_zones) if (pred(a)) a.binding.y = y;
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->rocks), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.rocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Rocks");
@@ -242,7 +241,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		float radius;
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(level_to_edit->rocks), pred);
+			auto it = std::find_if(BEG_END(game->current_level.rocks), pred);
 			mass = it->mass;
 			radius = it->r;
 		}
@@ -250,33 +249,33 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::Text("Mass");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Mass", &mass)) {
-			for (auto& y : level_to_edit->rocks) if (pred(y)) y.mass = mass;
+			for (auto& y : game->current_level.rocks) if (pred(y)) y.mass = mass;
 		}
 		ImGui::Text("Radius");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Radius", &radius)) {
-			for (auto& y : level_to_edit->rocks) if (pred(y)) y.r = radius;
+			for (auto& y : game->current_level.rocks) if (pred(y)) y.r = radius;
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->decor_sprites), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.decor_sprites), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Texture");
 
 		float opacity{ 1 };
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(level_to_edit->decor_sprites), pred);
+			auto it = std::find_if(BEG_END(game->current_level.decor_sprites), pred);
 			opacity = it->opacity;
 		}
 
 		ImGui::Text("Opacity");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Opacity", &opacity))
-			for (auto& x : level_to_edit->decor_sprites) if (pred(x)) x.opacity = opacity;
+			for (auto& x : game->current_level.decor_sprites) if (pred(x)) x.opacity = opacity;
 	}
 
-	n_selected = std::count_if(BEG_END(level_to_edit->dispensers), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.dispensers), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("dispensers");
@@ -286,7 +285,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		float offset_timer{ 0.f };
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(level_to_edit->dispensers), pred);
+			auto it = std::find_if(BEG_END(game->current_level.dispensers), pred);
 			r = it->proj_r;
 			speed = it->proj_speed;
 			hz = it->hz;
@@ -296,17 +295,17 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::Text("Radius");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Radius", &r))
-			for (auto& y : level_to_edit->dispensers) if (pred(y)) y.proj_r = r;
+			for (auto& y : game->current_level.dispensers) if (pred(y)) y.proj_r = r;
 
 		ImGui::Text("Speed");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Speed", &speed))
-			for (auto& y : level_to_edit->dispensers) if (pred(y)) y.proj_speed = speed;
+			for (auto& y : game->current_level.dispensers) if (pred(y)) y.proj_speed = speed;
 
 		ImGui::Text("Cadence");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Cadence", &hz))
-			for (auto& y : level_to_edit->dispensers) if (pred(y)) {
+			for (auto& y : game->current_level.dispensers) if (pred(y)) {
 				y.hz = hz;
 				y.timer = 1.f / hz;
 			}
@@ -314,7 +313,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::Text("Offset");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Offset", &offset_timer))
-			for (auto& y : level_to_edit->dispensers) if (pred(y)) {
+			for (auto& y : game->current_level.dispensers) if (pred(y)) {
 				y.offset_timer = offset_timer;
 			}
 	}
@@ -419,14 +418,14 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		target.draw(shape);
 	}
 
-	for (const auto& d : level_to_edit->doors) {
+	for (const auto& d : game->current_level.doors) {
 		Vector2f start = d.rec.center();
 
 		for (const auto& x : d.must_triggered) {
 			auto it = std::find_if(
-				BEG_END(level_to_edit->trigger_zones), [x](auto& z) { return z.id == x; }
+				BEG_END(game->current_level.trigger_zones), [x](auto& z) { return z.id == x; }
 			);
-			if (it == END(level_to_edit->trigger_zones)) continue;
+			if (it == END(game->current_level.trigger_zones)) continue;
 
 			Vector2f end = it->rec.center();
 
@@ -435,9 +434,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 
 		for (const auto& x : d.mustnt_triggered) {
 			auto it = std::find_if(
-				BEG_END(level_to_edit->trigger_zones), [x](auto& z) { return z.id == x; }
+				BEG_END(game->current_level.trigger_zones), [x](auto& z) { return z.id == x; }
 			);
-			if (it == END(level_to_edit->trigger_zones)) continue;
+			if (it == END(game->current_level.trigger_zones)) continue;
 
 			Vector2f end = it->rec.center();
 
@@ -446,7 +445,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	}
 
 	if (snap_grid) {
-		auto& cam = level_to_edit->camera;
+		auto& cam = game->current_level.camera;
 		std::vector<std::array<sf::Vertex, 2>> vertices;
 
 		size_t n = (size_t)(std::abs(cam.getSize().x) / snap_grid);
@@ -490,7 +489,6 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 
 void Editor::update(float dt) noexcept {
 	sin_time += std::cosf(sin_time) * dt;
-	if (!level_to_edit) return;
 	if (!IM::isWindowFocused()) return;
 
 	bool shift = IM::isKeyPressed(sf::Keyboard::LShift);
@@ -498,8 +496,8 @@ void Editor::update(float dt) noexcept {
 	auto scale = IM::getLastScroll();
 	if (shift) scale /= 10;
 
-	if (!edit_texture) level_to_edit->camera.zoom(math::scale_zoom(-scale + 1));
-	else for (auto& b : level_to_edit->decor_sprites) {
+	if (!edit_texture) game->current_level.camera.zoom(math::scale_zoom(-scale + 1));
+	else for (auto& b : game->current_level.decor_sprites) {
 		if (b.editor_selected) {
 			auto center = b.rec.pos + b.rec.size / 2;
 			b.rec.size *= math::scale_zoom(-scale + 1);
@@ -515,12 +513,12 @@ void Editor::update(float dt) noexcept {
 		if (IM::isMouseJustPressed(sf::Mouse::Left) && !pos_start_drag) {
 			pos_start_drag = get_mouse_pos();
 			drag_offset.clear();
-			for (auto& b : level_to_edit->decor_sprites)
+			for (auto& b : game->current_level.decor_sprites)
 				if (b.editor_selected) drag_offset.push_back(get_mouse_pos() - b.rec.pos);
 		}
 		if (edit_texture && IM::isMousePressed(sf::Mouse::Left)) {
 			size_t i = 0;
-			for (auto& b : level_to_edit->decor_sprites) {
+			for (auto& b : game->current_level.decor_sprites) {
 				if (b.editor_selected) {
 					b.rec.pos = get_mouse_pos() - drag_offset[i++];
 				}
@@ -538,7 +536,7 @@ void Editor::update(float dt) noexcept {
 			Prest_Source p;
 			p.pos = get_mouse_pos();
 			p.prest = 1;
-			level_to_edit->prest_sources.push_back(p);
+			game->current_level.prest_sources.push_back(p);
 			break;
 		}
 		case Creating_Element::Rock: {
@@ -546,7 +544,7 @@ void Editor::update(float dt) noexcept {
 			r.pos = get_mouse_pos();
 			r.r = 0.1f;
 			r.mass = 1;
-			level_to_edit->rocks.push_back(r);
+			game->current_level.rocks.push_back(r);
 			break;
 		}
 		default: break;
@@ -554,14 +552,14 @@ void Editor::update(float dt) noexcept {
 	}
 
 	if (IM::isMousePressed(sf::Mouse::Middle) && !IM::isMouseJustPressed(sf::Mouse::Middle)) {
-		level_to_edit->camera.move(-1 * IM::getMouseDeltaInView(level_to_edit->camera));
+		game->current_level.camera.move(-1 * IM::getMouseDeltaInView(game->current_level.camera));
 	}
 	if (IM::isMouseJustPressed(sf::Mouse::Left)) {
 		if (placing_player) {
 			placing_player = false;
 
-			level_to_edit->player.pos = get_mouse_pos();
-			level_to_edit->player.velocity = {};
+			game->current_level.player.pos = get_mouse_pos();
+			game->current_level.player.velocity = {};
 		}
 		if (edit_texture) {
 			require_dragging = true;
@@ -574,7 +572,7 @@ void Editor::update(float dt) noexcept {
 		defer{ start_selection.reset(); };
 		Rectanglef rec{*start_selection, get_mouse_pos() - *start_selection};
 
-		auto iter = [cam = level_to_edit->camera, shift, ctrl, rec](auto& c) noexcept {
+		auto iter = [cam = game->current_level.camera, shift, ctrl, rec](auto& c) noexcept {
 			for (auto& b : c) {
 				bool orig = (shift && b.editor_selected);
 
@@ -583,26 +581,26 @@ void Editor::update(float dt) noexcept {
 			}
 		};
 
-		iter(level_to_edit->rocks);
-		iter(level_to_edit->doors);
-		iter(level_to_edit->blocks);
-		iter(level_to_edit->dry_zones);
-		iter(level_to_edit->kill_zones);
-		iter(level_to_edit->next_zones);
-		iter(level_to_edit->dispensers);
-		iter(level_to_edit->trigger_zones);
-		iter(level_to_edit->prest_sources);
-		iter(level_to_edit->friction_zones);
-		iter(level_to_edit->auto_binding_zones);
+		iter(game->current_level.rocks);
+		iter(game->current_level.doors);
+		iter(game->current_level.blocks);
+		iter(game->current_level.dry_zones);
+		iter(game->current_level.kill_zones);
+		iter(game->current_level.next_zones);
+		iter(game->current_level.dispensers);
+		iter(game->current_level.trigger_zones);
+		iter(game->current_level.prest_sources);
+		iter(game->current_level.friction_zones);
+		iter(game->current_level.auto_binding_zones);
 
 		drag_offset.clear();
 		if (edit_texture) {
-			for (auto& b : level_to_edit->decor_sprites) {
+			for (auto& b : game->current_level.decor_sprites) {
 				b.editor_selected = b.rec.intersect(rec);
 			}
 		}
 		else {
-			for (auto& b : level_to_edit->decor_sprites) b.editor_selected = false;
+			for (auto& b : game->current_level.decor_sprites) b.editor_selected = false;
 		}
 	}
 	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
@@ -611,15 +609,13 @@ void Editor::update(float dt) noexcept {
 }
 
 Vector2f Editor::get_mouse_pos() const noexcept {
-	auto pos = IM::getMousePosInView(level_to_edit->camera);;
+	auto pos = IM::getMousePosInView(game->current_level.camera);;
 	if (snap_grid == 0) return pos;
 
 	return snap_grid * (Vector2i)(pos / snap_grid);
 }
 
 void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
-	if (!level_to_edit) return;
-
 	if (element_to_create){
 		switch (*element_to_create) {
 		case Creating_Element::Block: {
@@ -632,7 +628,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.size.x = std::abs(new_block.size.x);
 			new_block.size.y = std::abs(new_block.size.y);
 
-			level_to_edit->blocks.emplace_back(std::move(new_block));
+			game->current_level.blocks.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Kill_Zone: {
@@ -645,7 +641,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.size.x = std::abs(new_block.size.x);
 			new_block.size.y = std::abs(new_block.size.y);
 
-			level_to_edit->kill_zones.emplace_back(std::move(new_block));
+			game->current_level.kill_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Next_Zone: {
@@ -658,7 +654,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.size.x = std::abs(new_block.size.x);
 			new_block.size.y = std::abs(new_block.size.y);
 
-			level_to_edit->next_zones.emplace_back(std::move(new_block));
+			game->current_level.next_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Dispenser: {
@@ -670,21 +666,21 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.proj_speed = 1.f;
 			new_block.timer = 1.f / new_block.hz;
 
-			level_to_edit->dispensers.emplace_back(std::move(new_block));
+			game->current_level.dispensers.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Dry_Zone: {
 			Dry_Zone new_block;
 			new_block.rec = { start, end - start };
 
-			level_to_edit->dry_zones.emplace_back(std::move(new_block));
+			game->current_level.dry_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Friction_Zone: {
 			Friction_Zone new_block;
 			new_block.rec = { start, end - start };
 
-			level_to_edit->friction_zones.emplace_back(std::move(new_block));
+			game->current_level.friction_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Trigger_Zone: {
@@ -692,14 +688,14 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.rec = { start, end - start };
 			new_block.id = xstd::uuid();
 
-			level_to_edit->trigger_zones.emplace_back(std::move(new_block));
+			game->current_level.trigger_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Door: {
 			Door new_block;
 			new_block.rec = { start, end - start };
 
-			level_to_edit->doors.emplace_back(std::move(new_block));
+			game->current_level.doors.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Auto_Binding_Zone: {
@@ -707,7 +703,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.rec = { start, end - start };
 			new_block.uuid = xstd::uuid();
 
-			level_to_edit->auto_binding_zones.emplace_back(std::move(new_block));
+			game->current_level.auto_binding_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		}
@@ -715,10 +711,10 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 }
 
 void Editor::set_camera_bound() noexcept {
-	auto& cam = level_to_edit->camera;
+	auto& cam = game->current_level.camera;
 	Vector2f center = cam.getCenter();
 	Vector2f size = cam.getSize();
-	level_to_edit->camera_bound = { center - size / 2, size };
+	game->current_level.camera_bound = { center - size / 2, size };
 }
 
 void Editor::delete_all_selected() noexcept {
@@ -730,20 +726,20 @@ void Editor::delete_all_selected() noexcept {
 		}
 	};
 
-	iter(level_to_edit->rocks);
-	iter(level_to_edit->doors);
-	iter(level_to_edit->blocks);
-	iter(level_to_edit->dry_zones);
-	iter(level_to_edit->kill_zones);
-	iter(level_to_edit->next_zones);
-	iter(level_to_edit->dispensers);
-	iter(level_to_edit->trigger_zones);
-	iter(level_to_edit->prest_sources);
-	iter(level_to_edit->decor_sprites);
-	iter(level_to_edit->friction_zones);
-	iter(level_to_edit->auto_binding_zones);
+	iter(game->current_level.rocks);
+	iter(game->current_level.doors);
+	iter(game->current_level.blocks);
+	iter(game->current_level.dry_zones);
+	iter(game->current_level.kill_zones);
+	iter(game->current_level.next_zones);
+	iter(game->current_level.dispensers);
+	iter(game->current_level.trigger_zones);
+	iter(game->current_level.prest_sources);
+	iter(game->current_level.decor_sprites);
+	iter(game->current_level.friction_zones);
+	iter(game->current_level.auto_binding_zones);
 
-#define S(x) level_to_edit->x.size()
+#define S(x) game->current_level.x.size()
 	auto n_elements =
 		S(rocks) +
 		S(doors) +
@@ -763,7 +759,7 @@ void Editor::delete_all_selected() noexcept {
 }
 
 void Editor::save(const std::filesystem::path& path) noexcept {
-	save_to_json_file((dyn_struct)* level_to_edit, path);
+	save_to_json_file((dyn_struct)game->current_level, path);
 	ask_to_save = false;
 }
 

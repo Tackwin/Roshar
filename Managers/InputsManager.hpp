@@ -120,6 +120,7 @@ public:
 		std::filesystem::path path, Input_Iterator begin, Input_Iterator end
 	) noexcept;
 	static std::uint64_t load_record(std::filesystem::path path) noexcept;
+	static bool load_record_at(std::filesystem::path path, std::uint64_t id) noexcept;
 	static void forget_record(std::uint64_t id) noexcept;
 
 	static Input_Iterator begin(std::uint64_t id) noexcept;

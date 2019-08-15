@@ -51,8 +51,6 @@ class Editor {
 
 	Vector2f get_mouse_pos() const noexcept;
 public:
-	Level* level_to_edit{ nullptr };
-
 	void render(sf::RenderTarget& target) noexcept;
 	void update(float dt) noexcept;
 

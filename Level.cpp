@@ -8,8 +8,7 @@
 #include "Collision.hpp"
 #include "Time.hpp"
 #include "OS/file.hpp"
-
-Level_Store_t Level_Store;
+#include "Game.hpp"
 
 void Block::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
@@ -234,7 +233,7 @@ void Auto_Binding_Zone::render(sf::RenderTarget& target) const noexcept {
 	}
 }
 
-void Dispenser::set_start_timer() noexcept {
+Dispenser::Dispenser() noexcept {
 	timer = (1 / hz) - std::fmodf(offset_timer, 1 / hz);
 }
 
@@ -323,8 +322,6 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(projectiles);
 	renders(rocks);
 
-	if (in_editor) camera_bound.render(target, { 1, 0, 0, 1 }, { 0, 0, 0, 0 }, 1);
-
 	for (auto& x : markers) {
 		sf::CircleShape shape(0.05f);
 		shape.setPosition(x);
@@ -361,98 +358,32 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	for (const auto& x : debug_vectors) {
 		Vector2f::renderArrow(target, x.a, x.a + x.b, { 1, 1, 0, 1 }, { 1, 1, 0, 1 });
 	}
-
-	auto view = target.getView();
-	defer{ target.setView(view); };
-	target.setView(target.getDefaultView());
-	sf::RectangleShape shape(
-		{ (float)Environment.window_width, (float)Environment.window_height }
-	);
-	shape.setPosition(0, 0);
-	if (!in_editor && camera_fade_out_timer > 0) {
-		auto alpha = 1 - (camera_fade_out_timer / Camera_Fade_Time);
-
-		shape.setFillColor(Vector4d{ 0, 0, 0, alpha });
-		target.draw(shape);
-	}
-	if (!in_editor && camera_fade_out_timer <= 0 && camera_fade_in_timer > 0) {
-		auto alpha = camera_fade_in_timer / Camera_Fade_Time;
-		auto gray = 1 - alpha;
-
-		shape.setFillColor(Vector4d{ gray, gray, gray, alpha });
-		target.draw(shape);
-	}
 }
 
-Level::Level() noexcept {
-	camera.setSize({ 10, -10 * (window_size.y / (float)window_size.x) });
-	for (auto& x : dispensers) x.set_start_timer();
-	speedrun_clock_start = nanoseconds();
-}
+void Level::input(IM::Input_Iterator record) noexcept {
+	mouse_screen_pos = record->mouse_screen_pos;
+	mouse_world_pos = record->mouse_world_pos(camera);
+	window_size = record->window_size;
 
-bool Level::test_input(float) noexcept {
-	if (in_replay && Level_Store.next_level && IM::isKeyJustPressed(sf::Keyboard::Return)) {
-		set_new_level(*Level_Store.next_level);
-		return true;
-	}
-	if (in_replay && Level_Store.initial_level && IM::isKeyJustPressed(sf::Keyboard::Escape)) {
-		set_new_level(*Level_Store.initial_level);
-		return true;
-	}
-	if (in_test && IM::isKeyJustPressed(sf::Keyboard::Return)) {
-		in_test = false;
-	}
-
-	if (in_replay && IM::isKeyJustPressed(sf::Keyboard::F11)) {
-		IM::save_range(save_path.replace_extension(".test"), *start_record, *end_record);
-	}
-	if (!in_replay && IM::isKeyJustPressed(sf::Keyboard::F11) && Level_Store.initial_level) {
-		auto local_test_record_id = IM::load_record(save_path.replace_extension(".test"));
-		if (local_test_record_id != 0) {
-			retry();
-
-			test_record_id = local_test_record_id;
-			in_test = true;
-			start_record = IM::begin(test_record_id);
-			curr_record = *start_record;
-			end_record = IM::end(test_record_id);
-
-			return true;
-		}
-	}
-
-	if (!this_record->focused) return false;
-
-	mouse_screen_pos = this_record->mouse_screen_pos;
-	mouse_world_pos = this_record->mouse_world_pos(camera);
-	window_size = this_record->window_size;
-
-	if (!in_replay && this_record->is_just_pressed(sf::Keyboard::Quote)) {
-		retry();
-		return true;
-	}
-
-	player.input(this_record);
-	if (this_record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
-	if (this_record->is_just_pressed(sf::Keyboard::Return)) {
+	player.input(record);
+	if (record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
+	if (record->is_just_pressed(sf::Keyboard::Return)) {
 		markers.push_back(player.pos);
 
-		if (this_record->is_pressed(sf::Keyboard::LShift)) markers.clear();
+		if (record->is_pressed(sf::Keyboard::LShift)) markers.clear();
 	}
 
 	if (start_drag) {
-		if (!this_record->is_pressed(sf::Mouse::Left)) {
+		if (!record->is_pressed(sf::Mouse::Left)) {
 			start_drag.reset();
 			rock_dragging_i = 0;
 		}
 
 		mouse_on_drag();
 	}
-	
-	return false;
 }
 
-void Level::update() noexcept {
+void Level::update(float dt) noexcept {
 	for (size_t i = 0; i < decor_sprites.size(); ++i) {
 		auto& x = decor_sprites[i];
 		if (!x.texture_loaded) {
@@ -465,41 +396,9 @@ void Level::update() noexcept {
 		}
 	}
 
-	this_record = IM::get_iterator();
-	if ((in_replay || in_test) && start_record && end_record) {
-		if (curr_record == std::next(*end_record)) {
-			curr_record = *start_record;
-			this_record = curr_record;
-		}
-		else {
-			this_record = curr_record++;
-		}
-	}
-
-	auto dt = this_record->dt;
 	debug_vectors.clear();
 
 	update_camera(dt);
-
-	if (camera_fade_out_timer > 0) {
-		camera_fade_out_timer -= dt;
-		if (camera_fade_out_timer <= 0.f) {
-			retry();
-			input_active_timer = Input_Active_Time;
-			camera_fade_in_timer = Camera_Fade_Time;
-		}
-		return;
-	}
-	if (camera_fade_out_timer <= 0.f && camera_fade_in_timer > 0) {
-		camera_fade_in_timer -= dt;
-	}
-	
-	if (input_active_timer > 0) {
-		input_active_timer -= dt;
-		if (input_active_timer > 0.f) return;
-	}
-
-	if (in_editor || test_input(dt)) return;
 
 	for (auto& x : trigger_zones) {
 		x.triggered =
@@ -642,7 +541,7 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 		std::sqrtf(impact) > Environment.dead_velocity ||
 		test_any_p(kill_zones) || test_any_p(projectiles)
 	) {
-		return die();
+		game->died = true;
 	}
 
 	for (const auto& d : dry_zones) {
@@ -653,25 +552,8 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	for (auto& x : next_zones) {
 		if (!test(x, player)) continue;
 
-		auto opt_dyn = load_from_json_file(Exe_Path / LEVEL_PATH / x.next_level);
-		if (!opt_dyn) {
-			printf("Couldn't load file: %s%s\n", LEVEL_PATH, x.next_level.c_str());
-			continue;
-		}
-
-		Level new_level = (Level)* opt_dyn;
-		new_level.save_path = Exe_Path / LEVEL_PATH / x.next_level;
-
-		if (!in_test) {
-			finnish();
-
-			Level_Store.next_level = std::move(new_level);
-		}
-		else {
-			set_new_level(std::move(new_level));
-		}
-
-		return;
+		game->next_level_path = Exe_Path / LEVEL_PATH / x.next_level;
+		game->succeed = true;
 	}
 
 	for (auto& x : auto_binding_zones) {
@@ -715,26 +597,6 @@ void Level::update_camera(float dt) noexcept {
 		camera_rect = camera_rect.restrict_in(camera_bound);
 		camera.setCenter(camera_rect.center());
 	}
-}
-
-void Level::retry() noexcept {
-	if (Level_Store.initial_level) set_new_level(*Level_Store.initial_level);
-}
-
-void Level::finnish() noexcept {
-	auto local_start_record = start_record;
-	auto local_end_record = in_replay ? end_record : IM::get_iterator();
-
-	retry();
-
-	start_record = local_start_record;
-	if (local_start_record) curr_record = *local_start_record;
-	end_record = local_end_record;
-	in_replay = true;
-}
-
-void Level::die() noexcept {
-	camera_fade_out_timer = Camera_Fade_Time;
 }
 
 void Level::mouse_start_drag() noexcept {
@@ -788,19 +650,8 @@ void Level::mouse_on_drag() noexcept {
 	}
 }
 
-void Level::set_new_level(const Level& l) noexcept {
-	IM::forget_record(test_record_id);
-	*this = l;
-	Level_Store.initial_level = l;
-
-	start_record = IM::get_iterator();
-	end_record = start_record;
-}
-
 void Level::pause() noexcept {}
 void Level::resume() noexcept {
-	if (start_record == end_record) start_record = IM::get_iterator();
-
 	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
 
 	iter(rocks);

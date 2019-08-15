@@ -4,6 +4,8 @@ constexpr unsigned SEED = 0;
 constexpr auto PI = 3.1415926;
 constexpr auto LEVEL_PATH = "levels/";
 
+constexpr std::uint64_t RECORD_LEVEL_TEST_ID = 1;
+
 namespace math {
 	template<typename S>
 	constexpr S scale_zoom(S x) noexcept {
