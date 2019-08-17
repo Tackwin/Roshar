@@ -16,13 +16,14 @@
 int main(int, char**) {
 	Environment.window_width = 1280;
 	Environment.window_height = 720;
-	sf::RenderWindow window(
+	sf::RenderWindow render_window(
 		sf::VideoMode(Environment.window_width, Environment.window_height), "Roshar"
 	);
+	window = &render_window;
 
 	defer{ asset::Store.textures.clear(); };
 
-	ImGui::SFML::Init(window);
+	ImGui::SFML::Init(render_window);
 	defer{ ImGui::SFML::Shutdown(); };
 
 	asset::Store.monitor_path("textures/");
@@ -34,18 +35,39 @@ int main(int, char**) {
 	game = new Game;
 	defer{ delete game; };
 
+#ifdef DEBUG
+	render_window.setVerticalSyncEnabled(true);
+#endif
+
 	sf::Clock dtClock;
-	while (window.isOpen()) {
+	while (render_window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
 		max_dt = std::max(dt, max_dt);
 		last_dt.insert(BEG(last_dt), dt);
 		last_dt.resize(last_dt_count);
 
+		sf::Event event;
+		wheel_scroll = 0.f;
+		while (render_window.pollEvent(event)) {
+
+			ImGui::SFML::ProcessEvent(event);
+
+			if (!render_window.hasFocus()) continue;
+
+			if (event.type == sf::Event::Closed)
+				render_window.close();
+
+			if (event.type == sf::Event::MouseWheelScrolled) {
+				wheel_scroll = event.mouseWheelScroll.delta;
+			}
+		}
+
+		ImGui::SFML::Update(render_window, sf::seconds(dt));
+
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
-		IM::update(window, dt);
 
-		window.clear({ 153, 78, 102, 255 });
+		render_window.clear({ 153, 78, 102, 255 });
 
 		ImGui::Begin("Environment");
 		ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
@@ -74,12 +96,11 @@ int main(int, char**) {
 
 		ImGui::End();
 
-		game->input();
-		game->update();
-		game->render(window);
+		game->update(dt);
+		game->render(render_window);
 
-		ImGui::SFML::Render(window);
-		window.display();
+		ImGui::SFML::Render(render_window);
+		render_window.display();
 	}
 	return 0;
 }

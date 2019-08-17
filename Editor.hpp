@@ -42,7 +42,6 @@ class Editor {
 
 	std::vector<Vector2f> drag_offset;
 
-	std::string save_path;
 
 	void delete_all_selected() noexcept;
 	void set_camera_bound() noexcept;
@@ -51,6 +50,8 @@ class Editor {
 
 	Vector2f get_mouse_pos() const noexcept;
 public:
+	std::string save_path;
+
 	void render(sf::RenderTarget& target) noexcept;
 	void update(float dt) noexcept;
 

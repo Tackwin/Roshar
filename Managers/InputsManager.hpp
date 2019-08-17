@@ -53,7 +53,7 @@ public:
 
 	static std::string nameOfKey(sf::Keyboard::Key) noexcept;
 
-	static void update(sf::RenderWindow &window, float dt);
+	static void update(float dt);
 
 	static sf::Keyboard::Key getLastKeyPressed() noexcept;
 
@@ -124,11 +124,11 @@ public:
 	static void forget_record(std::uint64_t id) noexcept;
 
 	static Input_Iterator begin(std::uint64_t id) noexcept;
+	static size_t size(std::uint64_t id) noexcept;
 	static Input_Iterator end(std::uint64_t id) noexcept;
 private:
 	// For now i'll put that here, but it needs to be in his own stuff
 	// Maybe when i'll make a custom renderer i'll look into matrix, view and whatnot.
-
 	static Vector2f applyInverseView(const sf::View& view, Vector2f p) noexcept;
 };
 

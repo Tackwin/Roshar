@@ -330,7 +330,7 @@ auto IM::get_iterator() noexcept -> decltype(records)::iterator {
 	return records.empty() ? records.end() : --records.end();
 }
 
-void InputsManager::update(sf::RenderWindow& window, float dt) {
+void InputsManager::update(float dt) {
 	Inputs_Info new_record = {};
 
 	new_record.dt = dt;
@@ -352,31 +352,16 @@ void InputsManager::update(sf::RenderWindow& window, float dt) {
 		new_record.mouse_infos[i].just_released = last_pressed && !pressed;
 		new_record.mouse_infos[i].pressed = pressed;
 	}
-
-	sf::Event event;
-	while(window.pollEvent(event)) {
-
-		ImGui::SFML::ProcessEvent(event);
-
-		if (!window.hasFocus()) continue;
-		
-		if(event.type == sf::Event::Closed)
-			window.close();
-		if (event.type == sf::Event::MouseWheelScrolled) {
-			new_record.scroll = event.mouseWheelScroll.delta;
-		}
-	}
-
-	new_record.focused = window.hasFocus();
+	new_record.scroll = wheel_scroll;
+	new_record.focused = window->hasFocus();
 	Vector2f last_mouse_screen_pos =
 		records.empty() ? Vector2f{} : records.back().mouse_screen_pos;
 
-	new_record.mouse_screen_pos = sf::Mouse::getPosition(window);
+	new_record.mouse_screen_pos = sf::Mouse::getPosition(*window);
 	new_record.mouse_screen_delta = new_record.mouse_screen_pos - last_mouse_screen_pos;
 
-	new_record.window_size = window.getSize();
+	new_record.window_size = window->getSize();
 
-	ImGui::SFML::Update(window, sf::seconds(dt));
 	new_record.key_captured = ImGui::GetIO().WantCaptureKeyboard;
 	new_record.mouse_captured = ImGui::GetIO().WantCaptureMouse;
 
@@ -471,6 +456,10 @@ Input_Iterator IM::begin(std::uint64_t id) noexcept {
 }
 Input_Iterator IM::end(std::uint64_t id) noexcept {
 	return std::end(loaded_record[id]);
+}
+
+size_t IM::size(std::uint64_t id) noexcept {
+	return std::size(loaded_record[id]);
 }
 
 void IM::forget_record(std::uint64_t id) noexcept {

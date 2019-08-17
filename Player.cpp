@@ -38,8 +38,10 @@ void Player::input(Input_Iterator this_record) noexcept {
 		this_record->is_just_pressed(sf::Keyboard::Z) &&
 		!binding_origin_history.empty()
 	) {
+		printf("%u\n", own.basic_bindings.size());
 		binding_origin_history.back()->pop_back();
 		binding_origin_history.pop_back();
+		printf("%u\n", own.basic_bindings.size());
 
 		// When we cancel the previous binding we could cancel a forced binding.
 		// So we need to make sure to remove our id bag so that if we re enter a auto binding zone
@@ -127,8 +129,11 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 }
 
 void Player::jump() noexcept {
-	velocity += Vector2f{ 0, 6.5 };
+	printf("Jump %s %f2.2\n", floored ? "floored" : "-------", coyotee_timer);
+	velocity += Vector2f{ 0, 6.5f };
 	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
+	just_jumped = true;
+	coyotee_timer = 0.f;
 }
 void Player::maintain_jump() noexcept {
 	flat_velocities.push_back({ 0, 1.5 });

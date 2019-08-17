@@ -37,6 +37,7 @@ struct Player {
 	float prest{ 0.f };
 
 	bool floored{ false };
+	bool just_jumped{ false };
 
 	static constexpr float Coyotee_Time = 0.1f;
 	float coyotee_timer = Coyotee_Time;
@@ -54,6 +55,8 @@ struct Player {
 	float speed_down_timer = 0;
 
 	Dir last_dir{ None };
+
+
 
 	void input(Input_Iterator this_record) noexcept;
 	void update(float dt) noexcept;

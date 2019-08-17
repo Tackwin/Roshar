@@ -187,13 +187,10 @@ struct Level {
 
 	std::filesystem::path save_path;
 
-	float camera_speed{ 10 };
-	float camera_idle_radius{ 0.3f };
-	sf::View camera;
-
 	Player player;
 
 	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
+	Rectanglef camera_start;
 
 	double drag_time{ 0.0 };
 	std::optional<Vector2f> start_drag;
@@ -218,8 +215,6 @@ private:
 
 	std::uint64_t speedrun_clock_start;
 
-	std::optional<Vector2f> camera_target;
-
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;
 	Vector2u window_size;
@@ -228,8 +223,6 @@ private:
 
 	void mouse_start_drag() noexcept;
 	void mouse_on_drag() noexcept;
-
-	void update_camera(float dt) noexcept;
 };
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;

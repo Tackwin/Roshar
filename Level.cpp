@@ -303,7 +303,6 @@ void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
 }
 
 void Level::render(sf::RenderTarget& target) const noexcept {
-	target.setView(camera);
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
 	renders(doors);
@@ -362,7 +361,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 
 void Level::input(IM::Input_Iterator record) noexcept {
 	mouse_screen_pos = record->mouse_screen_pos;
-	mouse_world_pos = record->mouse_world_pos(camera);
+	mouse_world_pos = record->mouse_world_pos(game->camera);
 	window_size = record->window_size;
 
 	player.input(record);
@@ -397,8 +396,6 @@ void Level::update(float dt) noexcept {
 	}
 
 	debug_vectors.clear();
-
-	update_camera(dt);
 
 	for (auto& x : trigger_zones) {
 		x.triggered =
@@ -494,13 +491,16 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 		player.forces.y = 0;
 	}
 
-	if (player.floored && !new_floored) {
+	if (player.floored && !new_floored && !player.just_jumped) {
 		player.coyotee_timer = Player::Coyotee_Time;
 	}
 	if (!player.floored && new_floored && player.preshot_timer > 0) {
 		player.jump();
 	}
-	player.floored = new_floored;
+	else {
+		player.just_jumped = false;
+		player.floored = new_floored;
+	}
 
 	for (auto& rock : rocks) {
 		const auto G = Environment.gravity;
@@ -577,31 +577,9 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 }
 
 
-void Level::update_camera(float dt) noexcept {
-	auto camera_idle_radius_2 = camera_idle_radius * camera_idle_radius;
-	if (camera_target) {
-		Vector2f pos = camera.getCenter();
-		if ((pos - *camera_target).length2() < camera_idle_radius_2) return camera_target.reset();
-
-		Vector2f dt_pos = (*camera_target - pos);
-
-		camera.move(dt * camera_speed * dt_pos.normalize());
-	}
-	Vector2f pos = camera.getCenter();
-	Vector2f size = camera.getSize();
-	Vector2f target = player.pos;
-	if ((target - pos).length2() > camera_idle_radius_2) camera_target = target;
-
-	if (camera_bound.area() > 0) {
-		Rectanglef camera_rect = { pos - size / 2, size };
-		camera_rect = camera_rect.restrict_in(camera_bound);
-		camera.setCenter(camera_rect.center());
-	}
-}
-
 void Level::mouse_start_drag() noexcept {
 	start_drag = mouse_screen_pos;
-	drag_time = seconds();
+	drag_time = game->timeshots;
 
 	for (size_t i = 0; i < rocks.size(); ++i) {
 		auto& r = rocks[i];
@@ -628,7 +606,7 @@ void Level::mouse_on_drag() noexcept {
 
 		auto unit = Vector2f::createUnitVector(discrete_angle);
 		auto prest_gathered =
-			(int)(std::ceil(Environment.gather_speed * (seconds() - drag_time))) *
+			(int)(std::ceil(Environment.gather_speed * (game->timeshots - drag_time))) *
 			Environment.gather_step;
 		prest_gathered = std::min(prest_gathered, player.prest);
 
@@ -711,6 +689,7 @@ void from_dyn_struct(const dyn_struct& str, Dispenser& dispenser) noexcept {
 	dispenser.proj_r = (float)str["proj_r"];
 	dispenser.hz = (float)str["hz"];
 	dispenser.proj_speed = (float)str["proj_speed"];
+	dispenser.timer = (1 / dispenser.hz) - std::fmodf(dispenser.offset_timer, 1 / dispenser.hz);
 }
 void to_dyn_struct(dyn_struct& str, const Dispenser& dispenser) noexcept {
 	str = dyn_struct::structure_t{};
@@ -754,7 +733,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(rocks);
 	X(markers);
 	X(auto_binding_zones);
-	X(camera_bound)
+	X(camera_bound);
 #undef X
 
 	Player player;
@@ -764,8 +743,16 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	player.pos = (Vector2f)str["player"]["pos"];
 	level.player = player;
 
-	level.camera.setCenter((Vector2f)str["camera"]["pos"]);
-	level.camera.setSize((Vector2f)str["camera"]["size"]);
+	if (has(str["camera"], "pos")) {
+		level.camera_start = {
+			{0, 0},
+			(Vector2f)str["camera"]["size"]
+		};
+		level.camera_start.setCenter((Vector2f)str["camera"]["pos"]);
+	}
+	else {
+		level.camera_start = (Rectanglef)str["camera"];
+	}
 }
 void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};
@@ -789,10 +776,12 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	player["prest"] = level.player.prest;
 	player["pos"] = level.player.pos;
 
-	auto& camera = str["camera"] = dyn_struct::structure_t{};
-
-	camera["pos"] = (Vector2f)level.camera.getCenter();
-	camera["size"] = (Vector2f)level.camera.getSize();
+	auto cam = level.camera_start;
+	cam.size = game->camera.getSize();
+	cam.size.y *= -1;
+	cam.pos = game->camera.getCenter();
+	cam.pos -= cam.size / 2;
+	str["camera"] = cam;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {
 	x.pos = (Vector2f)str["pos"];

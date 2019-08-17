@@ -74,6 +74,15 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		game->to_swap_level = std::move(new_level);
 		game->current_level.markers = std::move(old_markers);
 	}
+	ImGui::SameLine();
+	if (ImGui::Button("Next level") && game->current_level.next_zones.size() > 0) {
+		auto opt_dyn = load_from_json_file(game->current_level.next_zones[0].next_level);
+		if (!opt_dyn) return;
+		Level new_level = (Level)* opt_dyn;
+		new_level.save_path = game->current_level.next_zones[0].next_level;
+
+		game->to_swap_level = std::move(new_level);
+	}
 	char buffer[512];
 	strcpy_s(buffer, save_path.data());
 	ImGui::PushItemWidth(ImGui::GetWindowWidth());
@@ -98,7 +107,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		decor.texture_key = *key;
 		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
-		decor.rec = { game->current_level.camera.getCenter(), texture.asset.getSize() };
+		decor.rec = { game->camera.getCenter(), texture.asset.getSize() };
 		decor.rec.pos -= decor.rec.size / 2;
 		decor.sprite.setTexture(texture.asset);
 		game->current_level.decor_sprites.push_back(decor);
@@ -445,7 +454,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 	}
 
 	if (snap_grid) {
-		auto& cam = game->current_level.camera;
+		auto& cam = game->camera;
 		std::vector<std::array<sf::Vertex, 2>> vertices;
 
 		size_t n = (size_t)(std::abs(cam.getSize().x) / snap_grid);
@@ -496,7 +505,7 @@ void Editor::update(float dt) noexcept {
 	auto scale = IM::getLastScroll();
 	if (shift) scale /= 10;
 
-	if (!edit_texture) game->current_level.camera.zoom(math::scale_zoom(-scale + 1));
+	if (!edit_texture) game->camera.zoom(math::scale_zoom(-scale + 1));
 	else for (auto& b : game->current_level.decor_sprites) {
 		if (b.editor_selected) {
 			auto center = b.rec.pos + b.rec.size / 2;
@@ -552,7 +561,7 @@ void Editor::update(float dt) noexcept {
 	}
 
 	if (IM::isMousePressed(sf::Mouse::Middle) && !IM::isMouseJustPressed(sf::Mouse::Middle)) {
-		game->current_level.camera.move(-1 * IM::getMouseDeltaInView(game->current_level.camera));
+		game->camera.move(-1 * IM::getMouseDeltaInView(game->camera));
 	}
 	if (IM::isMouseJustPressed(sf::Mouse::Left)) {
 		if (placing_player) {
@@ -572,7 +581,7 @@ void Editor::update(float dt) noexcept {
 		defer{ start_selection.reset(); };
 		Rectanglef rec{*start_selection, get_mouse_pos() - *start_selection};
 
-		auto iter = [cam = game->current_level.camera, shift, ctrl, rec](auto& c) noexcept {
+		auto iter = [cam = game->camera, shift, ctrl, rec](auto& c) noexcept {
 			for (auto& b : c) {
 				bool orig = (shift && b.editor_selected);
 
@@ -609,111 +618,121 @@ void Editor::update(float dt) noexcept {
 }
 
 Vector2f Editor::get_mouse_pos() const noexcept {
-	auto pos = IM::getMousePosInView(game->current_level.camera);;
+	auto pos = IM::getMousePosInView(game->camera);;
 	if (snap_grid == 0) return pos;
 
 	return snap_grid * (Vector2i)(pos / snap_grid);
 }
 
 void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
-	if (element_to_create){
-		switch (*element_to_create) {
-		case Creating_Element::Block: {
-			Block new_block;
-			new_block.pos = start;
-			new_block.size = end - start;
+	Rectangle rec = { start, end - start };
 
-			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
-			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
-			new_block.size.x = std::abs(new_block.size.x);
-			new_block.size.y = std::abs(new_block.size.y);
+	if (!element_to_create) return;
+#define RETURN_IF_AREA_0 if (rec.area() == 0) return
 
-			game->current_level.blocks.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Kill_Zone: {
-			Kill_Zone new_block;
-			new_block.pos = start;
-			new_block.size = end - start;
+	switch (*element_to_create) {
+	case Creating_Element::Block: {
+		RETURN_IF_AREA_0;
+		Block new_block;
+		new_block.pos = start;
+		new_block.size = end - start;
 
-			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
-			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
-			new_block.size.x = std::abs(new_block.size.x);
-			new_block.size.y = std::abs(new_block.size.y);
+		if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
+		if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
+		new_block.size.x = std::abs(new_block.size.x);
+		new_block.size.y = std::abs(new_block.size.y);
 
-			game->current_level.kill_zones.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Next_Zone: {
-			Next_Zone new_block;
-			new_block.pos = start;
-			new_block.size = end - start;
+		game->current_level.blocks.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Kill_Zone: {
+		RETURN_IF_AREA_0;
+		Kill_Zone new_block;
+		new_block.pos = start;
+		new_block.size = end - start;
 
-			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
-			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
-			new_block.size.x = std::abs(new_block.size.x);
-			new_block.size.y = std::abs(new_block.size.y);
+		if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
+		if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
+		new_block.size.x = std::abs(new_block.size.x);
+		new_block.size.y = std::abs(new_block.size.y);
 
-			game->current_level.next_zones.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Dispenser: {
-			Dispenser new_block;
-			new_block.start_pos = start;
-			new_block.end_pos = end;
-			new_block.proj_r = .1f;
-			new_block.hz = 1;
-			new_block.proj_speed = 1.f;
-			new_block.timer = 1.f / new_block.hz;
+		game->current_level.kill_zones.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Next_Zone: {
+		RETURN_IF_AREA_0;
+		Next_Zone new_block;
+		new_block.pos = start;
+		new_block.size = end - start;
 
-			game->current_level.dispensers.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Dry_Zone: {
-			Dry_Zone new_block;
-			new_block.rec = { start, end - start };
+		if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
+		if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
+		new_block.size.x = std::abs(new_block.size.x);
+		new_block.size.y = std::abs(new_block.size.y);
 
-			game->current_level.dry_zones.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Friction_Zone: {
-			Friction_Zone new_block;
-			new_block.rec = { start, end - start };
+		game->current_level.next_zones.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Dispenser: {
+		Dispenser new_block;
+		new_block.start_pos = start;
+		new_block.end_pos = end;
+		new_block.proj_r = .1f;
+		new_block.hz = 1;
+		new_block.proj_speed = 1.f;
+		new_block.timer = 1.f / new_block.hz;
 
-			game->current_level.friction_zones.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Trigger_Zone: {
-			Trigger_Zone new_block;
-			new_block.rec = { start, end - start };
-			new_block.id = xstd::uuid();
+		game->current_level.dispensers.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Dry_Zone: {
+		RETURN_IF_AREA_0;
+		Dry_Zone new_block;
+		new_block.rec = rec;
 
-			game->current_level.trigger_zones.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Door: {
-			Door new_block;
-			new_block.rec = { start, end - start };
+		game->current_level.dry_zones.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Friction_Zone: {
+		RETURN_IF_AREA_0;
+		Friction_Zone new_block;
+		new_block.rec = rec;
 
-			game->current_level.doors.emplace_back(std::move(new_block));
-			break;
-		}
-		case Creating_Element::Auto_Binding_Zone: {
-			Auto_Binding_Zone new_block;
-			new_block.rec = { start, end - start };
-			new_block.uuid = xstd::uuid();
+		game->current_level.friction_zones.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Trigger_Zone: {
+		RETURN_IF_AREA_0;
+		Trigger_Zone new_block;
+		new_block.rec = rec;
+		new_block.id = xstd::uuid();
 
-			game->current_level.auto_binding_zones.emplace_back(std::move(new_block));
-			break;
-		}
-		}
+		game->current_level.trigger_zones.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Door: {
+		RETURN_IF_AREA_0;
+		Door new_block;
+		new_block.rec = rec;
+
+		game->current_level.doors.emplace_back(std::move(new_block));
+		break;
+	}
+	case Creating_Element::Auto_Binding_Zone: {
+		RETURN_IF_AREA_0;
+		Auto_Binding_Zone new_block;
+		new_block.rec = rec;
+		new_block.uuid = xstd::uuid();
+
+		game->current_level.auto_binding_zones.emplace_back(std::move(new_block));
+		break;
+	}
 	}
 }
 
 void Editor::set_camera_bound() noexcept {
-	auto& cam = game->current_level.camera;
-	Vector2f center = cam.getCenter();
-	Vector2f size = cam.getSize();
+	Vector2f center = game->camera.getCenter();
+	Vector2f size = game->camera.getSize();
 	game->current_level.camera_bound = { center - size / 2, size };
 }
 
