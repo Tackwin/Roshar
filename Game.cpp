@@ -73,18 +73,18 @@ void Game::input() noexcept {
 }
 
 void Game::update(float dt) noexcept {
-	timeshots += dt;
+	dt *= Environment.speed_up_step;
 
 	dt += to_carry_over;
 	size_t to_do = (size_t)(dt / Environment.physics_step);
 	to_carry_over = dt - to_do * Environment.physics_step;
 
-	printf("to_do: %u\n", to_do);
-
 	for (size_t i = 0; i < to_do; ++i) update_step(Environment.physics_step);
 }
 
 void Game::update_step(float dt) noexcept {
+	timeshots += dt;
+
 	input();
 
 	if (!in_editor) current_level.input(this_record);

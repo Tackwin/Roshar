@@ -77,6 +77,7 @@ int main(int, char**) {
 		ImGui::InputFloat("Binding range", &Environment.binding_range);
 		ImGui::InputFloat("Gravity", &Environment.gravity);
 		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
+		ImGui::InputFloat("Speed up", &Environment.speed_up_step);
 		ImGui::End();
 
 		ImGui::Begin("Perf");

@@ -332,7 +332,7 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 
 	if (start_drag) {
 		auto time_dt =
-			std::ceilf((float)(Environment.gather_speed * (seconds() - drag_time))) *
+			std::ceilf((float)(Environment.gather_speed * (game->timeshots - drag_time))) *
 			Environment.gather_step;
 		float prest_gathered = std::min(time_dt, player.prest) * 0.1f;
 		sf::CircleShape shape;

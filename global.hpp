@@ -15,6 +15,7 @@ struct Environment_t {
 	float binding_range{ 1 };
 
 	float physics_step{ 0.005f }; // 200 ups
+	float speed_up_step{ 1 }; // 200 ups
 
 	std::uint32_t window_width;
 	std::uint32_t window_height;
