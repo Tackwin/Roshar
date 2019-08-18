@@ -42,22 +42,17 @@ struct Game {
 	float camera_idle_radius{ 0.3f };
 	sf::View camera;
 
-
-	// >Float >Precision: I'm going to keep increment it by dt step at a dt ~ 1ms i can go up to 
-	// 10 000 seconds it should be enough ?
-	// keep in mind that it's counting in seconds from the start of the level, so basically a human
-	// even trying tricky thing would never spend ~3h on a single level at a 1000 framerate
-	// to add up.
-	float timeshots{ 0 };
+	double timeshots{ 0 };
 
 	void input() noexcept;
-	void update(float dt) noexcept;
+	void update(std::uint64_t dt) noexcept;
 	void render(sf::RenderTarget& target) noexcept;
 
 private:
-	float to_carry_over{ 0.f };
+	std::uint64_t fixed_point_timeshot{ 0 };
+	std::uint64_t to_carry_over{ 0 };
 
-	void update_step(float dt) noexcept;
+	void update_step(std::uint64_t dt) noexcept;
 
 	void update_camera(float dt) noexcept;
 

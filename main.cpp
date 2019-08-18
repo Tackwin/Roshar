@@ -97,7 +97,7 @@ int main(int, char**) {
 
 		ImGui::End();
 
-		game->update(dt);
+		game->update((size_t)(1'000'000 * dt));
 		game->render(render_window);
 
 		ImGui::SFML::Render(render_window);

@@ -5,7 +5,7 @@
 Game* game = nullptr;
 
 void Game::input() noexcept {
-	IM::update(Environment.physics_step);
+	IM::update(Environment.physics_step / 1'000'000.f);
 
 	this_record = IM::get_iterator();
 	if (!IM::isWindowFocused()) return;
@@ -72,18 +72,21 @@ void Game::input() noexcept {
 	if (input_active_timer > 0.f) return;
 }
 
-void Game::update(float dt) noexcept {
-	dt *= Environment.speed_up_step;
+void Game::update(std::uint64_t dt) noexcept {
+	dt = (std::uint64_t)(dt * (double)Environment.speed_up_step);
 
 	dt += to_carry_over;
-	size_t to_do = (size_t)(dt / Environment.physics_step);
+	std::uint64_t to_do = dt / Environment.physics_step;
 	to_carry_over = dt - to_do * Environment.physics_step;
 
 	for (size_t i = 0; i < to_do; ++i) update_step(Environment.physics_step);
 }
 
-void Game::update_step(float dt) noexcept {
-	timeshots += dt;
+void Game::update_step(std::uint64_t fixed_dt) noexcept {
+	fixed_point_timeshot += fixed_dt;
+	auto dt = fixed_dt / 1'000'000.f;
+
+	timeshots = fixed_point_timeshot / 1'000'000.0;
 
 	input();
 
