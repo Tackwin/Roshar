@@ -129,7 +129,6 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 }
 
 void Player::jump() noexcept {
-	printf("Jump %s %f2.2\n", floored ? "floored" : "-------", coyotee_timer);
 	velocity += Vector2f{ 0, 6.5f };
 	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
 	just_jumped = true;

@@ -503,6 +503,7 @@ void Editor::update(float dt) noexcept {
 	bool shift = IM::isKeyPressed(sf::Keyboard::LShift);
 	auto ctrl = IM::isKeyPressed(sf::Keyboard::LControl);
 	auto scale = IM::getLastScroll();
+
 	if (shift) scale /= 10;
 
 	if (!edit_texture) game->camera.zoom(math::scale_zoom(-scale + 1));

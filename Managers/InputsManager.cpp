@@ -331,6 +331,7 @@ auto IM::get_iterator() noexcept -> decltype(records)::iterator {
 }
 
 void InputsManager::update(float dt) {
+	defer{ wheel_scroll = 0; };
 	Inputs_Info new_record = {};
 
 	new_record.dt = dt;
