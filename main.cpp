@@ -27,6 +27,7 @@ int main(int, char**) {
 	defer{ ImGui::SFML::Shutdown(); };
 
 	asset::Store.monitor_path("textures/");
+	asset::Store.load_known_textures();
 
 	float max_dt = 0;
 	size_t last_dt_count = 5;
@@ -47,7 +48,6 @@ int main(int, char**) {
 		last_dt.resize(last_dt_count);
 
 		sf::Event event;
-		wheel_scroll = 0.f;
 		while (render_window.pollEvent(event)) {
 
 			ImGui::SFML::ProcessEvent(event);

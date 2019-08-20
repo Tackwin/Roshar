@@ -159,6 +159,21 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			for (auto& y : game->current_level.friction_zones) if (pred(y)) y.friction = friction;
 	}
 
+	n_selected = std::count_if(BEG_END(game->current_level.key_items), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Key items");
+		std::uint64_t id = { 0 };
+		if (n_selected == 1)
+			id = std::find_if(BEG_END(game->current_level.key_items), pred)->id;
+
+		ImGui::Text("Id");
+		ImGui::SameLine();
+		int x = (int)id;
+		if (ImGui::InputInt("Id", &x))
+			for (auto& y : game->current_level.key_items) if (pred(y)) y.id = x;
+	}
+
 	n_selected = std::count_if(BEG_END(game->current_level.doors), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -371,6 +386,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 				case Creating_Element::Friction_Zone:
 					*out = "Friction_Zone";
 					break;
+				case Creating_Element::Key_Item:
+					*out = "Key_Item";
+					break;
 				default:
 					assert(false);
 					break;
@@ -383,6 +401,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		element_to_create = (Creating_Element)x;
 		require_dragging =
 			element_to_create != Creating_Element::Prest &&
+			element_to_create != Creating_Element::Key_Item &&
 			element_to_create != Creating_Element::Rock;
 	}
 
@@ -557,6 +576,13 @@ void Editor::update(float dt) noexcept {
 			game->current_level.rocks.push_back(r);
 			break;
 		}
+		case Creating_Element::Key_Item: {
+			Key_Item r;
+			r.pos = get_mouse_pos();
+			r.id = 0;
+			game->current_level.key_items.push_back(r);
+			break;
+		}
 		default: break;
 		}
 	}
@@ -594,6 +620,7 @@ void Editor::update(float dt) noexcept {
 		iter(game->current_level.rocks);
 		iter(game->current_level.doors);
 		iter(game->current_level.blocks);
+		iter(game->current_level.key_items);
 		iter(game->current_level.dry_zones);
 		iter(game->current_level.kill_zones);
 		iter(game->current_level.next_zones);
@@ -749,6 +776,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(game->current_level.rocks);
 	iter(game->current_level.doors);
 	iter(game->current_level.blocks);
+	iter(game->current_level.key_items);
 	iter(game->current_level.dry_zones);
 	iter(game->current_level.kill_zones);
 	iter(game->current_level.next_zones);
@@ -765,6 +793,7 @@ void Editor::delete_all_selected() noexcept {
 		S(doors) +
 		S(blocks) +
 		S(dry_zones) +
+		S(key_items) +
 		S(kill_zones) +
 		S(next_zones) +
 		S(trigger_zones) +

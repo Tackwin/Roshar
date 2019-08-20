@@ -10,6 +10,8 @@
 #include "OS/file.hpp"
 #include "Game.hpp"
 
+void match_and_destroy_keys(Player& p, Door& d) noexcept;
+
 void Block::render(sf::RenderTarget& target) const noexcept {
 	sf::RectangleShape shape(size);
 	shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
@@ -302,21 +304,40 @@ void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
 	}
 }
 
+Key_Item::Key_Item() noexcept {
+	sprite.setTexture(asset::Store.textures[asset::Known_Textures::Key_Item].asset);
+}
+
+void Key_Item::render(sf::RenderTarget& target) const noexcept {
+	sprite.setPosition(pos);
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.0001f) * 0.5 + 0.25;
+
+		sprite.setColor(Vector4d{ alpha, alpha, alpha, alpha });
+	}
+	else {
+		sprite.setColor(sf::Color::White);
+	}
+	target.draw(sprite);
+}
+
 void Level::render(sf::RenderTarget& target) const noexcept {
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
-	renders(doors);
-	renders(blocks);
+	renders(friction_zones);
+	renders(auto_binding_zones);
+	renders(trigger_zones);
+	renders(next_zones);
 	renders(dry_zones);
 	renders(kill_zones);
-	renders(next_zones);
+	renders(doors);
+	renders(blocks);
 	renders(dispensers);
-	renders(trigger_zones);
-	renders(auto_binding_zones);
-	renders(friction_zones);
 
 	renders(decor_sprites);
 
+	renders(key_items);
 	renders(prest_sources);
 	renders(projectiles);
 	renders(rocks);
@@ -416,6 +437,7 @@ void Level::update(float dt) noexcept {
 				BEG_END(trigger_zones), [i](const auto& x) { return x.id == i && !x.triggered; }
 			);
 		}
+		open &= x.must_have_keys.empty();
 
 		x.closed = !open;
 	}
@@ -450,6 +472,8 @@ void Level::update(float dt) noexcept {
 
 	auto previous_player_pos = player.pos;
 	player.update(dt);
+
+	for (auto& d : doors) if (player.pos.distTo2(d.rec) < 1) match_and_destroy_keys(player, d);
 
 	test_collisions(dt, previous_player_pos);
 }
@@ -635,6 +659,7 @@ void Level::resume() noexcept {
 	iter(rocks);
 	iter(doors);
 	iter(blocks);
+	iter(key_items);
 	iter(dry_zones);
 	iter(next_zones);
 	iter(kill_zones);
@@ -644,6 +669,19 @@ void Level::resume() noexcept {
 	iter(prest_sources);
 	iter(friction_zones);
 	iter(auto_binding_zones);
+}
+
+void match_and_destroy_keys(Player& p, Door& d) noexcept {
+	for (size_t i = p.own_keys.size() - 1; i + 1 > 0; --i) {
+		for (size_t j = d.must_have_keys.size() - 1; j + 1 > 0; --j) {
+			if (p.own_keys[i] == d.must_have_keys[j]) {
+				p.own_keys.erase(BEG(p.own_keys) + i);
+				d.must_have_keys.erase(BEG(d.must_have_keys) + j);
+				goto parent_loop;
+			}
+		}
+	parent_loop:;
+	}
 }
 
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
@@ -676,6 +714,15 @@ void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept {
 void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
 	x.friction = (float)str["friction"];
+}
+void to_dyn_struct(dyn_struct& str, const Key_Item& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["pos"] = x.pos;
+	str["id"] = x.id;
+}
+void from_dyn_struct(const dyn_struct& str, Key_Item& x) noexcept {
+	x.pos = (Vector2f)str["pos"];
+	x.id = (std::uint64_t)str["id"];
 }
 void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept {
 	str = dyn_struct::structure_t{};
@@ -726,6 +773,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(kill_zones);
 	X(next_zones);
 	X(prest_sources);
+	X(key_items);
 	X(decor_sprites);
 	X(dry_zones);
 	X(doors);
@@ -758,6 +806,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};
 	str["blocks"] = level.blocks;
 	str["kill_zones"] = level.kill_zones;
+	str["key_items"] = level.key_items;
 	str["next_zones"] = level.next_zones;
 	str["dry_zones"] = level.dry_zones;
 	str["prest_sources"] = level.prest_sources;

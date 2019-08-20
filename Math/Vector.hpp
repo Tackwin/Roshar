@@ -94,6 +94,9 @@ struct __vec_member<4, T> {
 template<size_t D, typename T>
 struct Vector;
 
+template<typename T>
+struct Rectangle;
+
 template<typename T> using Vector2 = Vector<2U, T>;
 template<typename T> using Vector3 = Vector<3U, T>;
 template<typename T> using Vector4 = Vector<4U, T>;
@@ -251,6 +254,35 @@ struct Vector : public __vec_member<D, T> {
 			result += this->components[i] * this->components[i];
 		}
 		return result;
+	}
+
+	template<size_t Dp = D>
+	std::enable_if_t<Dp == 2, double> distTo2(const Rectangle<T>& rec) const noexcept {
+		if (
+			(this->x < rec.x || this->x > rec.x + rec.w) &&
+			(rec.y < this->y && this->y < rec.y + rec.h)
+		) {
+			return (rec.x - this->x) * (rec.x - this->x);
+		}
+		if (
+			(this->y < rec.y || this->y > rec.y + rec.h) &&
+			(rec.x < this->x && this->x < rec.x + rec.w)
+		) {
+			return (rec.y - this->y) * (rec.y - this->y);
+		}
+
+		Vector<2, T> dt;
+
+		if (this->x < rec.x) {
+			if (this->y < rec.y) dt = (*this - Vector<2, T>{rec.x, rec.y});
+			else                 dt = (*this - Vector<2, T>{rec.x, rec.y + rec.h});
+		}
+		else {
+			if (this->y < rec.y) dt = (*this - Vector<2, T>{rec.x + rec.w, rec.y});
+			else                 dt = (*this - Vector<2, T>{rec.x + rec.w, rec.y + rec.h});
+		}
+		
+		return dt.length2();
 	}
 
 	template<size_t Dp = D>

@@ -38,10 +38,8 @@ void Player::input(Input_Iterator this_record) noexcept {
 		this_record->is_just_pressed(sf::Keyboard::Z) &&
 		!binding_origin_history.empty()
 	) {
-		printf("%u\n", own.basic_bindings.size());
 		binding_origin_history.back()->pop_back();
 		binding_origin_history.pop_back();
-		printf("%u\n", own.basic_bindings.size());
 
 		// When we cancel the previous binding we could cancel a forced binding.
 		// So we need to make sure to remove our id bag so that if we re enter a auto binding zone

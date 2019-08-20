@@ -15,8 +15,12 @@ namespace asset {
 		T asset;
 		std::filesystem::path path;
 	};
+	struct Known_Textures {
+		inline static Key Key_Item{ 0 };
+	};
 
 	struct Store_t {
+
 		std::unordered_map<std::string, std::uint64_t> textures_loaded;
 		std::unordered_map<std::uint64_t, Asset_t<sf::Texture>> textures;
 	
@@ -24,6 +28,8 @@ namespace asset {
 		[[nodiscard]] std::optional<Key> load_texture(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_texture(Key k,  std::filesystem::path path) noexcept;
 		void monitor_path(std::filesystem::path dir) noexcept;
+
+		void load_known_textures() noexcept;
 	};
 	extern Store_t Store;
 

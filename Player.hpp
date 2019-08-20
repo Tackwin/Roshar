@@ -32,6 +32,8 @@ struct Player {
 		std::vector<std::uint64_t> zones_uuid;
 	} forced;
 
+	std::vector<std::uint64_t> own_keys;
+
 	std::vector<std::vector<Vector2f>*> binding_origin_history;
 
 	float prest{ 0.f };

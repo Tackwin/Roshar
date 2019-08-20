@@ -3,6 +3,8 @@
 
 #include <assert.h>
 
+#include "../Level.hpp"
+
 using namespace asset;
 
 namespace asset {
@@ -57,4 +59,22 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 			textures.at(it->second).asset.loadFromFile(path.string());
 		}
 	});
+}
+
+void Store_t::load_known_textures() noexcept {
+
+#define X(str, x)\
+	printf("Loading "##str##" ... ");\
+	auto opt = load_texture(str);\
+	if (opt) {\
+		Known_Textures::x = *opt;\
+		printf("sucess :) !\n");\
+	}\
+	else {\
+		printf("failed :( !\n");\
+	}
+
+	X("textures/key.png", Key_Item);
+
+#undef X
 }

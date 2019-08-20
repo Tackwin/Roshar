@@ -61,6 +61,7 @@ struct Door {
 
 	std::vector<std::uint64_t> must_triggered;
 	std::vector<std::uint64_t> mustnt_triggered;
+	std::vector<std::uint64_t> must_have_keys;
 
 	void render(sf::RenderTarget& target) const noexcept;
 };
@@ -161,6 +162,20 @@ struct Decor_Sprite {
 	void render(sf::RenderTarget& target) const noexcept;
 };
 
+struct Key_Item {
+	inline static asset::Key Texture_Key{ 0 };
+
+	bool editor_selected{ false };
+
+	mutable sf::Sprite sprite;
+
+	Vector2f pos;
+	std::uint64_t id;
+
+	Key_Item() noexcept;
+	void render(sf::RenderTarget& target) const noexcept;
+};
+
 struct Level {
 	// >SEE:
 	// >DEBUG:
@@ -174,6 +189,7 @@ struct Level {
 	std::vector<Door>               doors;
 	std::vector<Block>              blocks;
 	std::vector<Dry_Zone>           dry_zones;
+	std::vector<Key_Item>           key_items;
 	std::vector<Kill_Zone>          kill_zones;
 	std::vector<Next_Zone>          next_zones;
 	std::vector<Dispenser>          dispensers;
@@ -229,6 +245,8 @@ extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Key_Item& x) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Key_Item& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept;

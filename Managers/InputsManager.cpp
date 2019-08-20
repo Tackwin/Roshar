@@ -1,6 +1,7 @@
 #include "InputsManager.hpp"
 
 #include <cassert>
+#include <Windows.h>
 
 #include "imgui.h"
 #include "imgui-SFML.h"
@@ -336,8 +337,11 @@ void InputsManager::update(float dt) {
 
 	new_record.dt = dt;
 
+	BYTE keyboard_state[256] = {};
+	GetKeyboardState(keyboard_state);
+
 	for (size_t i = 0; i < sf::Keyboard::KeyCount; ++i) {
-		auto pressed = sf::Keyboard::isKeyPressed((sf::Keyboard::Key)i);
+		auto pressed = (bool)(keyboard_state[get_vkey((sf::Keyboard::Key)i)] & 0b1000'0000);
 		auto last_pressed = records.empty() ? false : records.back().key_infos[i].pressed;
 
 		new_record.key_infos[i].just_pressed = !last_pressed && pressed;
@@ -353,6 +357,23 @@ void InputsManager::update(float dt) {
 		new_record.mouse_infos[i].just_released = last_pressed && !pressed;
 		new_record.mouse_infos[i].pressed = pressed;
 	}
+
+	for (size_t i = 0; i < sf::Joystick::ButtonCount; ++i) {
+		auto pressed = sf::Joystick::isButtonPressed(0, i);
+
+		auto last_pressed =
+			records.empty() ? false : records.back().joystick_buttons_infos[i].pressed;
+
+		new_record.joystick_buttons_infos[i].just_pressed = !last_pressed && pressed;
+		new_record.joystick_buttons_infos[i].just_released = last_pressed && !pressed;
+		new_record.joystick_buttons_infos[i].pressed = pressed;
+	}
+
+	new_record.joystick_axis = {
+		sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X),
+		sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Y)
+	};
+
 	new_record.scroll = wheel_scroll;
 	new_record.focused = window->hasFocus();
 	Vector2f last_mouse_screen_pos =
@@ -411,7 +432,7 @@ bool IM::save_range(
 	std::filesystem::path path, Input_Iterator begin, Input_Iterator end
 ) noexcept {
 	std::vector<std::uint8_t> bytes;
-	bytes.push_back(0); // Version
+	bytes.push_back(Inputs_Info::Version); // Version
 
 	for (auto it = begin; it != end; ++it) {
 		auto buffer = reinterpret_cast<const std::uint8_t*>(&(*it));
@@ -429,6 +450,53 @@ std::uint64_t IM::load_record(std::filesystem::path path) noexcept {
 	return load_record_at(path, id) ? id : 0;
 }
 
+struct Inputs_Info_0 {
+	struct Action_Info {
+		bool pressed : 1;
+		bool just_pressed : 1;
+		bool just_released : 1;
+	};
+
+	std::array<Action_Info, sf::Keyboard::KeyCount> key_infos;
+	std::array<Action_Info, sf::Mouse::ButtonCount> mouse_infos;
+
+	Vector2f mouse_screen_pos;
+	Vector2f mouse_screen_delta;
+	Vector2u window_size;
+
+	float scroll;
+	float dt;
+
+	struct {
+		bool mouse_captured : 1;
+		bool key_captured : 1;
+		bool focused : 1;
+	};
+};
+
+Inputs_Info to_up_to_date(Inputs_Info_0 in) noexcept {
+	Inputs_Info out = {};
+	for (size_t i = 0; i < in.mouse_infos.size(); ++i) {
+		out.mouse_infos[i].pressed       = in.mouse_infos[i].pressed;
+		out.mouse_infos[i].just_pressed  = in.mouse_infos[i].just_pressed;
+		out.mouse_infos[i].just_released = in.mouse_infos[i].just_released;
+	}
+	for (size_t i = 0; i < in.key_infos.size(); ++i) {
+		out.key_infos[i].pressed       = in.key_infos[i].pressed;
+		out.key_infos[i].just_pressed  = in.key_infos[i].just_pressed;
+		out.key_infos[i].just_released = in.key_infos[i].just_released;
+	}
+	out.mouse_screen_pos = in.mouse_screen_pos;
+	out.mouse_screen_delta = in.mouse_screen_delta;
+	out.window_size = in.window_size;
+	out.dt = in.dt;
+	out.scroll = in.scroll;
+	out.mouse_captured = in.mouse_captured;
+	out.key_captured = in.key_captured;
+	out.focused = in.focused;
+	return out;
+}
+
 bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 	auto expected = file::read_whole_file(path);
 	if (!expected) return 0;
@@ -438,6 +506,16 @@ bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 	std::uint8_t version = bytes[0];
 	switch (version) {
 	case 0: {
+		for (size_t i = 1; i < bytes.size();) {
+			Inputs_Info_0 info;
+			for (size_t j = 0; j < sizeof(Inputs_Info_0); ++j, ++i) {
+				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
+			}
+			loaded_record[id].push_back(to_up_to_date(info));
+		}
+		return true;
+	}
+	case 1: {
 		for (size_t i = 1; i < bytes.size();) {
 			Inputs_Info info;
 			for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
@@ -467,4 +545,111 @@ void IM::forget_record(std::uint64_t id) noexcept {
 	if (loaded_record.count(id)) loaded_record.erase(id);
 }
 
+int IM::get_vkey(sf::Keyboard::Key key) noexcept {
+	switch (key)
+	{
+	default:                       return 0;            
+	case sf::Keyboard::A:          return 'A';          
+	case sf::Keyboard::B:          return 'B';          
+	case sf::Keyboard::C:          return 'C';          
+	case sf::Keyboard::D:          return 'D';          
+	case sf::Keyboard::E:          return 'E';          
+	case sf::Keyboard::F:          return 'F';          
+	case sf::Keyboard::G:          return 'G';          
+	case sf::Keyboard::H:          return 'H';          
+	case sf::Keyboard::I:          return 'I';          
+	case sf::Keyboard::J:          return 'J';          
+	case sf::Keyboard::K:          return 'K';          
+	case sf::Keyboard::L:          return 'L';          
+	case sf::Keyboard::M:          return 'M';          
+	case sf::Keyboard::N:          return 'N';          
+	case sf::Keyboard::O:          return 'O';          
+	case sf::Keyboard::P:          return 'P';          
+	case sf::Keyboard::Q:          return 'Q';          
+	case sf::Keyboard::R:          return 'R';          
+	case sf::Keyboard::S:          return 'S';          
+	case sf::Keyboard::T:          return 'T';          
+	case sf::Keyboard::U:          return 'U';          
+	case sf::Keyboard::V:          return 'V';          
+	case sf::Keyboard::W:          return 'W';          
+	case sf::Keyboard::X:          return 'X';          
+	case sf::Keyboard::Y:          return 'Y';          
+	case sf::Keyboard::Z:          return 'Z';          
+	case sf::Keyboard::Num0:       return '0';          
+	case sf::Keyboard::Num1:       return '1';          
+	case sf::Keyboard::Num2:       return '2';          
+	case sf::Keyboard::Num3:       return '3';          
+	case sf::Keyboard::Num4:       return '4';          
+	case sf::Keyboard::Num5:       return '5';          
+	case sf::Keyboard::Num6:       return '6';          
+	case sf::Keyboard::Num7:       return '7';          
+	case sf::Keyboard::Num8:       return '8';          
+	case sf::Keyboard::Num9:       return '9';          
+	case sf::Keyboard::Escape:     return VK_ESCAPE;    
+	case sf::Keyboard::LControl:   return VK_LCONTROL;  
+	case sf::Keyboard::LShift:     return VK_LSHIFT;    
+	case sf::Keyboard::LAlt:       return VK_LMENU;     
+	case sf::Keyboard::LSystem:    return VK_LWIN;      
+	case sf::Keyboard::RControl:   return VK_RCONTROL;  
+	case sf::Keyboard::RShift:     return VK_RSHIFT;    
+	case sf::Keyboard::RAlt:       return VK_RMENU;     
+	case sf::Keyboard::RSystem:    return VK_RWIN;      
+	case sf::Keyboard::Menu:       return VK_APPS;      
+	case sf::Keyboard::LBracket:   return VK_OEM_4;     
+	case sf::Keyboard::RBracket:   return VK_OEM_6;     
+	case sf::Keyboard::Semicolon:  return VK_OEM_1;     
+	case sf::Keyboard::Comma:      return VK_OEM_COMMA; 
+	case sf::Keyboard::Period:     return VK_OEM_PERIOD;
+	case sf::Keyboard::Quote:      return VK_OEM_7;     
+	case sf::Keyboard::Slash:      return VK_OEM_2;     
+	case sf::Keyboard::Backslash:  return VK_OEM_5;     
+	case sf::Keyboard::Tilde:      return VK_OEM_3;     
+	case sf::Keyboard::Equal:      return VK_OEM_PLUS;  
+	case sf::Keyboard::Hyphen:     return VK_OEM_MINUS; 
+	case sf::Keyboard::Space:      return VK_SPACE;     
+	case sf::Keyboard::Enter:      return VK_RETURN;    
+	case sf::Keyboard::Backspace:  return VK_BACK;      
+	case sf::Keyboard::Tab:        return VK_TAB;       
+	case sf::Keyboard::PageUp:     return VK_PRIOR;     
+	case sf::Keyboard::PageDown:   return VK_NEXT;      
+	case sf::Keyboard::End:        return VK_END;       
+	case sf::Keyboard::Home:       return VK_HOME;      
+	case sf::Keyboard::Insert:     return VK_INSERT;    
+	case sf::Keyboard::Delete:     return VK_DELETE;    
+	case sf::Keyboard::Add:        return VK_ADD;       
+	case sf::Keyboard::Subtract:   return VK_SUBTRACT;  
+	case sf::Keyboard::Multiply:   return VK_MULTIPLY;  
+	case sf::Keyboard::Divide:     return VK_DIVIDE;    
+	case sf::Keyboard::Left:       return VK_LEFT;      
+	case sf::Keyboard::Right:      return VK_RIGHT;     
+	case sf::Keyboard::Up:         return VK_UP;        
+	case sf::Keyboard::Down:       return VK_DOWN;      
+	case sf::Keyboard::Numpad0:    return VK_NUMPAD0;   
+	case sf::Keyboard::Numpad1:    return VK_NUMPAD1;   
+	case sf::Keyboard::Numpad2:    return VK_NUMPAD2;   
+	case sf::Keyboard::Numpad3:    return VK_NUMPAD3;   
+	case sf::Keyboard::Numpad4:    return VK_NUMPAD4;   
+	case sf::Keyboard::Numpad5:    return VK_NUMPAD5;   
+	case sf::Keyboard::Numpad6:    return VK_NUMPAD6;   
+	case sf::Keyboard::Numpad7:    return VK_NUMPAD7;   
+	case sf::Keyboard::Numpad8:    return VK_NUMPAD8;   
+	case sf::Keyboard::Numpad9:    return VK_NUMPAD9;   
+	case sf::Keyboard::F1:         return VK_F1;        
+	case sf::Keyboard::F2:         return VK_F2;        
+	case sf::Keyboard::F3:         return VK_F3;        
+	case sf::Keyboard::F4:         return VK_F4;        
+	case sf::Keyboard::F5:         return VK_F5;        
+	case sf::Keyboard::F6:         return VK_F6;        
+	case sf::Keyboard::F7:         return VK_F7;        
+	case sf::Keyboard::F8:         return VK_F8;        
+	case sf::Keyboard::F9:         return VK_F9;        
+	case sf::Keyboard::F10:        return VK_F10;       
+	case sf::Keyboard::F11:        return VK_F11;       
+	case sf::Keyboard::F12:        return VK_F12;       
+	case sf::Keyboard::F13:        return VK_F13;       
+	case sf::Keyboard::F14:        return VK_F14;       
+	case sf::Keyboard::F15:        return VK_F15;       
+	case sf::Keyboard::Pause:      return VK_PAUSE;     
+	}
+}
 

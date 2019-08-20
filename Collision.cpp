@@ -18,6 +18,10 @@ bool test(const Dry_Zone& b, const Rock& x) noexcept {
 	return is_in(b.rec, Circlef{ .c = x.pos,.r = x.r });
 }
 
+bool test(const Key_Item& b, const Rectangle<float>& x) noexcept {
+	return x.in(b.pos);
+}
+
 bool test(const Block& b, const Player& p) noexcept {
 	if (b.pos.x < p.pos.x + p.size.x && p.pos.x < b.pos.x + b.size.x &&
 		b.pos.y < p.pos.y + p.size.y && p.pos.y < b.pos.y + b.size.y) return true;

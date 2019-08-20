@@ -7,14 +7,19 @@
 #include "./../Math/Vector.hpp"
 
 struct Inputs_Info {
+	constexpr static std::uint8_t Version{ 1 };
+
 	struct Action_Info {
 		bool pressed : 1;
 		bool just_pressed : 1;
 		bool just_released : 1;
 	};
 
-	std::array<Action_Info, sf::Keyboard::KeyCount> key_infos;
-	std::array<Action_Info, sf::Mouse::ButtonCount> mouse_infos;
+	std::array<Action_Info, sf::Keyboard::KeyCount>    key_infos;
+	std::array<Action_Info, sf::Mouse::ButtonCount>    mouse_infos;
+	std::array<Action_Info, sf::Joystick::ButtonCount> joystick_buttons_infos;
+
+	Vector2f joystick_axis;
 
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_screen_delta;
@@ -127,6 +132,8 @@ public:
 	static size_t size(std::uint64_t id) noexcept;
 	static Input_Iterator end(std::uint64_t id) noexcept;
 private:
+	static int get_vkey(sf::Keyboard::Key) noexcept;
+
 	// For now i'll put that here, but it needs to be in his own stuff
 	// Maybe when i'll make a custom renderer i'll look into matrix, view and whatnot.
 	static Vector2f applyInverseView(const sf::View& view, Vector2f p) noexcept;

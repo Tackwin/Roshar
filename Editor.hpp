@@ -20,6 +20,7 @@ class Editor {
 		Rock,
 		Auto_Binding_Zone,
 		Friction_Zone,
+		Key_Item,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;
