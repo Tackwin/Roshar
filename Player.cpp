@@ -3,16 +3,37 @@
 #include <assert.h>
 
 void Player::input(Input_Iterator this_record) noexcept {
+	auto prev_motion = wanted_motion;
+	wanted_motion = this_record->joystick_axis;
+
+	auto dead_zone = this_record->Joystick_Dead_Zone * this_record->Joystick_Dead_Zone;
+	if (wanted_motion.length2() > dead_zone) {
+		if (std::signbit(prev_motion.x) != std::signbit(wanted_motion.x)) {
+			start_move_sideway();
+		}
+		
+		if (std::abs(wanted_motion.x) > this_record->Joystick_Dead_Zone) {
+			move_sideway(wanted_motion.x > 0 ? Player::Right : Player::Left);
+		}
+
+	} else if (prev_motion.length2() > dead_zone) {
+		stop_move_sideway();
+	}
+
+	if (wanted_motion.y < -1 * this_record->Joystick_Dead_Zone) {
+		fall_back();
+	}
+
 	if (this_record->is_pressed(sf::Keyboard::Q)) {
 		if (this_record->is_just_pressed(sf::Keyboard::Q)) start_move_sideway();
-		move_sideway(Player::Right);
+		move_sideway(Player::Left);
 	}
 	else if (this_record->is_just_released(sf::Keyboard::Q)) {
 		stop_move_sideway();
 	}
 	if (this_record->is_pressed(sf::Keyboard::D)) {
 		if (this_record->is_just_pressed(sf::Keyboard::D)) start_move_sideway();
-		move_sideway(Player::Left);
+		move_sideway(Player::Right);
 	}
 	else if (this_record->is_just_released(sf::Keyboard::D)) {
 		stop_move_sideway();
@@ -20,7 +41,11 @@ void Player::input(Input_Iterator this_record) noexcept {
 	if (this_record->is_pressed(sf::Keyboard::S)) {
 		fall_back();
 	}
-	if (this_record->is_just_pressed(sf::Keyboard::Space)) {
+
+	if (
+		this_record->is_just_pressed(sf::Keyboard::Space) ||
+		this_record->is_just_pressed(Joystick_Button::A)
+	) {
 		if (floored || coyotee_timer > 0) {
 			jump();
 		}
@@ -29,13 +54,25 @@ void Player::input(Input_Iterator this_record) noexcept {
 		}
 	}
 	if (jump_strength_modifier_timer > 0) {
-		if (this_record->is_pressed(sf::Keyboard::Space)) maintain_jump();
-		if (this_record->is_pressed(sf::Keyboard::Z)) directional_up();
+		if (
+			this_record->is_pressed(sf::Keyboard::Space) ||
+			this_record->is_pressed(Joystick_Button::A)
+		) maintain_jump();
+		if (
+			this_record->is_pressed(sf::Keyboard::Z) ||
+			wanted_motion.y > this_record->Joystick_Dead_Zone
+		) directional_up();
 	}
-	if (this_record->is_just_pressed(sf::Mouse::Right)) own.basic_bindings.clear();
 	if (
-		this_record->is_pressed(sf::Keyboard::LControl) &&
-		this_record->is_just_pressed(sf::Keyboard::Z) &&
+		this_record->is_just_pressed(sf::Mouse::Right) ||
+		this_record->is_just_pressed(Joystick_Button::B)
+	) own.basic_bindings.clear();
+		if (((
+				this_record->is_pressed(sf::Keyboard::LControl) &&
+				this_record->is_just_pressed(sf::Keyboard::Z)
+			) ||
+			this_record->is_just_pressed(Joystick_Button::RB)
+		) &&
 		!binding_origin_history.empty()
 	) {
 		binding_origin_history.back()->pop_back();
@@ -60,7 +97,7 @@ void Player::update(float dt) noexcept {
 
 	if (last_dir != None && speed_down_timer > 0) {
 		auto slow_down = std::clamp(speed_down_timer / Speed_Down_Time, 0.f, 1.f);
-		if (last_dir == Right) slow_down *= -5;
+		if (last_dir == Left) slow_down *= -5;
 		else slow_down *= 5;
 
 		flat_velocities.push_back({ slow_down, 0 });
@@ -112,15 +149,18 @@ void Player::clear_all_basic_bindings() noexcept {
 }
 
 void Player::start_move_sideway() noexcept {
+	printf("start_move_sideway\n");
 	if (speed_up_timer <= 0) speed_up_timer = Speed_Up_Time;
 }
 void Player::stop_move_sideway() noexcept {
+	printf("stop_move_sideway\n");
 	speed_down_timer = Speed_Down_Time;
 }
 void Player::move_sideway(Player::Dir dir) noexcept {
+	printf("Move sideway\n");
 	auto top_speed = std::sqrtf(std::clamp(1.f - speed_up_timer / Speed_Up_Time, 0.f, 1.f));
-	if (dir == Right) top_speed *= -5;
-	else if (dir == Left) top_speed *= 5;
+	if (dir == Right) top_speed *= 5;
+	else if (dir == Left) top_speed *= -5;
 	else assert(false); // Logic error.
 	flat_velocities.push_back({ top_speed, 0 });
 	last_dir = dir;

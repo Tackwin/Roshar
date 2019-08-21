@@ -30,17 +30,26 @@
 [[nodiscard]] bool Inputs_Info::is_just_released(sf::Mouse::Button b) const noexcept {
 	return mouse_infos[b].just_released;
 }
+[[nodiscard]] bool Inputs_Info::is_just_released(int x              ) const noexcept {
+	return joystick_buttons_infos[x].just_released;
+}
 [[nodiscard]] bool Inputs_Info::is_just_pressed(sf::Keyboard::Key k) const noexcept {
 	return key_infos[k].just_pressed;
 }
 [[nodiscard]] bool Inputs_Info::is_just_pressed(sf::Mouse::Button b) const noexcept {
 	return mouse_infos[b].just_pressed;
 }
+[[nodiscard]] bool Inputs_Info::is_just_pressed(int x              ) const noexcept {
+	return joystick_buttons_infos[x].just_pressed;
+}
 [[nodiscard]] bool Inputs_Info::is_pressed(sf::Keyboard::Key k) const noexcept {
 	return key_infos[k].pressed;
 }
 [[nodiscard]] bool Inputs_Info::is_pressed(sf::Mouse::Button b) const noexcept {
 	return mouse_infos[b].pressed;
+}
+[[nodiscard]] bool Inputs_Info::is_pressed(int x              ) const noexcept {
+	return joystick_buttons_infos[x].pressed;
 }
 
 void print_sequence(const std::vector<sf::Keyboard::Key>& x) {
@@ -371,7 +380,7 @@ void InputsManager::update(float dt) {
 
 	new_record.joystick_axis = {
 		sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X),
-		sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Y)
+		-sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Y)
 	};
 
 	new_record.scroll = wheel_scroll;

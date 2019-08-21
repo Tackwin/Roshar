@@ -6,7 +6,19 @@
 
 #include "./../Math/Vector.hpp"
 
+struct Joystick_Button {
+	enum X360 {
+		A = 0,
+		B = 1,
+		X = 2,
+		Y = 3,
+		RB = 6,
+		Count
+	};
+};
+
 struct Inputs_Info {
+	constexpr static float Joystick_Dead_Zone{ 10 };
 	constexpr static std::uint8_t Version{ 1 };
 
 	struct Action_Info {
@@ -37,10 +49,13 @@ struct Inputs_Info {
 	[[nodiscard]] Vector2f mouse_world_pos(sf::View& v) const noexcept;
 	[[nodiscard]] bool is_just_released(sf::Keyboard::Key k) const noexcept;
 	[[nodiscard]] bool is_just_released(sf::Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_just_released(int b              ) const noexcept;
 	[[nodiscard]] bool is_just_pressed(sf::Keyboard::Key k) const noexcept;
 	[[nodiscard]] bool is_just_pressed(sf::Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_just_pressed(int b              ) const noexcept;
 	[[nodiscard]] bool is_pressed(sf::Keyboard::Key k) const noexcept;
 	[[nodiscard]] bool is_pressed(sf::Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_pressed(int x              ) const noexcept;
 };
 
 class InputsManager {

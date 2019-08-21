@@ -15,6 +15,8 @@ struct Player {
 	Vector2f velocity;
 	Vector2f forces;
 
+	Vector2f wanted_motion{0, 0};
+
 	enum Dir {
 		Right,
 		Left,
