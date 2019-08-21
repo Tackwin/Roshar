@@ -11,6 +11,10 @@ namespace asset {
 	Store_t Store;
 }
 
+[[nodiscard]] sf::Texture& Store_t::get_texture(Key k) noexcept {
+	return textures.at(k).asset;
+}
+
 [[nodiscard]] std::optional<Key> Store_t::load_texture(std::filesystem::path path) noexcept {
 	auto k = xstd::uuid();
 
@@ -63,9 +67,11 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 
 void Store_t::load_known_textures() noexcept {
 
+	std::optional<Key> opt;
+
 #define X(str, x)\
 	printf("Loading "##str##" ... ");\
-	auto opt = load_texture(str);\
+	opt = load_texture(str);\
 	if (opt) {\
 		Known_Textures::x = *opt;\
 		printf("sucess :) !\n");\
@@ -75,6 +81,7 @@ void Store_t::load_known_textures() noexcept {
 	}
 
 	X("textures/key.png", Key_Item);
+	X("textures/rock.png", Rock);
 
 #undef X
 }

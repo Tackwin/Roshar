@@ -105,4 +105,27 @@ namespace xstd {
 #pragma warning(pop)
 	}
 
+	template<typename T, typename U>
+	constexpr inline T* find_member(std::vector<T>& vec, size_t offset, U&& u) noexcept {
+		for (auto& x : vec) {
+			char* byte = (char*)&x;
+			byte += offset;
+			auto candidate = *(std::decay_t<U>*)byte;
+			if (candidate == u) return &x;
+		}
+		return nullptr;
+	}
+
+	template<typename T, typename U>
+	constexpr inline const T* find_member(
+		const std::vector<T>& vec, size_t offset, U&& u
+	) noexcept {
+		for (auto& x : vec) {
+			const char* byte = (const char*)& x;
+			byte += offset;
+			auto candidate = *(const std::decay_t<U>*)byte;
+			if (candidate == u) return &x;
+		}
+		return nullptr;
+	}
 }

@@ -2,9 +2,15 @@
 
 #include <assert.h>
 
+#include "Game.hpp"
+#include "Collision.hpp"
+#include "Math/Circle.hpp"
+
 void Player::input(Input_Iterator this_record) noexcept {
 	auto prev_motion = wanted_motion;
 	wanted_motion = this_record->joystick_axis;
+	mouse_screen_pos = this_record->mouse_screen_pos;
+	mouse_world_pos = this_record->mouse_world_pos(game->camera);
 
 	auto dead_zone = this_record->Joystick_Dead_Zone * this_record->Joystick_Dead_Zone;
 	if (wanted_motion.length2() > dead_zone) {
@@ -40,6 +46,9 @@ void Player::input(Input_Iterator this_record) noexcept {
 	}
 	if (this_record->is_pressed(sf::Keyboard::S)) {
 		fall_back();
+	}
+	if (this_record->is_just_pressed(sf::Mouse::Left)) {
+		start_drag();
 	}
 
 	if (
@@ -103,6 +112,8 @@ void Player::update(float dt) noexcept {
 		flat_velocities.push_back({ slow_down, 0 });
 	}
 
+	if (dragging) on_drag();
+
 	for (const auto& x : own.basic_bindings) forces += x * Environment.gravity;
 	for (const auto& x : forced.basic_bindings) forces += x * Environment.gravity;
 	forces.y -= Environment.gravity;
@@ -139,6 +150,29 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 			{ 0, 1, 1, 1 }
 		);
 	}
+
+	if (dragging) {
+		auto time_dt =
+			std::ceilf((float)(Environment.gather_speed * (game->timeshots - start_drag_time))) *
+			Environment.gather_step;
+		float prest_gathered = std::min(time_dt, prest) * 0.1f;
+		sf::CircleShape shape;
+		shape.setRadius(prest_gathered);
+		shape.setOrigin(prest_gathered, prest_gathered);
+		shape.setPosition(mouse_world_pos);
+		shape.setFillColor(sf::Color::Green);
+		shape.setOutlineThickness(0.01f);
+		shape.setOutlineColor(sf::Color::White);
+		target.draw(shape);
+
+		Vector2f::renderLine(
+			target,
+			target.mapPixelToCoords(start_drag_pos),
+			mouse_world_pos,
+			{ 0, 1, 0, 1 }
+		);
+	}
+
 }
 
 void Player::clear_all_basic_bindings() noexcept {
@@ -149,15 +183,12 @@ void Player::clear_all_basic_bindings() noexcept {
 }
 
 void Player::start_move_sideway() noexcept {
-	printf("start_move_sideway\n");
 	if (speed_up_timer <= 0) speed_up_timer = Speed_Up_Time;
 }
 void Player::stop_move_sideway() noexcept {
-	printf("stop_move_sideway\n");
 	speed_down_timer = Speed_Down_Time;
 }
 void Player::move_sideway(Player::Dir dir) noexcept {
-	printf("Move sideway\n");
 	auto top_speed = std::sqrtf(std::clamp(1.f - speed_up_timer / Speed_Up_Time, 0.f, 1.f));
 	if (dir == Right) top_speed *= 5;
 	else if (dir == Left) top_speed *= -5;
@@ -194,4 +225,47 @@ void Player::add_forced_binding(Vector2f x, std::uint64_t id) noexcept {
 void Player::add_own_binding(Vector2f x) noexcept {
 	binding_origin_history.push_back(&own.basic_bindings);
 	own.basic_bindings.push_back(x);
+}
+
+void Player::start_drag() noexcept {
+	dragging = true;
+	start_drag_pos = mouse_screen_pos;
+	start_drag_time = game->timeshots;
+
+	for (const auto& x : game->current_level.rocks) {
+		auto range = Environment.binding_range * Environment.binding_range;
+		if (
+			is_in(mouse_world_pos, { x.pos, x.r }) &&
+			(x.pos - (pos + size / 2)).length2() <= range
+		) {
+			dragged_rock = x.running_id;
+			return;
+		}
+	}
+}
+
+void Player::on_drag() noexcept {
+	auto dt = mouse_screen_pos - start_drag_pos;
+	dt.y *= -1;
+	if (dt.length2() < Drag_Dead_Zone * Drag_Dead_Zone) return;
+	defer{
+		dragged_rock = 0;
+		dragging = false;
+	};
+
+	auto discrete_angle = dt.angleX();
+	auto angle_step = 2 * PI / Environment.drag_angle_step;
+	discrete_angle = angle_step * std::round(discrete_angle / angle_step);
+
+	auto unit = Vector2f::createUnitVector(discrete_angle);
+	auto prest_gathered =
+		(int)(std::ceil(Environment.gather_speed * (game->timeshots - start_drag_time))) *
+		Environment.gather_step;
+	prest_gathered = std::min(prest_gathered, prest);
+
+	if (prest_gathered == 0) return;
+	prest -= prest_gathered;
+
+	if (dragged_rock) return game->current_level.bind_rock(dragged_rock, unit * prest_gathered);
+	add_own_binding(unit * prest_gathered);
 }

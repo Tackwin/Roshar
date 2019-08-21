@@ -25,6 +25,8 @@ struct Player {
 
 	std::unordered_set<std::uint64_t> auto_binded_from_zones;
 	std::vector<Vector2f> flat_velocities;
+
+	std::unordered_set<size_t> colliding_blocks;
 	
 	struct {
 		std::vector<Vector2f> basic_bindings;
@@ -78,4 +80,18 @@ struct Player {
 	void add_forced_binding(Vector2f x, std::uint64_t id) noexcept;
 
 	void clear_all_basic_bindings() noexcept;
+
+private:
+	static constexpr float Drag_Dead_Zone{ 50.f };
+	std::uint64_t dragged_rock{ 0 };
+
+	Vector2f mouse_screen_pos;
+	Vector2f mouse_world_pos;
+
+	bool dragging{ false };
+	Vector2f start_drag_pos;
+	double start_drag_time;
+
+	void start_drag() noexcept;
+	void on_drag() noexcept;
 };

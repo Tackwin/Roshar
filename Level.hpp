@@ -18,6 +18,13 @@
 struct Block {
 	bool editor_selected{ false };
 
+	enum class Kind {
+		Normal = 0,
+		Eponge,
+		Saturated,
+		Count
+	} kind;
+
 	Vector2f pos;
 	Vector2f size;
 	void render(sf::RenderTarget& target) const noexcept;
@@ -116,9 +123,13 @@ struct Prest_Source {
 struct Rock {
 	bool editor_selected{ false };
 
+	std::uint64_t running_id = xstd::uuid();
+
 	float r;
 	Vector2f pos;
 	Vector2f velocity;
+
+	mutable sf::Sprite sprite;
 
 	std::vector<Vector2f> bindings;
 	float mass;
@@ -208,11 +219,6 @@ struct Level {
 	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
 	Rectanglef camera_start;
 
-	double drag_time{ 0.0 };
-	std::optional<Vector2f> start_drag;
-	float drag_dead_zone{ 50 };
-	size_t rock_dragging_i{ 0 };
-
 	std::vector<Decor_Sprite> decor_sprites;
 
 	void input(IM::Input_Iterator record) noexcept;
@@ -221,6 +227,8 @@ struct Level {
 
 	void pause() noexcept;
 	void resume() noexcept;
+
+	void bind_rock(std::uint64_t x, Vector2f bind) noexcept;
 
 private:
 	bool full_test{ false };
@@ -236,9 +244,6 @@ private:
 	Vector2u window_size;
 
 	void test_collisions(float dt, Vector2f previous_player_pos) noexcept;
-
-	void mouse_start_drag() noexcept;
-	void mouse_on_drag() noexcept;
 };
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;

@@ -103,11 +103,24 @@ void Dry_Zone::render(sf::RenderTarget& target) const noexcept {
 }
 
 void Rock::render(sf::RenderTarget& target) const noexcept {
-	sf::CircleShape shape(r, 1000);
-	shape.setOrigin(r, r);
-	shape.setPosition(pos);
-	shape.setFillColor(Vector4d{ 0.5, 0.6, 0.7, 1.0 });
-	target.draw(shape);
+	sprite.setTexture(asset::Store.get_texture(asset::Known_Textures::Rock));
+	sprite.setTextureRect({
+		0,
+		0,
+		(int)asset::Store.get_texture(asset::Known_Textures::Rock).getSize().x,
+		(int)asset::Store.get_texture(asset::Known_Textures::Rock).getSize().y
+	});
+	sprite.setOrigin(
+		asset::Store.get_texture(asset::Known_Textures::Rock).getSize().x / 2.f,
+		asset::Store.get_texture(asset::Known_Textures::Rock).getSize().y / 2.f
+	);
+
+	sprite.setPosition(pos);
+	sprite.setScale(
+		2 * r / sprite.getTextureRect().width,
+		2 * r / sprite.getTextureRect().height
+	);
+	target.draw(sprite);
 
 	for (auto& binding : bindings) {
 		Vector2f::renderArrow(
@@ -123,7 +136,9 @@ void Rock::render(sf::RenderTarget& target) const noexcept {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f);
 
-		shape.setRadius(r + 0.04f);
+		sf::CircleShape shape(r, 5);
+		shape.setPosition(pos);
+		shape.setRadius(r);
 		shape.setOrigin(shape.getRadius(), shape.getRadius());
 		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
 		target.draw(shape);
@@ -351,30 +366,6 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 
 	player.render(target);
 
-	if (start_drag) {
-		auto time_dt =
-			std::ceilf((float)(Environment.gather_speed * (game->timeshots - drag_time))) *
-			Environment.gather_step;
-		float prest_gathered = std::min(time_dt, player.prest) * 0.1f;
-		sf::CircleShape shape;
-		shape.setRadius(prest_gathered);
-		shape.setOrigin(prest_gathered, prest_gathered);
-		shape.setPosition(mouse_world_pos);
-		shape.setFillColor(sf::Color::Green);
-		shape.setOutlineThickness(0.01f);
-		shape.setOutlineColor(sf::Color::White);
-		target.draw(shape);
-	}
-
-	if (start_drag) {
-		Vector2f::renderLine(
-			target,
-			target.mapPixelToCoords(*start_drag),
-			mouse_world_pos,
-			{ 0, 1, 0, 1 }
-		);
-	}
-
 	for (const auto& x : debug_vectors) {
 		Vector2f::renderArrow(target, x.a, x.a + x.b, { 1, 1, 0, 1 }, { 1, 1, 0, 1 });
 	}
@@ -386,20 +377,10 @@ void Level::input(IM::Input_Iterator record) noexcept {
 	window_size = record->window_size;
 
 	player.input(record);
-	if (record->is_just_pressed(sf::Mouse::Left)) mouse_start_drag();
 	if (record->is_just_pressed(sf::Keyboard::Return)) {
 		markers.push_back(player.pos);
 
 		if (record->is_pressed(sf::Keyboard::LShift)) markers.clear();
-	}
-
-	if (start_drag) {
-		if (!record->is_pressed(sf::Mouse::Left)) {
-			start_drag.reset();
-			rock_dragging_i = 0;
-		}
-
-		mouse_on_drag();
 	}
 }
 
@@ -480,6 +461,26 @@ void Level::update(float dt) noexcept {
 
 void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	const auto dead_velocity_2 = Environment.dead_velocity * Environment.dead_velocity;
+
+	player.colliding_blocks.clear();
+
+	auto test_solids = [&]() {
+
+		bool flag = false;
+		for (size_t i = 0; i < doors.size(); ++i) {
+			if (test(doors[i], player)) flag = true;
+		}
+
+		for (size_t i = 0; i < blocks.size(); ++i) {
+			if (test(blocks[i], player)) {
+				player.colliding_blocks.insert(i);
+				flag = true;
+			}
+		}
+
+		return flag;
+	};
+
 	auto test_any = [](const auto& cont, const auto& to_test) {
 		return std::any_of(BEG_END(cont), [&](auto x) {return test(x, to_test); });
 	};
@@ -500,14 +501,14 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	bool new_floored = false;
 
 	player.pos.x += velocities.x * dt;
-	if (test_any_p(blocks) || test_any_p(doors)) {
+	if (test_solids()) {
 		impact += velocities.x * velocities.x;
 		player.pos.x = previous_player_pos.x;
 		player.velocity.x = 0;
 		player.forces.x = 0;
 	}
 	player.pos.y += velocities.y * dt;
-	if (test_any_p(blocks) || test_any_p(doors)) {
+	if (test_solids()) {
 		impact += velocities.y * velocities.y;
 		player.pos.y = previous_player_pos.y;
 		new_floored = velocities.y < 0;
@@ -600,58 +601,6 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	}
 }
 
-
-void Level::mouse_start_drag() noexcept {
-	start_drag = mouse_screen_pos;
-	drag_time = game->timeshots;
-
-	for (size_t i = 0; i < rocks.size(); ++i) {
-		auto& r = rocks[i];
-
-		Circlef c = { .c = r.pos, .r = r.r + Environment.binding_range };
-
-		if (is_in({ player.pos, player.size }, c) && is_in(mouse_world_pos, c)) {
-			auto temp = std::move(rocks[rock_dragging_i]);
-			rocks[rock_dragging_i++] = std::move(r);
-			r = std::move(temp);
-			break;
-		}
-	}
-}
-
-void Level::mouse_on_drag() noexcept {
-	auto new_pos = mouse_screen_pos;
-	auto dt_vec = new_pos - *start_drag;
-	dt_vec.y *= -1;
-	if (dt_vec.length2() > drag_dead_zone * drag_dead_zone) {
-		auto discrete_angle = dt_vec.angleX();
-		auto angle_step = 2 * PI / Environment.drag_angle_step;
-		discrete_angle = angle_step * std::round(discrete_angle / angle_step);
-
-		auto unit = Vector2f::createUnitVector(discrete_angle);
-		auto prest_gathered =
-			(int)(std::ceil(Environment.gather_speed * (game->timeshots - drag_time))) *
-			Environment.gather_step;
-		prest_gathered = std::min(prest_gathered, player.prest);
-
-		if (prest_gathered != 0) {
-			player.prest -= prest_gathered;
-
-			// if we started dragging a rock, then we bind it
-			for (size_t i = 0; i < rock_dragging_i; ++i) {
-				rocks[i].bindings.push_back(unit * prest_gathered);
-			}
-			if (rock_dragging_i == 0) {
-				// if we started dragging nothing, we default to the player.
-				player.add_own_binding(unit * prest_gathered);
-			}
-		}
-
-		start_drag.reset();
-		rock_dragging_i = 0;
-	}
-}
-
 void Level::pause() noexcept {}
 void Level::resume() noexcept {
 	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
@@ -671,6 +620,13 @@ void Level::resume() noexcept {
 	iter(auto_binding_zones);
 }
 
+void Level::bind_rock(std::uint64_t x, Vector2f bind) noexcept {
+	auto it = xstd::find_member(rocks, offsetof(Rock, running_id), x);
+	if (!it) return;
+
+	it->bindings.push_back(bind);
+}
+
 void match_and_destroy_keys(Player& p, Door& d) noexcept {
 	for (size_t i = p.own_keys.size() - 1; i + 1 > 0; --i) {
 		for (size_t j = d.must_have_keys.size() - 1; j + 1 > 0; --j) {
@@ -685,6 +641,7 @@ void match_and_destroy_keys(Player& p, Door& d) noexcept {
 }
 
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
+	if (has(str, "kind")) block.kind = (Block::Kind)((int)str["kind"]);
 	block.pos = (Vector2f)str["pos"];
 	block.size = (Vector2f)str["size"];
 }
@@ -692,6 +649,7 @@ void to_dyn_struct(dyn_struct& str, const Block& block) noexcept {
 	str = dyn_struct::structure_t{};
 	str["pos"] = block.pos;
 	str["size"] = block.size;
+	str["kind"] = (int)block.kind;
 }
 void from_dyn_struct(const dyn_struct& str, Auto_Binding_Zone& zone) noexcept {
 	zone.rec = (Rectanglef)str["rec"];

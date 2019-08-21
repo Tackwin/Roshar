@@ -249,7 +249,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 
 		ImGui::Text("X");
 		ImGui::SameLine();
-		ImGui::PushItemWidth(0.7f);
+		ImGui::PushItemWidth(0.7f * ImGui::GetWindowWidth());
 		defer{ ImGui::PopItemWidth(); };
 		if (ImGui::InputFloat("X", &x, 0.05f))
 			for (auto& a : game->current_level.auto_binding_zones) if (pred(a)) a.binding.x = x;
