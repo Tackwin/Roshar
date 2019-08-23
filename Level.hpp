@@ -23,7 +23,7 @@ struct Block {
 		Eponge,
 		Saturated,
 		Count
-	} kind;
+	} kind{ Kind::Normal };
 
 	Vector2f pos;
 	Vector2f size;

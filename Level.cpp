@@ -228,7 +228,7 @@ void Auto_Binding_Zone::render(sf::RenderTarget& target) const noexcept {
 	shape.setPosition(rec.pos);
 	shape.setFillColor(Vector4d{ 0.9, 0.1, 0.9, 1.0 });
 	target.draw(shape);
-
+    
 	Vector2f::renderArrow(
 		target,
 		rec.center() - binding / 2,
@@ -302,7 +302,7 @@ void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
 		sprite.setScale(
 			rec.size.x / sprite.getTextureRect().width,
 			-rec.size.y / sprite.getTextureRect().height
-		);
+	);
 	}
 	sprite.setColor(Vector4d{ 1, 1, 1, opacity * 1. });
 	target.draw(sprite);
@@ -621,7 +621,7 @@ void Level::resume() noexcept {
 }
 
 void Level::bind_rock(std::uint64_t x, Vector2f bind) noexcept {
-	auto it = xstd::find_member(rocks, offsetof(Rock, running_id), x);
+	auto it = xstd::find_member(rocks, xstd::offset_of(&Rock::running_id), x);
 	if (!it) return;
 
 	it->bindings.push_back(bind);
@@ -636,7 +636,7 @@ void match_and_destroy_keys(Player& p, Door& d) noexcept {
 				goto parent_loop;
 			}
 		}
-	parent_loop:;
+        parent_loop:;
 	}
 }
 
@@ -741,14 +741,14 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(auto_binding_zones);
 	X(camera_bound);
 #undef X
-
+    
 	Player player;
 	player.forces = {};
 	player.velocity = {};
 	player.prest = (float)str["player"]["prest"];
 	player.pos = (Vector2f)str["player"]["pos"];
 	level.player = player;
-
+    
 	if (has(str["camera"], "pos")) {
 		level.camera_start = {
 			{0, 0},
@@ -777,12 +777,12 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["auto_binding_zones"] = level.auto_binding_zones;
 	str["trigger_zones"] = level.trigger_zones;
 	str["camera_bound"] = level.camera_bound;
-
+    
 	auto& player = str["player"] = dyn_struct::structure_t{};
-
+    
 	player["prest"] = level.player.prest;
 	player["pos"] = level.player.pos;
-
+    
 	auto cam = level.camera_start;
 	cam.size = game->camera.getSize();
 	cam.size.y *= -1;
@@ -839,7 +839,7 @@ void to_dyn_struct(dyn_struct& str, const Rock& x) noexcept {
 void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
 	x.texture_path = (std::string)str["texture_path"];
-
+    
 	auto& texture_loaded = asset::Store.textures_loaded;
 	if (!texture_loaded.count(x.texture_path.string())) {
 		x.texture_key = asset::Store.make_texture();
@@ -847,7 +847,7 @@ void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	else {
 		x.texture_key = std::find_if(
 			BEG_END(texture_loaded), [p = x.texture_path.string()](auto x) {return x.first == p; }
-		)->second;
+            )->second;
 	}
 	x.sprite.setTexture(asset::Store.textures.at(x.texture_key).asset);
 }

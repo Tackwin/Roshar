@@ -16,9 +16,7 @@
 int main(int, char**) {
 	Environment.window_width = 1280;
 	Environment.window_height = 720;
-	sf::RenderWindow render_window(
-		sf::VideoMode(Environment.window_width, Environment.window_height), "Roshar"
-	);
+	sf::RenderWindow render_window(sf::VideoMode(Environment.window_width,Environment.window_height), "Roshar");
 	window = &render_window;
 
 	defer{ asset::Store.textures.clear(); };
@@ -38,7 +36,7 @@ int main(int, char**) {
 
 #ifdef DEBUG
 	render_window.setVerticalSyncEnabled(true);
-#endif
+	#endif
 
 	sf::Clock dtClock;
 	while (render_window.isOpen()) {

@@ -50,6 +50,9 @@ void Player::input(Input_Iterator this_record) noexcept {
 	if (this_record->is_just_pressed(sf::Mouse::Left)) {
 		start_drag();
 	}
+	else if (!this_record->is_pressed(sf::Mouse::Left)) {
+		dragging = false;
+	}
 
 	if (
 		this_record->is_just_pressed(sf::Keyboard::Space) ||

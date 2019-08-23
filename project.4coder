@@ -1,0 +1,38 @@
+version(1);
+
+project_name = "Roshar";
+
+patterns = {
+	"*.cpp", "*.hpp", "*.4coder", "*.bat"
+};
+
+blacklist_patterns = { ".*" };
+
+load_paths = {
+	{
+		{ { ".", .relative = true, .recursive = true } },
+		.os = "win"
+	}
+};
+
+command_list = {
+	{
+		.name = "build",
+		.out = "*compilation*",
+		.footer_panel = true,
+		.save_dirty_files = true,
+		.cursor_at_end = false,
+		.cmd = { { "Powershell.exe -executionpolicy remotesigned -File build.ps1", .os = "win", } }
+	},
+	{
+		.name = "run",
+		.out = "*run*",
+		.footer_panel = false,
+		.save_dirty_files = false,
+		.cursor_at_end = false,
+		.cmd = { { "build\roshar.exe", .os = "win", } }
+	}
+};
+
+fkey_command[7] = "build";
+fkey_command[5] = "run";
