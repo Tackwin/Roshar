@@ -6,7 +6,7 @@
 #include "Math/Rectangle.hpp"
 #include "Math/Vector.hpp"
 
-bool test(const Rock& r, const Rectangle<float>& x) noexcept {
+bool test(const Rock& r, const Rectangle_t<float>& x) noexcept {
 	return is_in(x, Circlef{ .c = r.pos,.r = r.r });
 }
 
@@ -18,7 +18,7 @@ bool test(const Dry_Zone& b, const Rock& x) noexcept {
 	return is_in(b.rec, Circlef{ .c = x.pos,.r = x.r });
 }
 
-bool test(const Key_Item& b, const Rectangle<float>& x) noexcept {
+bool test(const Key_Item& b, const Rectangle_t<float>& x) noexcept {
 	return x.in(b.pos);
 }
 
@@ -29,7 +29,7 @@ bool test(const Block& b, const Player& p) noexcept {
 }
 
 bool test(const Block& b, const Rectanglef& r) noexcept {
-	return Rectangle{ b.pos, b.size }.intersect(r);
+	return Rectangle_t{ b.pos, b.size }.intersect(r);
 }
 
 bool test(const Block& b, const Vector2f& v) noexcept {
@@ -45,7 +45,7 @@ bool test(const Kill_Zone& b, const Player& p) noexcept {
 }
 
 bool test(const Kill_Zone& b, const Rectanglef& r) noexcept {
-	return Rectangle{ b.pos, b.size }.intersect(r);
+	return Rectangle_t{ b.pos, b.size }.intersect(r);
 }
 
 bool test(const Dry_Zone& b, const Player& p) noexcept {
@@ -66,14 +66,14 @@ bool test(const Prest_Source& b, const Player& p) noexcept {
 	Circlef c;
 	c.c = b.pos;
 	c.r = std::sqrt(b.prest) * Prest_Source::Radius_Multiplier;
-	return is_in(Rectangle<float>(p.pos, p.size), c);
+	return is_in(Rectangle_t<float>(p.pos, p.size), c);
 }
 
 bool test(const Prest_Source& b, const Rectanglef& p) noexcept {
 	Circlef c;
 	c.c = b.pos;
 	c.r = std::sqrt(b.prest) * Prest_Source::Radius_Multiplier;
-	return is_in(Rectangle<float>(p.pos, p.size), c);
+	return is_in(Rectangle_t<float>(p.pos, p.size), c);
 }
 
 bool test(const Prest_Source& b, const Vector2f& p) noexcept {
@@ -82,10 +82,10 @@ bool test(const Prest_Source& b, const Vector2f& p) noexcept {
 	return (b.pos - p).length2() < b.prest * mult;
 }
 
-bool test(const Auto_Binding_Zone& b, const Rectangle<float>& x) noexcept {
+bool test(const Auto_Binding_Zone& b, const Rectangle_t<float>& x) noexcept {
 	return b.rec.intersect(x);
 }
-bool test(const Friction_Zone& b, const Rectangle<float>& x) noexcept {
+bool test(const Friction_Zone& b, const Rectangle_t<float>& x) noexcept {
 	return b.rec.intersect(x);
 }
 
@@ -93,7 +93,7 @@ bool test(const Projectile& x, const Player& p) noexcept {
 	Circlef c;
 	c.c = x.pos;
 	c.r = x.r;
-	return is_in(Rectangle<float>(p.pos, p.size), c);
+	return is_in(Rectangle_t<float>(p.pos, p.size), c);
 }
 
 
@@ -119,7 +119,7 @@ bool test(const Dispenser& x, const Rectanglef& r) noexcept {
 	return is_in(r, c);
 }
 
-bool test(const Next_Zone& x, const Rectangle<float>& r) noexcept {
+bool test(const Next_Zone& x, const Rectangle_t<float>& r) noexcept {
 	return r.intersect({ x.pos, x.size });
 }
 bool test(const Next_Zone& x, const Player& p) noexcept {
@@ -156,10 +156,10 @@ std::optional<Vector2f> get_next_velocity(
 	return current_velocity.projectTo(dtp);
 }
 
-bool test(const Trigger_Zone& b, const Rectangle<float>& x) noexcept {
+bool test(const Trigger_Zone& b, const Rectangle_t<float>& x) noexcept {
 	return b.rec.intersect(x);
 }
-bool test(const Door& b, const Rectangle<float>& x) noexcept {
+bool test(const Door& b, const Rectangle_t<float>& x) noexcept {
 	return b.rec.intersect(x);
 }
 bool test(const Door& b, const Player& x) noexcept {

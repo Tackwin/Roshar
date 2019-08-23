@@ -256,3 +256,5 @@ paket-files/
 # CodeRush
 .cr/
 /Build
+/Debug_Win
+/Release_Win

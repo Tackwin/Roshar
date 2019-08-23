@@ -88,9 +88,6 @@ struct __vec_member<4, T> {
 template<size_t D, typename T>
 struct Vector;
 
-template<typename T>
-struct Rectangle;
-
 template<typename T> using Vector2 = Vector<2U, T>;
 template<typename T> using Vector3 = Vector<3U, T>;
 template<typename T> using Vector4 = Vector<4U, T>;
@@ -233,7 +230,7 @@ struct Vector : public __vec_member<D, T> {
 		}
 		return sum;
 	}
-    
+
 	T length() const {
 		T result = 0;
 		for (size_t i = 0u; i < D; ++i) {
@@ -241,7 +238,7 @@ struct Vector : public __vec_member<D, T> {
 		}
 		return sqrt(result);
 	}
-    
+
 	T length2() const {
 		T result = 0;
 		for (size_t i = 0u; i < D; ++i) {
@@ -249,70 +246,41 @@ struct Vector : public __vec_member<D, T> {
 		}
 		return result;
 	}
-    
-	template<size_t Dp = D>
-		std::enable_if_t<Dp == 2, double> distTo2(const Rectangle<T>& rec) const noexcept {
-		if (
-			(this->x < rec.x || this->x > rec.x + rec.w) &&
-			(rec.y < this->y && this->y < rec.y + rec.h)
-			) {
-			return (rec.x - this->x) * (rec.x - this->x);
-		}
-		if (
-			(this->y < rec.y || this->y > rec.y + rec.h) &&
-			(rec.x < this->x && this->x < rec.x + rec.w)
-			) {
-			return (rec.y - this->y) * (rec.y - this->y);
-		}
-        
-		Vector<2, T> dt;
-        
-		if (this->x < rec.x) {
-			if (this->y < rec.y) dt = (*this - Vector<2, T>{rec.x, rec.y});
-			else                 dt = (*this - Vector<2, T>{rec.x, rec.y + rec.h});
-		}
-		else {
-			if (this->y < rec.y) dt = (*this - Vector<2, T>{rec.x + rec.w, rec.y});
-			else                 dt = (*this - Vector<2, T>{rec.x + rec.w, rec.y + rec.h});
-		}
-		
-		return dt.length2();
-	}
-    
+
 	template<size_t Dp = D>
 		std::enable_if_t<Dp == 2, double> angleX() const noexcept {
 		return std::atan2(this->y, this->x);
 	}
-    
+
 	template<typename U, size_t Dp = D>
 		std::enable_if_t<Dp == 2, double> angleTo(const Vector<2U, U>& other) const noexcept {
 		return std::atan2(other.y - this->y, other.x - this->x);
 	}
-    
+
 	template<typename U, size_t Dp = D>
 		std::enable_if_t<Dp == 2, double> angleFrom(const Vector<2U, U>& other) const noexcept {
 		return std::atan2(this->y - other.y, this->x - other.x);
 	}
-    
+
 	template<size_t Dp = D>
 		std::enable_if_t<Dp == 2, double> pseudoAngleX() const noexcept {
 		auto dx = this->x;
 		auto dy = this->y;
 		return std::copysign(1.0 - dx / (std::fabs(dx) + fabs(dy)), dy);
 	}
-    
+
 	template<size_t Dp = D>
 		std::enable_if_t<Dp == 2, double>
 		pseudoAngleTo(const Vector<2U, T>& other) const noexcept {
 		return (other - *this).pseudoAngleX();
 	}
-    
+
 	template<size_t Dp = D>
 		std::enable_if_t<Dp == 2, double>
 		pseudoAngleFrom(const Vector<2U, T>& other) const noexcept {
 		return (*this - other).pseudoAngleX();
 	}
-    
+
 	Vector<D, T>& normalize() {
 		const auto& l = length();
 		if (l == 0) return *this;

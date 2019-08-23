@@ -79,14 +79,16 @@ void Player::input(Input_Iterator this_record) noexcept {
 		this_record->is_just_pressed(sf::Mouse::Right) ||
 		this_record->is_just_pressed(Joystick_Button::B)
 	) own.basic_bindings.clear();
-		if (((
-				this_record->is_pressed(sf::Keyboard::LControl) &&
-				this_record->is_just_pressed(sf::Keyboard::Z)
-			) ||
-			this_record->is_just_pressed(Joystick_Button::RB)
-		) &&
-		!binding_origin_history.empty()
-	) {
+		if (
+			(
+				(
+					this_record->is_pressed(sf::Keyboard::LControl) &&
+					this_record->is_just_pressed(sf::Keyboard::Z)
+				) ||
+				this_record->is_just_pressed(Joystick_Button::RB)
+			) &&
+			!binding_origin_history.empty()
+		) {
 		binding_origin_history.back()->pop_back();
 		binding_origin_history.pop_back();
 
@@ -105,6 +107,7 @@ void Player::update(float dt) noexcept {
 	preshot_timer -= dt;
 	speed_up_timer -= dt;
 	speed_down_timer -= dt;
+	saturated_touch_last_time -= dt;
 	jump_strength_modifier_timer -= dt;
 
 	if (last_dir != None && speed_down_timer > 0) {
@@ -155,10 +158,16 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 	}
 
 	if (dragging) {
-		auto time_dt =
+		auto prest_gathered =
 			std::ceilf((float)(Environment.gather_speed * (game->timeshots - start_drag_time))) *
 			Environment.gather_step;
-		float prest_gathered = std::min(time_dt, prest) * 0.1f;
+
+		if (saturated_touch_last_time <= 0) {
+			prest_gathered = std::min(prest_gathered, prest);
+		}
+
+		prest_gathered *= .1f;
+
 		sf::CircleShape shape;
 		shape.setRadius(prest_gathered);
 		shape.setOrigin(prest_gathered, prest_gathered);
@@ -201,20 +210,22 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 }
 
 void Player::jump() noexcept {
+	falling_back = false;
 	velocity += Vector2f{ 0, 6.5f };
 	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
 	just_jumped = true;
 	coyotee_timer = 0.f;
 }
 void Player::maintain_jump() noexcept {
-	flat_velocities.push_back({ 0, 1.5 });
+	if (!falling_back) flat_velocities.push_back({ 0, 1.5 });
 }
 void Player::directional_up() noexcept {
-	flat_velocities.push_back({ 0, 0.75 });
+	if (!falling_back) flat_velocities.push_back({ 0, 0.75 });
 }
 void Player::fall_back() noexcept {
 	if (!floored) {
 		flat_velocities.push_back({ 0, -1 });
+		falling_back = true;
 	}
 }
 
@@ -264,10 +275,14 @@ void Player::on_drag() noexcept {
 	auto prest_gathered =
 		(int)(std::ceil(Environment.gather_speed * (game->timeshots - start_drag_time))) *
 		Environment.gather_step;
-	prest_gathered = std::min(prest_gathered, prest);
+
+	if (saturated_touch_last_time <= 0) {
+		prest_gathered = std::min(prest_gathered, prest);
+	}
 
 	if (prest_gathered == 0) return;
 	prest -= prest_gathered;
+	prest = std::max(0.f, prest);
 
 	if (dragged_rock) return game->current_level.bind_rock(dragged_rock, unit * prest_gathered);
 	add_own_binding(unit * prest_gathered);

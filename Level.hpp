@@ -175,6 +175,7 @@ struct Decor_Sprite {
 
 struct Key_Item {
 	inline static asset::Key Texture_Key{ 0 };
+	inline static Vector2f Key_World_Size{ 0.15f, 0.3f };
 
 	bool editor_selected{ false };
 

@@ -324,6 +324,10 @@ Key_Item::Key_Item() noexcept {
 }
 
 void Key_Item::render(sf::RenderTarget& target) const noexcept {
+	sprite.setScale(
+		Key_World_Size.x / sprite.getTextureRect().width,
+		-Key_World_Size.y / sprite.getTextureRect().height
+	);
 	sprite.setPosition(pos);
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -454,7 +458,7 @@ void Level::update(float dt) noexcept {
 	auto previous_player_pos = player.pos;
 	player.update(dt);
 
-	for (auto& d : doors) if (player.pos.distTo2(d.rec) < 1) match_and_destroy_keys(player, d);
+	for (auto& d : doors) if (distTo2(player.pos, d.rec) < 1) match_and_destroy_keys(player, d);
 
 	test_collisions(dt, previous_player_pos);
 }
@@ -474,6 +478,9 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 		for (size_t i = 0; i < blocks.size(); ++i) {
 			if (test(blocks[i], player)) {
 				player.colliding_blocks.insert(i);
+				if (blocks[i].kind == Block::Kind::Saturated) {
+					player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
+				}
 				flag = true;
 			}
 		}
@@ -596,7 +603,13 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 		if (test(prest_sources[i], player)) {
 			player.prest += prest_sources[i].prest;
 			prest_sources.erase(BEG(prest_sources) + i);
-			break;
+		}
+	}
+
+	for (size_t i = key_items.size() - 1; i + 1 > 0; --i) {
+		if (test(key_items[i], { player.pos, player.size })) {
+			player.own_keys.push_back(key_items[i].id);
+			key_items.erase(BEG(key_items) + i);
 		}
 	}
 }
@@ -814,6 +827,8 @@ void from_dyn_struct(const dyn_struct& str, Door& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
 	x.closed = (bool)str["closed"];
 	x.must_triggered = (decltype(x.must_triggered))str["must_triggered"];
+	if (has(str, "must_have_keys"))
+		x.must_have_keys = (decltype(x.must_have_keys))str["must_have_keys"];
 	x.mustnt_triggered = (decltype(x.mustnt_triggered))str["mustnt_triggered"];
 }
 void to_dyn_struct(dyn_struct& str, const Door& x) noexcept {
@@ -821,6 +836,7 @@ void to_dyn_struct(dyn_struct& str, const Door& x) noexcept {
 	str["rec"] = x.rec;
 	str["closed"] = x.closed;
 	str["must_triggered"] = x.must_triggered;
+	str["must_have_keys"] = x.must_have_keys;
 	str["mustnt_triggered"] = x.mustnt_triggered;
 }
 void from_dyn_struct(const dyn_struct& str, Rock& x) noexcept {

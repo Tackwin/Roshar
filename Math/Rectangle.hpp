@@ -2,7 +2,7 @@
 #include "Vector.hpp"
 
 template<typename T>
-struct Rectangle {
+struct Rectangle_t {
 
 	enum class Side {
 		Left = 0,
@@ -46,9 +46,9 @@ struct Rectangle {
 		};
 	};
 
-	Rectangle() {}
+	Rectangle_t() {}
 
-	Rectangle(const Vector<2, T>& pos, const Vector<2, T>& size) :
+	Rectangle_t(const Vector<2, T>& pos, const Vector<2, T>& size) :
 		pos(pos),
 		size(size)
 	{
@@ -63,7 +63,7 @@ struct Rectangle {
 	}
 #ifdef SFML_GRAPHICS_HPP
 
-	Rectangle(const sf::FloatRect& rec) : 
+	Rectangle_t(const sf::FloatRect& rec) : 
 		x(rec.left), y(rec.top), w(rec.width), h(rec.height)
 	{
 		if (size.x < 0) {
@@ -78,14 +78,14 @@ struct Rectangle {
 
 #endif
 
-	bool intersect(const Rectangle<T>& other) const {
+	bool intersect(const Rectangle_t<T>& other) const {
 		return !(
 				pos.x + size.x < other.pos.x || pos.x > other.pos.x + other.size.x ||
 				pos.y + size.y < other.pos.y || pos.y > other.pos.y + other.size.y
 			);
 	}
 
-	constexpr Side intersect_side(const Rectangle<T>& other) const noexcept {
+	constexpr Side intersect_side(const Rectangle_t<T>& other) const noexcept {
 		if (!intersect(other)) return Side::None;
 
 		auto left = x - (other.x + other.w); left *= left;
@@ -100,18 +100,18 @@ struct Rectangle {
 	}
 
 	// works only for top down y
-	bool isOnTopOf(Rectangle<T> other) const {
+	bool isOnTopOf(Rectangle_t<T> other) const {
 		T distEdgeToEdge = std::max(other.x + other.w - x, x + w - other.x);
 		T sumOfWidth = w + other.w;
 
 		return y < other.y && distEdgeToEdge < sumOfWidth;
 	}
-	bool isFullyOnTopOf(Rectangle<T> other, T tolerance = FLT_EPSILON) const noexcept {
+	bool isFullyOnTopOf(Rectangle_t<T> other, T tolerance = FLT_EPSILON) const noexcept {
 		return y + h < other.y + tolerance;
 	}
 
 	// works only for top down y
-	bool isOnBotOf(Rectangle<T> other) const {
+	bool isOnBotOf(Rectangle_t<T> other) const {
 		T distEdgeToEdge = std::max(other.x + other.w - x, x + w - other.x);
 		T sumOfWidth = w + other.w;
 
@@ -131,13 +131,13 @@ struct Rectangle {
 	}
 
 	std::tuple<
-		Rectangle<T>, Rectangle<T>, Rectangle<T>, Rectangle<T>
+		Rectangle_t<T>, Rectangle_t<T>, Rectangle_t<T>, Rectangle_t<T>
 	> divide() const noexcept {
 		return {
-			Rectangle<T>{pos, size / 2},
-			Rectangle<T>{ {pos.x + size.x / 2, pos.y}, size / 2 },
-			Rectangle<T>{ {pos.x, pos.y + size.y / 2}, size / 2 },
-			Rectangle<T>{pos + size / 2, size / 2},
+			Rectangle_t<T>{pos, size / 2},
+			Rectangle_t<T>{ {pos.x + size.x / 2, pos.y}, size / 2 },
+			Rectangle_t<T>{ {pos.x, pos.y + size.y / 2}, size / 2 },
+			Rectangle_t<T>{pos + size / 2, size / 2},
 		};
 	}
 
@@ -160,7 +160,7 @@ struct Rectangle {
 		return { x + w, y };
 	}
 
-	Rectangle<T> fitUpRatio(double ratio) const noexcept {
+	Rectangle_t<T> fitUpRatio(double ratio) const noexcept {
 		if (w > h) {
 			return { pos,{ w, (T)(w / ratio) } };
 		}
@@ -168,7 +168,7 @@ struct Rectangle {
 			return { pos,{ (T)(h * ratio), h } };
 		}
 	}
-	Rectangle<T> fitDownRatio(double ratio) const noexcept {
+	Rectangle_t<T> fitDownRatio(double ratio) const noexcept {
 		if (w < h) {
 			return { pos,{ w, (T)(w / ratio) } };
 		}
@@ -177,8 +177,8 @@ struct Rectangle {
 		}
 	}
 
-	Rectangle<T> restrict_in(Rectangle<T> area) const noexcept {
-		Rectangle<T> result = *this;
+	Rectangle_t<T> restrict_in(Rectangle_t<T> area) const noexcept {
+		Rectangle_t<T> result = *this;
 
 		if (w > area.w) {
 			result.x = area.center().x - result.size.x / 2;
@@ -238,8 +238,8 @@ struct Rectangle {
 
 #endif
 
-	static Rectangle<T> hull(std::vector<Rectangle<T>> recs) noexcept {
-		Rectangle<T> hull = recs[0];
+	static Rectangle_t<T> hull(std::vector<Rectangle_t<T>> recs) noexcept {
+		Rectangle_t<T> hull = recs[0];
 
 		for (auto rec : recs) {
 			hull.x = std::min(rec.x, hull.x);
@@ -254,21 +254,50 @@ struct Rectangle {
 
 };
 
-using Rectanglef = Rectangle<float>;
+using Rectanglef = Rectangle_t<float>;
 
 struct dyn_struct;
 template<typename T>
-void from_dyn_struct(const dyn_struct& str, Rectangle<T>& x) noexcept {
+void from_dyn_struct(const dyn_struct& str, Rectangle_t<T>& x) noexcept {
 	x.x = (T)str[0];
 	x.y = (T)str[1];
 	x.w = (T)str[2];
 	x.h = (T)str[3];
 }
 template<typename T>
-void to_dyn_struct(dyn_struct& str, const Rectangle<T>& x) noexcept {
+void to_dyn_struct(dyn_struct& str, const Rectangle_t<T>& x) noexcept {
 	str = dyn_struct::array_t{};
 	str.push_back(x.x);
 	str.push_back(x.y);
 	str.push_back(x.w);
 	str.push_back(x.h);
+}
+
+template<typename T>
+double distTo2(const Vector<2, T>& vec, const Rectangle_t<T> & rec) noexcept {
+	if (
+		(vec.x < rec.x || vec.x > rec.x + rec.w) &&
+		(rec.y < vec.y && vec.y < rec.y + rec.h)
+		) {
+		return (rec.x - vec.x) * (rec.x - vec.x);
+	}
+	if (
+		(vec.y < rec.y || vec.y > rec.y + rec.h) &&
+		(rec.x < vec.x && vec.x < rec.x + rec.w)
+		) {
+		return (rec.y - vec.y) * (rec.y - vec.y);
+	}
+
+	Vector<2, T> dt;
+
+	if (vec.x < rec.x) {
+		if (vec.y < rec.y)   dt = (vec - Vector<2, T>{rec.x, rec.y});
+		else                 dt = (vec - Vector<2, T>{rec.x, rec.y + rec.h});
+	}
+	else {
+		if (vec.y < rec.y)   dt = (vec - Vector<2, T>{rec.x + rec.w, rec.y});
+		else                 dt = (vec - Vector<2, T>{rec.x + rec.w, rec.y + rec.h});
+	}
+
+	return dt.length2();
 }

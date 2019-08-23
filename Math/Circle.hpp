@@ -13,7 +13,7 @@ using Circlef = Circle<float>;
 using Circled = Circle<double>;
 
 template<typename T>
-bool is_in(const Rectangle<T>& rec, const Circle<T>& c) noexcept {
+bool is_in(const Rectangle_t<T>& rec, const Circle<T>& c) noexcept {
 	Vector2<T> circle_distance = (c.c - rec.center()).applyCW([](auto x) {return std::abs(x); });
 
 	if (circle_distance.x >=  (rec.w / 2 + c.r)) { return false; }
@@ -33,7 +33,7 @@ bool is_in(const Vector2<T>& vec, const Circle<T>& c) noexcept {
 }
 
 template<typename T>
-bool is_fully_in(const Rectangle<T>& rec, const Circle<T>& c) noexcept {
+bool is_fully_in(const Rectangle_t<T>& rec, const Circle<T>& c) noexcept {
 	Vector2<T> circle_distance = (c.c - rec.center()).applyCW([](auto x) {return std::abs(x); });
 
 	if (circle_distance.x > (rec.w / 2 - c.r)) { return false; }

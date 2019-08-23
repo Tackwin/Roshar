@@ -7,16 +7,28 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Roshar", "Roshar.vcxproj", 
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_Win|x64 = Debug_Win|x64
+		Debug_Win|x86 = Debug_Win|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release_Win|x64 = Release_Win|x64
+		Release_Win|x86 = Release_Win|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug_Win|x64.ActiveCfg = Debug_Win|x64
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug_Win|x64.Build.0 = Debug_Win|x64
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug_Win|x86.ActiveCfg = Debug_Win|Win32
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug_Win|x86.Build.0 = Debug_Win|Win32
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug|x64.ActiveCfg = Debug|x64
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug|x64.Build.0 = Debug|x64
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug|x86.ActiveCfg = Debug|Win32
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Debug|x86.Build.0 = Debug|Win32
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release_Win|x64.ActiveCfg = Release_Win|x64
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release_Win|x64.Build.0 = Release_Win|x64
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release_Win|x86.ActiveCfg = Release_Win|Win32
+		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release_Win|x86.Build.0 = Release_Win|Win32
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release|x64.ActiveCfg = Release|x64
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release|x64.Build.0 = Release|x64
 		{3448BD34-B580-441F-9F60-FC493AFE3B25}.Release|x86.ActiveCfg = Release|Win32

@@ -144,7 +144,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::InputFloat("Prest", &x))
 			for (auto& y : game->current_level.prest_sources) if (pred(y)) y.prest = x;
 	}
-    
+
 	n_selected = std::count_if(BEG_END(game->current_level.friction_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -158,7 +158,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::InputFloat("Friction", &friction))
 			for (auto& y : game->current_level.friction_zones) if (pred(y)) y.friction = friction;
 	}
-    
+
 	n_selected = std::count_if(BEG_END(game->current_level.blocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -171,18 +171,21 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		ImGui::SameLine();
 		int k = (int)kind;
 		auto act = ImGui::ListBox("Kind", &k, [](void*, int i, const char** out) {
-                                  switch ((Block::Kind)i) {
-                                  case Block::Kind::Normal:       *out = "Normal";    break;
-                                  case Block::Kind::Saturated:    *out = "Saturated"; break;
-                                  case Block::Kind::Eponge:       *out = "Eponge";    break;
-                                  default: assert("Logic error"); *out = "";          break;
-                                  }
-                                  return true;
-                                  }, nullptr, (int)Block::Kind::Count);
-        
+				switch ((Block::Kind)i) {
+				case Block::Kind::Normal:       *out = "Normal";    break;
+				case Block::Kind::Saturated:    *out = "Saturated"; break;
+				case Block::Kind::Eponge:       *out = "Eponge";    break;
+				default: assert("Logic error"); *out = "";          break;
+				}
+				return true;
+			},
+			nullptr,
+			(int)Block::Kind::Count
+		);
+
 		if (act) for (auto& x : game->current_level.blocks) if (pred(x)) x.kind = (Block::Kind)k;
 	}
-    
+
 	n_selected = std::count_if(BEG_END(game->current_level.key_items), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -197,7 +200,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::InputInt("Id", &x))
 			for (auto& y : game->current_level.key_items) if (pred(y)) y.id = x;
 	}
-    
+
 	n_selected = std::count_if(BEG_END(game->current_level.doors), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -205,25 +208,32 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		bool closed = { true };
 		if (n_selected == 1)
 			closed = std::find_if(BEG_END(game->current_level.doors), pred)->closed;
-        
+
 		ImGui::Text("Closed");
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Closed", &closed))
 			for (auto& y : game->current_level.doors) if (pred(y)) y.closed = closed;
-        
+
 		thread_local bool must_list{ false };
 		ImGui::Checkbox(must_list ? "must list" : "mustnt_list", &must_list);
-        
+
 		if (ImGui::Button("Add Selection to list")) {
 			for (auto& y : game->current_level.doors) {
 				if (!pred(y)) continue;
 				auto& list = must_list ? y.must_triggered : y.mustnt_triggered;
-                
+
 				for (const auto& z : game->current_level.trigger_zones) {
 					if (pred(z)) list.push_back(z.id);
 				}
-                
+
+				auto& key_list = y.must_have_keys;
+
+				for (const auto& z : game->current_level.key_items) {
+					if (pred(z)) key_list.push_back(z.id);
+				}
+
 				list.erase(std::unique(BEG_END(list)), END(list));
+				key_list.erase(std::unique(BEG_END(key_list)), END(key_list));
 			}
 		}
 		ImGui::SameLine();
@@ -231,10 +241,18 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			for (auto& y : game->current_level.doors) {
 				if (!pred(y)) continue;
 				auto& list = must_list ? y.must_triggered : y.mustnt_triggered;
-                
+				auto& key_list = y.must_have_keys;
+
 				for (const auto& z : game->current_level.trigger_zones) {
 					if (!pred(z)) continue;
 					if (auto it = std::find(BEG_END(list), z.id); it != END(list)) list.erase(it);
+				}
+				
+				for (const auto& z : game->current_level.key_items) {
+					auto& l = key_list;
+
+					if (!pred(z)) continue;
+					if (auto it = std::find(BEG_END(l), z.id); it != END(l)) l.erase(it);
 				}
 			}
 		}
@@ -249,28 +267,28 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 			auto it = std::find_if(BEG_END(game->current_level.next_zones), pred);
 			strcpy_s(next, 512, it->next_level.c_str());
 		}
-        
+
 		ImGui::Text("Next");
 		ImGui::SameLine();
 		if (ImGui::InputText("Next", next, sizeof(next))) {
 			for (auto& y : game->current_level.next_zones) if (pred(y)) y.next_level = next;
 		}
 	}
-    
+
 	n_selected = std::count_if(BEG_END(game->current_level.auto_binding_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Auto bindings zones");
-        
+
 		float x;
 		float y;
-        
+
 		if (n_selected == 1) {
 			auto it = std::find_if(BEG_END(game->current_level.auto_binding_zones), pred);
 			x = it->binding.x;
 			y = it->binding.y;
 		}
-        
+
 		ImGui::Text("X");
 		ImGui::SameLine();
 		ImGui::PushItemWidth(0.7f * ImGui::GetWindowWidth());
@@ -280,20 +298,20 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		if (ImGui::InputFloat("Y", &y, 0.05f))
 			for (auto& a : game->current_level.auto_binding_zones) if (pred(a)) a.binding.y = y;
 	}
-    
+
 	n_selected = std::count_if(BEG_END(game->current_level.rocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Rocks");
 		float mass;
 		float radius;
-        
+
 		if (n_selected == 1) {
 			auto it = std::find_if(BEG_END(game->current_level.rocks), pred);
 			mass = it->mass;
 			radius = it->r;
 		}
-        
+
 		ImGui::Text("Mass");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Mass", &mass)) {
@@ -450,7 +468,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		Vector2f start = *pos_start_drag;
 		Vector2f end = get_mouse_pos();
         
-		Rectangle rec{ start, end - start };
+		Rectangle_t rec{ start, end - start };
 		sf::RectangleShape shape;
 		shape.setPosition(rec.pos);
 		shape.setSize(rec.size);
@@ -461,7 +479,7 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		defer{ target.setView(view); };
 		target.setView(target.getDefaultView());
 	}
-    
+
 	if (start_selection) {
 		sf::RectangleShape shape;
 		shape.setPosition(*start_selection);
@@ -469,33 +487,44 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		shape.setFillColor(Vector4d{ 0, 1, 0, 0.5 });
 		target.draw(shape);
 	}
-    
+
 	for (const auto& d : game->current_level.doors) {
 		Vector2f start = d.rec.center();
-        
+
 		for (const auto& x : d.must_triggered) {
 			auto it = std::find_if(
 				BEG_END(game->current_level.trigger_zones), [x](auto& z) { return z.id == x; }
-                );
+			);
 			if (it == END(game->current_level.trigger_zones)) continue;
-            
+
 			Vector2f end = it->rec.center();
-            
+
 			Vector2f::renderLine(target, start, end, { 0.1, 1.0, 0.1, 1.0 });
 		}
-        
+
 		for (const auto& x : d.mustnt_triggered) {
 			auto it = std::find_if(
 				BEG_END(game->current_level.trigger_zones), [x](auto& z) { return z.id == x; }
-                );
+			);
 			if (it == END(game->current_level.trigger_zones)) continue;
-            
+
 			Vector2f end = it->rec.center();
-            
+
 			Vector2f::renderLine(target, start, end, { 1.0, 0.1, 0.1, 1.0 });
 		}
+
+		for (const auto& x : d.must_have_keys) {
+			auto it = std::find_if(
+				BEG_END(game->current_level.key_items), [x](auto& z) { return z.id == x; }
+			);
+			if (it == END(game->current_level.key_items)) continue;
+
+			Vector2f end = it->pos;
+
+			Vector2f::renderLine(target, start, end, { 0.1, 1.0, 0.1, 1.0 });
+		}
 	}
-    
+
 	if (snap_grid) {
 		auto& cam = game->camera;
 		std::vector<std::array<sf::Vertex, 2>> vertices;
@@ -677,7 +706,7 @@ Vector2f Editor::get_mouse_pos() const noexcept {
 }
 
 void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
-	Rectangle rec = { start, end - start };
+	Rectangle_t rec = { start, end - start };
     
 	if (!element_to_create) return;
 #define RETURN_IF_AREA_0 if (rec.area() == 0) return

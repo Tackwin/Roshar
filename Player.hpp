@@ -44,6 +44,10 @@ struct Player {
 
 	bool floored{ false };
 	bool just_jumped{ false };
+	bool falling_back{ false };
+
+	static constexpr float Saturated_Touch_Last_Time = 0.2f;
+	float saturated_touch_last_time = 0;
 
 	static constexpr float Coyotee_Time = 0.1f;
 	float coyotee_timer = Coyotee_Time;
@@ -91,6 +95,8 @@ private:
 	bool dragging{ false };
 	Vector2f start_drag_pos;
 	double start_drag_time;
+
+	float prest_gathered;
 
 	void start_drag() noexcept;
 	void on_drag() noexcept;
