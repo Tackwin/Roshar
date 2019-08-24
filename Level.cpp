@@ -468,15 +468,39 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 
 	player.colliding_blocks.clear();
 
-	auto test_solids = [&]() {
+	auto test_solids = [&](bool auto_climb) {
+		auto_climb &= player.velocity.y < 0.1f;
 
+		size_t correcting_count = 1;
+		Vector2f current_old_player_pos = previous_player_pos;
+	corrected_position:
 		bool flag = false;
 		for (size_t i = 0; i < doors.size(); ++i) {
-			if (test(doors[i], player)) flag = true;
+			if (test(doors[i], player)) {
+				if (auto_climb) {
+					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
+					if (-player.size.y / 5.f < dt_y && dt_y < -player.size.y / 10.f) {
+						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
+						current_old_player_pos.y = player.pos.y;
+						if (correcting_count-- > 0) goto corrected_position;
+					}
+				}
+
+				flag = true;
+			}
 		}
 
 		for (size_t i = 0; i < blocks.size(); ++i) {
 			if (test(blocks[i], player)) {
+				if (auto_climb) {
+					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
+					if (-player.size.y / 5.f < dt_y && dt_y < -player.size.y / 10.f) {
+						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
+						current_old_player_pos.y = player.pos.y;
+						if (correcting_count-- > 0) goto corrected_position;
+					}
+				}
+
 				player.colliding_blocks.insert(i);
 				if (blocks[i].kind == Block::Kind::Saturated) {
 					player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
@@ -485,6 +509,7 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 			}
 		}
 
+		previous_player_pos = current_old_player_pos;
 		return flag;
 	};
 
@@ -508,14 +533,14 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	bool new_floored = false;
 
 	player.pos.x += velocities.x * dt;
-	if (test_solids()) {
+	if (test_solids(true)) {
 		impact += velocities.x * velocities.x;
 		player.pos.x = previous_player_pos.x;
 		player.velocity.x = 0;
 		player.forces.x = 0;
 	}
 	player.pos.y += velocities.y * dt;
-	if (test_solids()) {
+	if (test_solids(false)) {
 		impact += velocities.y * velocities.y;
 		player.pos.y = previous_player_pos.y;
 		new_floored = velocities.y < 0;

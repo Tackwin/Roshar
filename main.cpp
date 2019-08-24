@@ -34,10 +34,6 @@ int main(int, char**) {
 	game = new Game;
 	defer{ delete game; };
 
-#ifdef DEBUG
-	render_window.setVerticalSyncEnabled(true);
-	#endif
-
 	sf::Clock dtClock;
 	while (render_window.isOpen()) {
 		float dt = dtClock.restart().asSeconds();
