@@ -134,9 +134,9 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 }
 
 void Store_t::load_known_textures() noexcept {
-    
+
 	std::optional<Key> opt;
-    
+
 #define X(str, x)\
 	printf("Loading " str " ... ");\
 	opt = load_texture(str);\
@@ -151,5 +151,25 @@ void Store_t::load_known_textures() noexcept {
 	X("textures/key.png", Key_Item);
 	X("textures/rock.png", Rock);
 
+#undef X
+}
+
+void Store_t::load_known_shaders() noexcept {
+
+	std::optional<Key> opt;
+
+
+#define X(f, v, x)\
+	printf("Loading " #x " shader... ");\
+	opt = load_shader(f, v);\
+	if (opt) {\
+		Known_Shaders::x = *opt;\
+		printf("sucess :) !\n");\
+	}\
+	else {\
+		printf("failed :( !\n");\
+	}
+
+	X("shaders/default.vertex", "shaders/default.fragment", Default);
 #undef X
 }

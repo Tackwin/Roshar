@@ -1,6 +1,22 @@
 #include "Game.hpp"
 
 #include "dyn_struct.hpp"
+#include "Graphic/Graphics.hpp"
+
+void render_game(std::vector<render::Order>& o) noexcept {
+	render::Sprite_Info i;
+	i.pos = { 10, 10 };
+	i.size = { 10, 10 };
+	i.color = { 1., 1., 1., 1. };
+
+	render::Order order;
+	order.sprite = i;
+	order.kind = render::Order::Kind::Sprite;
+
+	o.push_back(order);
+}
+void update_game(std::uint64_t) noexcept {
+}
 
 Game* game = nullptr;
 

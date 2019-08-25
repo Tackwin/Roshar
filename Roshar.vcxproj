@@ -151,7 +151,7 @@
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <PreprocessorDefinitions>DEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;DEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
       <FloatingPointModel>Strict</FloatingPointModel>
@@ -169,7 +169,7 @@
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <PreprocessorDefinitions>DEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;DEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
       <FloatingPointModel>Strict</FloatingPointModel>
@@ -209,7 +209,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;</ForcedIncludeFiles>
       <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -231,7 +231,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;</ForcedIncludeFiles>
       <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
       <LanguageStandard>stdcpplatest</LanguageStandard>

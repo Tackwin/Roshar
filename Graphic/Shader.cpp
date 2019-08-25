@@ -97,8 +97,8 @@ bool Shader::build_shaders() noexcept {
 std::optional<std::string> Shader::check_shader_error(size_t shader) noexcept {
 	auto success = 0;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	std::string log(512, 0);
 	if (!success) {
-		std::string log(512, 0);
 		glGetShaderInfoLog(shader, 512, nullptr, log.data());
 		return log;
 	}
@@ -125,7 +125,7 @@ void Shader::set_primary_color(Vector4d color) noexcept {
 	glUniform4dv(loc("color"), 4, &color.x);
 }
 void Shader::set_rotation(float rotation) noexcept {
-	glUniform1f(loc("size"), rotation);
+	glUniform1f(loc("rotation"), rotation);
 }
 void Shader::set_origin(Vector2f origin) noexcept {
 	glUniform2fv(loc("origin"), 2, &origin.x);
@@ -139,5 +139,13 @@ void Shader::set_size(Vector2f size) noexcept {
 void Shader::set_texture(size_t id) noexcept {
 	glUniform1i(loc("color_texture"), (int)id);
 }
+void Shader::set_view(Rectanglef view) noexcept {
+	glUniform4fv(loc("world_bounds"), 4, &view.x);
+}
+void Shader::set_window_size(Vector2u size) noexcept {
+	Vector2i s = (Vector2i)size;
+	glUniform2iv(loc("screen_bounds"), 2, &s.x);
+}
+
 
 #undef loc

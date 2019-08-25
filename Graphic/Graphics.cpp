@@ -2,9 +2,8 @@
 
 #include <GL/glew.h>
 
-using namespace render;
 
-void sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept {
+void render::sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept {
 	Sprite_Info info;
 	info.pos = pos;
 	info.size = size;
@@ -16,7 +15,7 @@ void sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept {
 
 	render::sprite(info);
 }
-void sprite(Sprite_Info info) noexcept {
+void render::sprite(Sprite_Info info) noexcept {
 	static size_t quad_vao{ 0 };
 	static size_t quad_vbo{ 0 };
 
@@ -45,10 +44,12 @@ void sprite(Sprite_Info info) noexcept {
 	}
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, asset::Store.get_my_texture(info.texture).get_texture_id());
+	//glBindTexture(GL_TEXTURE_2D, asset::Store.get_my_texture(info.texture).get_texture_id());
 
 	auto& shader = asset::Store.get_shader(info.shader);
 	shader.use();
+	shader.set_window_size({ Environment.window_width, Environment.window_height });
+	shader.set_view(current_view.world_bounds);
 	shader.set_origin(info.origin);
 	shader.set_position(info.pos);
 	shader.set_primary_color(info.color);

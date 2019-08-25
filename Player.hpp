@@ -96,7 +96,6 @@ private:
 	Vector2f start_drag_pos;
 	double start_drag_time;
 
-	float prest_gathered;
 
 	void start_drag() noexcept;
 	void on_drag() noexcept;

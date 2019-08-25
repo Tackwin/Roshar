@@ -1,0 +1,19 @@
+#version 330 core
+layout (location = 0) in vec3 in_pos;
+layout (location = 1) in vec2 in_texture_coord;
+
+out vec2 texture_coord;
+out vec3 pos;
+
+uniform vec4f color;
+uniform vec2f size;
+uniform vec2f origin;
+uniform vec2f pos;
+uniform float rotation;
+uniform sampler2D color_texture;
+uniform vec4f world_bounds;
+uniform vec2i screen_bounds;
+
+void main() oord = in_texture_coord;
+    pos = vec4(in_pos, 1.0);
+}

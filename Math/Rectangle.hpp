@@ -255,6 +255,7 @@ struct Rectangle_t {
 };
 
 using Rectanglef = Rectangle_t<float>;
+using Rectangleu = Rectangle_t<size_t>;
 
 struct dyn_struct;
 template<typename T>

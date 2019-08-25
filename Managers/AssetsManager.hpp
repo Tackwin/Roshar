@@ -63,6 +63,7 @@ namespace asset {
 		void monitor_path(std::filesystem::path dir) noexcept;
 
 		void load_known_textures() noexcept;
+		void load_known_shaders() noexcept;
 	};
 	extern Store_t Store;
 

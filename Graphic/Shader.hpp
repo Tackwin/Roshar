@@ -3,6 +3,7 @@
 #include <string>
 
 #include "Math/Vector.hpp"
+#include "Math/Rectangle.hpp"
 #include "Math/Matrix.hpp"
 
 struct ShaderInfo {
@@ -32,6 +33,8 @@ public:
 
 	void use() const noexcept;
 
+	void set_window_size(Vector2u size) noexcept;
+	void set_view(Rectanglef view) noexcept;
 	void set_primary_color(Vector4d color) noexcept;
 	void set_rotation(float rotation) noexcept;
 	void set_origin(Vector2f origin) noexcept;
