@@ -293,6 +293,9 @@
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="global.cpp" />
+    <ClCompile Include="Graphic\Graphics.cpp" />
+    <ClCompile Include="Graphic\Shader.cpp" />
+    <ClCompile Include="Graphic\Texture.cpp" />
     <ClCompile Include="imgui-SFML.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
@@ -310,6 +313,9 @@
     <ClInclude Include="Editor.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="global.hpp" />
+    <ClInclude Include="Graphic\Graphics.hpp" />
+    <ClInclude Include="Graphic\Shader.hpp" />
+    <ClInclude Include="Graphic\Texture.hpp" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui-SFML.h" />
     <ClInclude Include="imgui-SFML_export.h" />
@@ -318,6 +324,7 @@
     <ClInclude Include="Managers\AssetsManager.hpp" />
     <ClInclude Include="Managers\InputsManager.hpp" />
     <ClInclude Include="Math\Circle.hpp" />
+    <ClInclude Include="Math\Matrix4f.hpp" />
     <ClInclude Include="Math\RandomData.hpp" />
     <ClInclude Include="Math\Ray.hpp" />
     <ClInclude Include="Math\Rectangle.hpp" />

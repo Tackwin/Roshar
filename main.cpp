@@ -28,7 +28,7 @@ int main(int, char**) {
 	asset::Store.load_known_textures();
 
 	float max_dt = 0;
-	size_t last_dt_count = 60;
+	size_t last_dt_count = 200;
 	std::vector<float> last_dt;
 
 	game = new Game;

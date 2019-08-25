@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <wingdi.h>
-#include <gl/GL.h>
+#include <GL/glew.h>
 #include <optional>
 #include <string>
 
@@ -57,11 +57,11 @@ int WINAPI WinMain(
 	HWND window_handle = CreateWindow(
 		Class_Name,
 		Window_Title,
-		WS_OVERLAPPED,
+		WS_OVERLAPPEDWINDOW,
+		0,
+		0,
 		1280,
 		720,
-		0,
-		0,
 		NULL,
 		NULL,
 		wc.hInstance,
@@ -77,8 +77,18 @@ int WINAPI WinMain(
 	Environment.window_width = (size_t)(window_rect.right - window_rect.left);
 	Environment.window_height = (size_t)(window_rect.bottom - window_rect.top);
 
+
 	auto gl_context = *create_gl_context(window_handle);
 	defer{ destroy_gl_context(gl_context); };
+
+	if (glewInit() != GLEW_OK) {
+		OutputDebugString("Can't init glew\n");
+		return 1;
+	}
+
+	OutputDebugString("Opengl ");
+	OutputDebugString((char*)glGetString(GL_VERSION));
+	OutputDebugString("\n");
 
 	auto dc_window = GetDC(window_handle);
 	if (!dc_window) {
@@ -88,10 +98,7 @@ int WINAPI WinMain(
 	}
 
 
-	if (!ShowWindow(window_handle, SW_SHOWDEFAULT)) {
-		OutputDebugString(get_last_error_message()->c_str());
-		return 1;
-	}
+	ShowWindow(window_handle, SW_SHOWDEFAULT);
 
 	MSG msg{};
 	auto last_time_frame = seconds();
@@ -103,6 +110,8 @@ int WINAPI WinMain(
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+
+
 
 		SwapBuffers(dc_window);
 	}

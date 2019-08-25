@@ -26,10 +26,6 @@ void Player::input(Input_Iterator this_record) noexcept {
 		stop_move_sideway();
 	}
 
-	if (wanted_motion.y < -1 * this_record->Joystick_Dead_Zone) {
-		fall_back();
-	}
-
 	if (this_record->is_pressed(sf::Keyboard::Q)) {
 		if (this_record->is_just_pressed(sf::Keyboard::Q)) start_move_sideway();
 		move_sideway(Player::Left);
@@ -44,8 +40,14 @@ void Player::input(Input_Iterator this_record) noexcept {
 	else if (this_record->is_just_released(sf::Keyboard::D)) {
 		stop_move_sideway();
 	}
-	if (this_record->is_pressed(sf::Keyboard::S)) {
+	if (
+		this_record->is_pressed(sf::Keyboard::S) ||
+		wanted_motion.y < -1 * this_record->Joystick_Dead_Zone
+	) {
 		fall_back();
+	}
+	else {
+		falling_back = false;
 	}
 	if (this_record->is_just_pressed(sf::Mouse::Left)) {
 		start_drag();
@@ -78,7 +80,14 @@ void Player::input(Input_Iterator this_record) noexcept {
 	if (
 		this_record->is_just_pressed(sf::Mouse::Right) ||
 		this_record->is_just_pressed(Joystick_Button::B)
-	) own.basic_bindings.clear();
+	) {
+		own.basic_bindings.clear();
+		for (size_t i = binding_origin_history.size() - 1; i + 1 > 0; --i) {
+			if (binding_origin_history[i] == &own.basic_bindings) {
+				binding_origin_history.erase(BEG(binding_origin_history) + i);
+			}
+		}
+	}
 		if (
 			(
 				(
@@ -210,22 +219,24 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 }
 
 void Player::jump() noexcept {
-	falling_back = false;
-	velocity += Vector2f{ 0, 6.5f };
+	if (!falling_back) {
+		velocity += Vector2f{ 0, 1.5f };
+	}
+	velocity += Vector2f{ 0, 5.f };
 	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
 	just_jumped = true;
 	coyotee_timer = 0.f;
 }
 void Player::maintain_jump() noexcept {
-	if (!falling_back) flat_velocities.push_back({ 0, 1.5 });
+	if (!falling_back) flat_velocities.push_back({ 0, 1.5f });
 }
 void Player::directional_up() noexcept {
 	if (!falling_back) flat_velocities.push_back({ 0, 0.75 });
 }
 void Player::fall_back() noexcept {
+	falling_back = true;
 	if (!floored) {
 		flat_velocities.push_back({ 0, -1 });
-		falling_back = true;
 	}
 }
 
