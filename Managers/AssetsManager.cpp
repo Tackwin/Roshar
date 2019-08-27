@@ -1,9 +1,14 @@
 #include "AssetsManager.hpp"
 #include "OS/file.hpp"
 
-#include <assert.h>
+#include <GL/glew.h>
+#include <GL/wglew.h>
+#include <Windows.h>
+#include <cstdlib>
 
 #include "../Level.hpp"
+
+#include "Graphic/OpenGL.hpp"
 
 using namespace asset;
 
@@ -86,8 +91,8 @@ namespace asset {
 
 	Asset_t<Shader> s{
 		std::move(*new_shader),
-		vertex,
-		fragment
+		std::filesystem::canonical(vertex),
+		std::filesystem::canonical(fragment)
 	};
 
 
@@ -112,11 +117,27 @@ namespace asset {
 	return k;
 }
 
+
+static int attribs[] = {
+	WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+	WGL_CONTEXT_MINOR_VERSION_ARB, 0,
+	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+	WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+	//WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+	0
+};
+
 void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 	file::monitor_dir(
+		[] {
+			if (!wglMakeCurrent(
+				(HDC)platform::handle_window, (HGLRC)platform::asset_opengl_context
+			)) std::abort();
+		},
 		dir,
-		[&, d = dir] (auto path) {
+		[&, d = dir] (std::filesystem::path path) {
 			std::lock_guard guard{ Main_Mutex };
+			
 			path = std::filesystem::canonical(Exe_Path / d / path);
 
 			{
@@ -124,11 +145,27 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 				if (it != END(textures_loaded) && textures.count(it->second)) {
 					textures.at(it->second).asset.loadFromFile(path.string());
 				}
+
 				if (it != END(textures_loaded) && my_textures.count(it->second)) {
 					my_textures.at(it->second).asset.load_file(path.string());
 				}
 			}
 
+			for (auto& [_, x] : shaders){
+				if (x.fragment == path) {
+					if (!x.asset.load_fragment(path)) continue;
+
+					if (x.asset.build_shaders()) printf("Rebuilt shader.\n");
+					else printf("Faield to rebuild shader.\n");
+				}
+				else if (x.vertex == path) {
+
+					if (!x.asset.load_vertex(path)) continue;
+
+					if (x.asset.build_shaders()) printf("Rebuilt shader.\n");
+					else printf("Faield to rebuild shader.\n");
+				}
+			}
 		}
 	);
 }

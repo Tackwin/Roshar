@@ -4,10 +4,13 @@
 #include "Graphic/Graphics.hpp"
 
 void render_game(std::vector<render::Order>& o) noexcept {
+	o.push_back(render::push_view({ 0, 0 }, {1280, 720}));
+
 	render::Sprite_Info i;
-	i.pos = { 10, 10 };
-	i.size = { 10, 10 };
-	i.color = { 1., 1., 1., 1. };
+	i.pos = { 50, 50 };
+	i.size = { 100, 100 };
+	i.color = { 1., 1., 0.5, 1. };
+	i.shader = asset::Known_Shaders::Default;
 
 	render::Order order;
 	order.sprite = i;

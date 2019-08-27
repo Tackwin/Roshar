@@ -1,3 +1,5 @@
+#ifdef NATIVE
+
 #define WIN32_LEAN_AND_MEAN
 
 #include <stdio.h>
@@ -13,11 +15,17 @@
 
 #include "Math/Vector.hpp"
 #include "Graphic/Graphics.hpp"
+#include "Graphic/OpenGL.hpp"
+
+static int attribs[] = {
+	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+	0
+};
 
 extern void update_game(std::uint64_t dt) noexcept;
 extern void render_game(std::vector<render::Order>& orders) noexcept;
 
-void opengl_debug(
+void APIENTRY opengl_debug(
 	GLenum source,
 	GLenum type,
 	GLuint id,
@@ -46,28 +54,17 @@ LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) no
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+#ifdef CONSOLE
+int main(int, char**
+#else
 int WINAPI WinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR     lpCmdLine,
 	int       nShowCmd
+#endif
 ) {
-
-	int hConHandle;
-	long lStdHandle;
-	FILE* fp;
-
-	// Allocate a console for this app
-	AllocConsole();
-
-	// Redirect unbuffered STDOUT to the console
-	lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
-	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-	fp = _fdopen(hConHandle, "w");
-	*stdout = *fp;
-
-	setvbuf(stdout, NULL, _IONBF, 0);
-
+	
 	constexpr auto Class_Name = TEXT("Roshar Class");
 	constexpr auto Window_Title = TEXT("Roshar");
 
@@ -90,6 +87,7 @@ int WINAPI WinMain(
 	RegisterClassEx(&wc);
 	defer{ UnregisterClass(Class_Name, wc.hInstance); };
 
+
 	HWND window_handle = CreateWindow(
 		Class_Name,
 		Window_Title,
@@ -104,10 +102,12 @@ int WINAPI WinMain(
 		NULL
 	);
 
+	platform::handle_window = window_handle;
+
 	RECT window_rect;
 	if (!GetWindowRect(window_handle, &window_rect)) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return 1;
 	}
 	Environment.window_width = (size_t)(window_rect.right - window_rect.left);
@@ -117,34 +117,38 @@ int WINAPI WinMain(
 	auto gl_context = *create_gl_context(window_handle);
 	defer{ destroy_gl_context(gl_context); };
 
-	if (glewInit() != GLEW_OK) {
-		OutputDebugString("Can't init glew\n");
-		return 1;
-	}
 
-	if (glDebugMessageControl != NULL) {
-		glEnable(GL_DEBUG_OUTPUT);
-		//glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-		glDebugMessageCallback((GLDEBUGPROCARB)opengl_debug, NULL);
-	}
+	//GLint flags;
+	//glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	//if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
+	//	glEnable(GL_DEBUG_OUTPUT);
+	//	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	//	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	//	glDebugMessageCallback((GLDEBUGPROCARB)opengl_debug, nullptr);
+	//}
 
-	OutputDebugString("Opengl ");
-	OutputDebugString((char*)glGetString(GL_VERSION));
-	OutputDebugString("\n");
+	printf("Opengl ");
+	printf((char*)glGetString(GL_VERSION));
+	printf("\n");
 
 	auto dc_window = GetDC(window_handle);
 	if (!dc_window) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return 1;
 	}
 
-	asset::Store.monitor_path("textures/");
+	platform::handle_window = dc_window;
+
+	while (GL_NO_ERROR != glGetError());
+
 	asset::Store.monitor_path("shaders/");
-	asset::Store.load_known_textures();
 	asset::Store.load_known_shaders();
 
-	ShowWindow(window_handle, SW_SHOWDEFAULT);
+
+	//asset::Store.monitor_path("textures/");
+	//asset::Store.load_known_textures();
+
 
 	MSG msg{};
 	auto last_time_frame = microseconds();
@@ -152,6 +156,7 @@ int WINAPI WinMain(
 	render::Sprite_Info o;
 
 	std::vector<render::Order> orders;
+	ShowWindow(window_handle, SW_SHOWDEFAULT);
 
 	while (msg.message != WM_QUIT) {
 		std::uint64_t dt = microseconds() - last_time_frame;
@@ -165,7 +170,7 @@ int WINAPI WinMain(
 
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
-
+		
 		update_game(dt);
 		render_game(orders);
 		render_orders(orders);
@@ -173,7 +178,6 @@ int WINAPI WinMain(
 
 		SwapBuffers(dc_window);
 	}
-
 	return 0;
 }
 
@@ -182,28 +186,24 @@ void render_orders(const std::vector<render::Order>& orders) noexcept {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector<render::View_Info> view_stack;
-	render::View_Info default_view;
-	default_view.world_bounds.pos = {};
-	default_view.world_bounds.size = {
-		(float)Environment.window_width, (float)Environment.window_height
-	};
-
-	view_stack.push_back(default_view);
 
 	for (const auto& x : orders) {
 		switch (x.kind) {
 		case render::Order::Kind::Sprite:
 			render::sprite(x.sprite);
 			break;
-		case render::Order::Kind::View_Push:
+		case render::Order::Kind::View_Push: {
+			auto y = x.view;
 			view_stack.push_back(x.view);
-			render::current_view = x.view;
+			render::current_view = y;
 			break;
-		case render::Order::Kind::View_Pop:
+		}
+		case render::Order::Kind::View_Pop: {
 			assert(!view_stack.empty());
 			view_stack.pop_back();
 			render::current_view = view_stack.back();
 			break;
+		}
 		}
 	}
 
@@ -233,7 +233,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	auto dc = GetDC(handle_window);
 	if (!dc) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 	defer{ ReleaseDC(handle_window, dc); };
@@ -249,7 +249,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	auto suggested_pixel_format = ChoosePixelFormat(dc, &pixel_format);
 	if (!suggested_pixel_format) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 	auto result = DescribePixelFormat(
@@ -257,62 +257,66 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	);
 	if (!result) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
 	if (!SetPixelFormat(dc, suggested_pixel_format, &pixel_format)) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
-	typedef HGLRC WINAPI wglCreateContextAttribsARB(HDC, HGLRC, const int*);
 
 	auto gl_context = wglCreateContext(dc);
 	if (!gl_context) {
 		// >TODO error handling
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
 	if (!wglMakeCurrent(dc, gl_context)) {
 		wglDeleteContext(gl_context);
 
-		OutputDebugStringA(get_last_error_message()->c_str());
+		printf(get_last_error_message()->c_str());
 		return std::nullopt;
 	}
-	
-	auto wglCreateContextArb =
-		(wglCreateContextAttribsARB*)wglGetProcAddress("wglCreateContextAttribsARB");
 
-	int attribs[] = {
-		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-		WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB, 0
-	};
-	
-	HGLRC share_context = nullptr;
+	glewExperimental = true; // Needed for core profile
+	if (glewInit() != GLEW_OK) {
+		printf("Can't init glew\n");
+		return gl_context;
+	}
 
-	auto new_context = wglCreateContextArb(dc, share_context, attribs);
-	if (!new_context) {
+	auto gl = wglCreateContextAttribsARB(dc, nullptr, attribs);
+	if (!gl) {
 		auto err = glGetError();
-		OutputDebugString(std::to_string(err).c_str());
+		printf(std::to_string(err).c_str());
 
 		return gl_context;
 	}
+	platform::main_opengl_context = gl;
 
-	if (!wglMakeCurrent(dc, new_context)) {
-		wglDeleteContext(new_context);
+	if (!wglMakeCurrent(dc, gl)) {
+		wglDeleteContext(gl);
 		return gl_context;
 	}
+
+	gl = wglCreateContextAttribsARB(dc, gl, attribs);
+	if (!gl) {
+		auto err = glGetError();
+		printf(std::to_string(err).c_str());
+
+		return gl_context;
+	}
+	platform::asset_opengl_context = gl;
+
 	wglDeleteContext(gl_context);
-
-	return new_context;
+	return (HGLRC)platform::main_opengl_context;
 }
 void destroy_gl_context(HGLRC gl_context) noexcept {
 	// >TODO error handling
-	if (!wglDeleteContext(gl_context)) OutputDebugStringA(get_last_error_message()->c_str());
+	if (!wglDeleteContext(gl_context)) printf(get_last_error_message()->c_str());
 }
 
 
@@ -348,7 +352,7 @@ const char* debug_severity_str(GLenum severity) {
 	return severities[str_idx];
 }
 
-void opengl_debug(
+void APIENTRY opengl_debug(
 	GLenum source,
 	GLenum type,
 	GLuint id,
@@ -357,10 +361,10 @@ void opengl_debug(
 	const GLchar* message,
 	const void*
 ) noexcept {
-	constexpr GLenum To_Ignore[] = {
-		131185,
-		131204  /*this one is the texture mipmap warning remember to periodically check it sfml*/
-				/*force me to ignore it*/
+	constexpr GLenum To_Ignore[] = {0
+		//131185,
+		//131204  /*this one is the texture mipmap warning remember to periodically check it sfml*/
+		//		/*force me to ignore it*/
 	};
 
 	constexpr GLenum To_Break_On[] = {
@@ -369,22 +373,23 @@ void opengl_debug(
 
 	if (std::find(BEG_END(To_Ignore), id) != std::end(To_Ignore)) return;
 
-	OutputDebugString("OpenGL Error:\n");
-	OutputDebugString("=============\n");
-	OutputDebugString(" Object ID: ");
-	OutputDebugString(std::to_string(id).c_str());
-	OutputDebugString("\n Severity:  ");
-	OutputDebugString(debug_severity_str(severity));
-	OutputDebugString(" Type:      ");
-	OutputDebugString(debug_type_str(type));
-	OutputDebugString("\n Source:    ");
-	OutputDebugString(debug_source_str(source));
-	OutputDebugString("\n Message:   ");
-	OutputDebugString(message);
-	OutputDebugString("\n\n");
+	printf("OpenGL Error:\n");
+	printf("=============\n");
+	printf(" Object ID: ");
+	printf(std::to_string(id).c_str());
+	printf("\n Severity:  ");
+	printf(debug_severity_str(severity));
+	printf("\n Type:      ");
+	printf(debug_type_str(type));
+	printf("\n Source:    ");
+	printf(debug_source_str(source));
+	printf("\n Message:   ");
+	printf(message);
+	printf("\n\n");
 
 	if (std::find(BEG_END(To_Break_On), id) != std::end(To_Break_On)) {
-		DebugBreak();
+		//DebugBreak();
 	}
 }
 
+#endif

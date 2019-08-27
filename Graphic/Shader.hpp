@@ -11,8 +11,11 @@ struct ShaderInfo {
 	size_t programId = 0;
 	size_t fragmentId = 0;
 
-	std::string vertexSource = "";
-	std::string fragmentSource = "";
+	bool vertex_compiled{ false };
+	bool vertex_linked{ false };
+
+	bool fragment_compiled{ false };
+	bool fragment_linked{ false };
 };
 
 class Shader {
@@ -42,11 +45,12 @@ public:
 	void set_size(Vector2f size) noexcept;
 	void set_texture(size_t id) noexcept;
 
-private:
 	bool load_vertex(std::filesystem::path path) noexcept;
 	bool load_fragment(std::filesystem::path path) noexcept;
 	bool build_shaders() noexcept;
 
+
+private:
 	std::optional<std::string> check_shader_error(size_t shader) noexcept;
 	std::optional<std::string> check_program_error(size_t program) noexcept;
 

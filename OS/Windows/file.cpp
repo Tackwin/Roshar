@@ -14,26 +14,26 @@ file::read_whole_text(const std::filesystem::path& path) noexcept {
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL,
 		nullptr
-        );
+	);
 	if (handle == INVALID_HANDLE_VALUE) {
 		return Error::Win_Create_File;
 	}
 	defer{ CloseHandle(handle); };
-    
+
 	LARGE_INTEGER large_int;
 	GetFileSizeEx(handle, &large_int);
 	if (large_int.QuadPart == 0) {
 		return Error::Win_File_Size;
 	}
-    
+
 	std::string buffer;
-	buffer.reserve((std::size_t)large_int.QuadPart);
-    
+	buffer.resize((std::size_t)large_int.QuadPart);
+
 	DWORD read;
 	if (!ReadFile(handle, buffer.data(), (DWORD)large_int.QuadPart, &read, nullptr)) {
 		return Error::Win_File_Read;
 	}
-    
+
 	return buffer;
 }
 
@@ -311,48 +311,57 @@ void file::monitor_file(std::filesystem::path path, std::function<void()> f) noe
 }
 
 void file::monitor_dir(
-std::filesystem::path dir, std::function<void(std::filesystem::path)> f
+	std::filesystem::path dir, std::function<void(std::filesystem::path)> f
 ) noexcept {
-	std::thread t{ [f, dir] {
-            auto handle = CreateFile(
-                dir.string().c_str(),
-                GENERIC_READ,
-                FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
-                NULL,
-                OPEN_EXISTING,
-                FILE_FLAG_BACKUP_SEMANTICS,
-                NULL
-                );
-            DWORD buffer[1024];
-            DWORD byte_returned;
-            
-            while (true) {
-                auto result = ReadDirectoryChangesW(
-                    handle,
-                    buffer,
-                    sizeof(buffer),
-                    TRUE,
-                    FILE_NOTIFY_CHANGE_LAST_WRITE,
-                    &byte_returned,
-                    NULL,
-                    NULL
-                    );
-                
-                if (!result) {
-                    // >TODO: error
-                    continue;
-                }
-                
-                
-                for (size_t i = 0; i < byte_returned;) {
-                    auto* info = (FILE_NOTIFY_INFORMATION*)(buffer + i);
-                    if (info->Action == FILE_ACTION_MODIFIED)
-                        f(std::wstring(info->FileName, info->FileNameLength / sizeof(WCHAR)));
+	monitor_dir([] {}, dir, f);
+}
+
+void file::monitor_dir(
+	std::function<void()> init_thread,
+	std::filesystem::path dir,
+	std::function<void(std::filesystem::path)> f
+) noexcept {
+	std::thread{ [f, dir, init_thread] {
+			init_thread();
+			auto handle = CreateFile(
+				dir.string().c_str(),
+				GENERIC_READ,
+				FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
+				NULL,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS,
+				NULL
+			);
+			DWORD buffer[1024];
+			DWORD byte_returned;
+
+			while (true) {
+				auto result = ReadDirectoryChangesW(
+					handle,
+					buffer,
+					sizeof(buffer),
+					TRUE,
+					FILE_NOTIFY_CHANGE_LAST_WRITE,
+					&byte_returned,
+					NULL,
+					NULL
+				);
+
+				if (!result) {
+					// >TODO: error
+					continue;
+				}
+
+
+				for (size_t i = 0; i < byte_returned;) {
+					auto* info = (FILE_NOTIFY_INFORMATION*)(buffer + i);
+					if (info->Action == FILE_ACTION_MODIFIED)
+						f(std::wstring(info->FileName, info->FileNameLength / sizeof(WCHAR)));
                     
-                    i += info->NextEntryOffset;
-                    if (info->NextEntryOffset == 0) break;
-                }
-            }
-        } };
-	t.detach();
+					i += info->NextEntryOffset;
+					if (info->NextEntryOffset == 0) break;
+				}
+			}
+		}
+	}.detach();
 }

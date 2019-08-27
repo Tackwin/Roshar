@@ -9,3 +9,8 @@ std::mutex Main_Mutex;
 
 sf::RenderWindow* window{ nullptr };
 float wheel_scroll;
+
+
+void* platform::handle_window{ nullptr };
+void* platform::main_opengl_context{ nullptr };
+void* platform::asset_opengl_context{ nullptr };

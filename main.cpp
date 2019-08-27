@@ -1,3 +1,5 @@
+#ifndef NATIVE
+
 #include <stdio.h>
 #include <SFML/Graphics.hpp>
 #include <optional>
@@ -99,3 +101,5 @@ int main(int, char**) {
 	}
 	return 0;
 }
+
+#endif

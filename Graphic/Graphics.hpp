@@ -3,6 +3,8 @@
 #include "Managers/AssetsManager.hpp"
 #include "Math/Vector.hpp"
 #include "Math/Rectangle.hpp"
+#include <GL/glew.h>
+#include <GL/wglew.h>
 
 namespace render {
 
@@ -39,8 +41,12 @@ namespace render {
 		} kind;
 	};
 
-	inline static View_Info current_view;
+	extern View_Info current_view;
 
-	void sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept;
+	Order sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept;
+	Order push_view(Vector2f pos, Vector2f size) noexcept;
+	Order push_view(Rectanglef bounds) noexcept;
+	Order pop_view() noexcept;
+
 	void sprite(Sprite_Info info) noexcept;
 }

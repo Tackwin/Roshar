@@ -2,8 +2,30 @@
 
 #include <GL/glew.h>
 
+render::View_Info render::current_view;
 
-void render::sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept {
+render::Order render::push_view(Rectanglef bounds) noexcept {
+	View_Info info;
+
+	info.world_bounds = bounds;
+
+	Order order;
+	order.kind = render::Order::Kind::View_Push;
+	order.view = info;
+
+	return order;
+}
+render::Order render::push_view(Vector2f pos, Vector2f size) noexcept {
+	return push_view({ pos, size });
+}
+
+render::Order render::pop_view() noexcept {
+	Order order;
+	order.kind = Order::Kind::View_Pop;
+	return order;
+}
+
+render::Order render::sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept {
 	Sprite_Info info;
 	info.pos = pos;
 	info.size = size;
@@ -13,26 +35,31 @@ void render::sprite(Vector2f pos, Vector2f size, asset::Key texture) noexcept {
 	info.texture = texture;
 	info.shader = asset::Known_Shaders::Default;
 
-	render::sprite(info);
+	Order order;
+	order.sprite = info;
+	order.kind = Order::Kind::Sprite;
+
+	return order;
 }
+
+float quad_vertices[] = {
+	// positions        // texture Coords
+	0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+	1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+};
+
 void render::sprite(Sprite_Info info) noexcept {
-	static size_t quad_vao{ 0 };
-	static size_t quad_vbo{ 0 };
+	static GLuint quad_vao{ 0 };
+	static GLuint quad_vbo{ 0 };
+	
 
 	if (!quad_vao) {
-
-		float quad_vertices[] = {
-			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		};
-
 		// setup plane VAO
 		glGenVertexArrays(1, &quad_vao);
-		glGenBuffers(1, &quad_vbo);
 		glBindVertexArray(quad_vao);
+		glGenBuffers(1, &quad_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
@@ -46,6 +73,7 @@ void render::sprite(Sprite_Info info) noexcept {
 	glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, asset::Store.get_my_texture(info.texture).get_texture_id());
 
+	if (!asset::Store.shaders.contains(info.shader)) return;
 	auto& shader = asset::Store.get_shader(info.shader);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });

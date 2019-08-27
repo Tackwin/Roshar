@@ -479,7 +479,7 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 			if (test(doors[i], player)) {
 				if (auto_climb) {
 					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
-					if (-player.size.y / 5.f < dt_y && dt_y < -player.size.y / 10.f) {
+					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
 						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
 						current_old_player_pos.y = player.pos.y;
 						if (correcting_count-- > 0) goto corrected_position;
@@ -494,7 +494,7 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 			if (test(blocks[i], player)) {
 				if (auto_climb) {
 					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
-					if (-player.size.y / 5.f < dt_y && dt_y < -player.size.y / 10.f) {
+					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
 						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
 						current_old_player_pos.y = player.pos.y;
 						if (correcting_count-- > 0) goto corrected_position;

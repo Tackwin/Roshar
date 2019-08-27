@@ -177,14 +177,14 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 
 		prest_gathered *= .1f;
 
-		sf::CircleShape shape;
-		shape.setRadius(prest_gathered);
-		shape.setOrigin(prest_gathered, prest_gathered);
-		shape.setPosition(mouse_world_pos);
-		shape.setFillColor(sf::Color::Green);
-		shape.setOutlineThickness(0.01f);
-		shape.setOutlineColor(sf::Color::White);
-		target.draw(shape);
+		sf::CircleShape circle_shape;
+		circle_shape.setRadius(prest_gathered);
+		circle_shape.setOrigin(prest_gathered, prest_gathered);
+		circle_shape.setPosition(mouse_world_pos);
+		circle_shape.setFillColor(sf::Color::Green);
+		circle_shape.setOutlineThickness(0.01f);
+		circle_shape.setOutlineColor(sf::Color::White);
+		target.draw(circle_shape);
 
 		Vector2f::renderLine(
 			target,

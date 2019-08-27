@@ -61,6 +61,12 @@ struct Rectangle_t {
 			this->size.y = -this->size.y;
 		}
 	}
+
+	Rectangle_t(const Rectangle_t&) = default;
+	Rectangle_t& operator=(const Rectangle_t&) = default;
+	Rectangle_t(Rectangle_t&&) = default;
+	Rectangle_t& operator=(Rectangle_t&&) = default;
+
 #ifdef SFML_GRAPHICS_HPP
 
 	Rectangle_t(const sf::FloatRect& rec) : 
