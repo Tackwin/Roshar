@@ -10,10 +10,21 @@ uniform vec2 size;
 uniform vec2 origin;
 uniform vec2 object_pos;
 uniform float rotation;
+
 uniform sampler2D color_texture;
+uniform bool use_color_texture;
+
 uniform vec4 world_bounds;
-uniform vec2 screen_bounds;	
+uniform vec2 screen_bounds;
 
 void main() {
-    FragColor = vec4(color.x, color.y, color.z, 1);
+	vec4 texel = vec4(1);
+	if (use_color_texture) texel = texture(color_texture, texture_coord);
+
+    FragColor = vec4(
+    	texel.x * color.x,
+    	texel.y * color.y,
+    	texel.z * color.z,
+    	texel.w
+    );
 }

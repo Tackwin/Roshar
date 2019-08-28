@@ -179,5 +179,9 @@ void Shader::set_window_size(Vector2u size) noexcept {
 	glUniform2fv(loc("screen_bounds"), 1, &s.x);
 }
 
+void Shader::set_use_texture(bool x) noexcept {
+	glUniform1i(loc("use_color_texture"), x);
+}
+
 
 #undef loc

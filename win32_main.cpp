@@ -117,15 +117,17 @@ int WINAPI WinMain(
 	auto gl_context = *create_gl_context(window_handle);
 	defer{ destroy_gl_context(gl_context); };
 
+	GLint flags;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glDebugMessageCallback((GLDEBUGPROCARB)opengl_debug, nullptr);
+	}
 
-	//GLint flags;
-	//glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-	//if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
-	//	glEnable(GL_DEBUG_OUTPUT);
-	//	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	//	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-	//	glDebugMessageCallback((GLDEBUGPROCARB)opengl_debug, nullptr);
-	//}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	printf("Opengl ");
 	printf((char*)glGetString(GL_VERSION));
@@ -143,12 +145,12 @@ int WINAPI WinMain(
 	while (GL_NO_ERROR != glGetError());
 
 	asset::Store.monitor_path("shaders/");
+	asset::Store.monitor_path("textures/");
+	
 	asset::Store.load_known_shaders();
+	asset::Store.load_known_textures();
 
-
-	//asset::Store.monitor_path("textures/");
-	//asset::Store.load_known_textures();
-
+	wglSwapIntervalEXT(0);
 
 	MSG msg{};
 	auto last_time_frame = microseconds();
@@ -161,6 +163,7 @@ int WINAPI WinMain(
 	while (msg.message != WM_QUIT) {
 		std::uint64_t dt = microseconds() - last_time_frame;
 		last_time_frame = microseconds();
+		if ((dt % 10) == 0) printf("%llu\n", dt);
 
 		if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE)) {
 			TranslateMessage(&msg);
@@ -190,7 +193,13 @@ void render_orders(const std::vector<render::Order>& orders) noexcept {
 	for (const auto& x : orders) {
 		switch (x.kind) {
 		case render::Order::Kind::Sprite:
-			render::sprite(x.sprite);
+			render::immediate(x.sprite);
+			break;
+		case render::Order::Kind::Rectangle:
+			render::immediate(x.rectangle);
+			break;
+		case render::Order::Kind::Circle:
+			render::immediate(x.circle);
 			break;
 		case render::Order::Kind::View_Push: {
 			auto y = x.view;
@@ -302,14 +311,6 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 		return gl_context;
 	}
 
-	gl = wglCreateContextAttribsARB(dc, gl, attribs);
-	if (!gl) {
-		auto err = glGetError();
-		printf(std::to_string(err).c_str());
-
-		return gl_context;
-	}
-	platform::asset_opengl_context = gl;
 
 	wglDeleteContext(gl_context);
 	return (HGLRC)platform::main_opengl_context;

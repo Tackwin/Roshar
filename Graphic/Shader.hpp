@@ -45,6 +45,8 @@ public:
 	void set_size(Vector2f size) noexcept;
 	void set_texture(size_t id) noexcept;
 
+	void set_use_texture(bool x) noexcept;
+
 	bool load_vertex(std::filesystem::path path) noexcept;
 	bool load_fragment(std::filesystem::path path) noexcept;
 	bool build_shaders() noexcept;

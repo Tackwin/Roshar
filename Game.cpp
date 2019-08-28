@@ -5,18 +5,11 @@
 
 void render_game(std::vector<render::Order>& o) noexcept {
 	o.push_back(render::push_view({ 0, 0 }, {1280, 720}));
-
-	render::Sprite_Info i;
-	i.pos = { 50, 50 };
-	i.size = { 100, 100 };
-	i.color = { 1., 1., 0.5, 1. };
-	i.shader = asset::Known_Shaders::Default;
-
-	render::Order order;
-	order.sprite = i;
-	order.kind = render::Order::Kind::Sprite;
-
-	o.push_back(order);
+	o.push_back(render::sprite(
+		{ 50, 50 }, { 100, 100 }, asset::Known_Textures::Rock, { 0, 0 }, 0, { 1, 1, 0.5, 1 }
+	));
+	o.push_back(render::rectangle({ 150, 150 }, { 100, 100 }, { 1, 0, 1, 1 }));
+	o.push_back(render::circle(50, { 300, 300 }, { 1, 0, 1, 1 }));
 }
 void update_game(std::uint64_t) noexcept {
 }

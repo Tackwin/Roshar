@@ -63,7 +63,7 @@ namespace asset {
 }
 
 [[nodiscard]] bool Store_t::load_my_texture(Key k, std::filesystem::path path) noexcept {
-	auto& new_texture = my_textures.at(k);
+	auto& new_texture = my_textures[k];
 	new_texture.path = path;
 	bool loaded = new_texture.asset.load_file(path.string());
 
@@ -128,10 +128,14 @@ static int attribs[] = {
 };
 
 void Store_t::monitor_path(std::filesystem::path dir) noexcept {
+	auto gl = wglCreateContextAttribsARB(
+		(HDC)platform::handle_window, (HGLRC)platform::main_opengl_context, attribs
+	);
+
 	file::monitor_dir(
-		[] {
+		[gl] {
 			if (!wglMakeCurrent(
-				(HDC)platform::handle_window, (HGLRC)platform::asset_opengl_context
+				(HDC)platform::handle_window, gl
 			)) std::abort();
 		},
 		dir,
@@ -176,7 +180,7 @@ void Store_t::load_known_textures() noexcept {
 
 #define X(str, x)\
 	printf("Loading " str " ... ");\
-	opt = load_texture(str);\
+	opt = load_my_texture(str);\
 	if (opt) {\
 		Known_Textures::x = *opt;\
 		printf("sucess :) !\n");\

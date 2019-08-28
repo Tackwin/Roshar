@@ -1,6 +1,5 @@
 #version 330 core
 layout (location = 0) in vec3 in_pos;
-layout (location = 1) in vec2 in_texture_coord;
 
 out vec2 texture_coord;
 out vec3 pos;
@@ -20,16 +19,12 @@ void main() {
 		object_pos.y + in_pos.y * size.y,
 		1.0
 	);
-	
-
 
 	pos.x = 2 * (pos.x - world_bounds.x) / (world_bounds.z) - 1;
 	pos.y = 2 * (pos.y - world_bounds.y) / (world_bounds.w) - 1;
 
-    gl_Position = vec4(
-    	pos.x,
-    	pos.y,
-    	1.0,
-    	1.0
-    );
+	texture_coord.x = in_pos.x;
+	texture_coord.y = in_pos.y;
+
+    gl_Position = vec4(pos, 1.0);
 }

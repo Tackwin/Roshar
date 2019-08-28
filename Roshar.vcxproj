@@ -231,7 +231,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>NATIVE;NOMINMAX;NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NATIVE;CONSOLE;NOMINMAX;NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;</ForcedIncludeFiles>
       <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
       <LanguageStandard>stdcpplatest</LanguageStandard>
