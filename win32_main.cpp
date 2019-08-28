@@ -17,6 +17,10 @@
 #include "Graphic/Graphics.hpp"
 #include "Graphic/OpenGL.hpp"
 
+#include <imgui.h>
+#include "Graphic/imgui_impl_win32.hpp"
+#include "Graphic/imgui_impl_opengl3.hpp"
+
 static int attribs[] = {
 	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
 	0
@@ -39,9 +43,14 @@ std::optional<std::string> get_last_error_message() noexcept;
 std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept;
 void destroy_gl_context(HGLRC gl_context) noexcept;
 
+IMGUI_IMPL_API LRESULT  ImGui_ImplWin32_WndProcHandler(
+	HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
+);
+
 void render_orders(const std::vector<render::Order>& orders) noexcept;
 
 LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept {
+	ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 	switch (msg) {
 	case WM_SYSCOMMAND:
 		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
@@ -53,6 +62,8 @@ LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) no
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+
+
 
 #ifdef CONSOLE
 int main(int, char**
@@ -133,6 +144,22 @@ int WINAPI WinMain(
 	printf((char*)glGetString(GL_VERSION));
 	printf("\n");
 
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	const char* glsl_version = "#version 130";
+	// Setup Platform/Renderer bindings
+	ImGui_ImplWin32_Init(window_handle);
+	ImGui_ImplOpenGL3_Init(glsl_version);
+
 	auto dc_window = GetDC(window_handle);
 	if (!dc_window) {
 		// >TODO error handling
@@ -141,8 +168,6 @@ int WINAPI WinMain(
 	}
 
 	platform::handle_window = dc_window;
-
-	while (GL_NO_ERROR != glGetError());
 
 	asset::Store.monitor_path("shaders/");
 	asset::Store.monitor_path("textures/");
@@ -163,7 +188,6 @@ int WINAPI WinMain(
 	while (msg.message != WM_QUIT) {
 		std::uint64_t dt = microseconds() - last_time_frame;
 		last_time_frame = microseconds();
-		if ((dt % 10) == 0) printf("%llu\n", dt);
 
 		if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE)) {
 			TranslateMessage(&msg);
@@ -174,13 +198,29 @@ int WINAPI WinMain(
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
 		
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::Begin("azeaz");
+		ImGui::Button("Test");
+		ImGui::End();
+
 		update_game(dt);
 		render_game(orders);
 		render_orders(orders);
 		orders.resize(0);
 
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		SwapBuffers(dc_window);
 	}
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	return 0;
 }
 
@@ -362,10 +402,8 @@ void APIENTRY opengl_debug(
 	const GLchar* message,
 	const void*
 ) noexcept {
-	constexpr GLenum To_Ignore[] = {0
-		//131185,
-		//131204  /*this one is the texture mipmap warning remember to periodically check it sfml*/
-		//		/*force me to ignore it*/
+	constexpr GLenum To_Ignore[] = {
+		131185
 	};
 
 	constexpr GLenum To_Break_On[] = {

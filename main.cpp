@@ -9,7 +9,6 @@
 #include "Managers/InputsManager.hpp"
 #include "Managers/AssetsManager.hpp"
 
-#include "imgui-SFML.h"
 #include "imgui.h"
 
 #include "Editor.hpp"
@@ -22,9 +21,6 @@ int main(int, char**) {
 	window = &render_window;
 
 	defer{ asset::Store.textures.clear(); };
-
-	ImGui::SFML::Init(render_window);
-	defer{ ImGui::SFML::Shutdown(); };
 
 	asset::Store.monitor_path("textures/");
 	asset::Store.load_known_textures();
@@ -46,8 +42,6 @@ int main(int, char**) {
 		sf::Event event;
 		while (render_window.pollEvent(event)) {
 
-			ImGui::SFML::ProcessEvent(event);
-
 			if (!render_window.hasFocus()) continue;
 
 			if (event.type == sf::Event::Closed)
@@ -57,8 +51,6 @@ int main(int, char**) {
 				wheel_scroll = event.mouseWheelScroll.delta;
 			}
 		}
-
-		ImGui::SFML::Update(render_window, sf::seconds(dt));
 
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
@@ -96,7 +88,6 @@ int main(int, char**) {
 		game->update((size_t)(1'000'000 * dt));
 		game->render(render_window);
 
-		ImGui::SFML::Render(render_window);
 		render_window.display();
 	}
 	return 0;

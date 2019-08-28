@@ -1,63 +1,56 @@
-#ifndef IMGUI_SFML_H
-#define IMGUI_SFML_H
+// Add this to your imconfig.h
 
 #include <SFML/System/Vector2.hpp>
-#include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Color.hpp>
-#include <SFML/System/Time.hpp>
-#include <SFML/Window/Joystick.hpp>
 
-#include "imgui-SFML_export.h"
+#ifndef IMGUI_SFML_EXPORT_H
+#define IMGUI_SFML_EXPORT_H
 
-namespace sf
-{
-	class Event;
-	class RenderTarget;
-	class RenderWindow;
-	class Sprite;
-	class Texture;
-	class Window;
-}
+#if IMGUI_SFML_SHARED_LIB
+#if _WIN32
+#ifdef IMGUI_SFML_EXPORTS
+#define IMGUI_SFML_API __declspec(dllexport)
+#define IMGUI_API __declspec(dllexport)
+#else
+#define IMGUI_SFML_API __declspec(dllimport)
+#define IMGUI_API __declspec(dllexport)
+#endif
+#elif __GNUC__ >= 4
+#define IMGUI_SFML_API __attribute__ ((visibility("default")))
+#define IMGUI_API __attribute__ ((visibility("default")))
+#else
+#define IMGUI_SFML_API
+#define IMGUI_API
+#endif
+#else
+#define IMGUI_SFML_API
+#define IMGUI_API
+#endif
 
-namespace ImGui
-{
-	namespace SFML
-	{
-		IMGUI_SFML_API void Init(sf::RenderWindow& window, bool loadDefaultFont = true);
-		IMGUI_SFML_API void Init(sf::Window& window, sf::RenderTarget& target, bool loadDefaultFont = true);
+#endif
 
-		IMGUI_SFML_API void ProcessEvent(const sf::Event& event);
+#define IM_VEC2_CLASS_EXTRA                                             \
+    template <typename T>                                               \
+    ImVec2(const sf::Vector2<T>& v) {                                   \
+        x = static_cast<float>(v.x);                                    \
+        y = static_cast<float>(v.y);                                    \
+    }                                                                   \
+                                                                        \
+    template <typename T>                                               \
+    operator sf::Vector2<T>() const {                                   \
+        return sf::Vector2<T>(x, y);                                    \
+    }
 
-		IMGUI_SFML_API void Update(sf::RenderWindow& window, sf::Time dt);
-		IMGUI_SFML_API void Update(sf::Window& window, sf::RenderTarget& target, sf::Time dt);
-		IMGUI_SFML_API void Update(const sf::Vector2i& mousePos, const sf::Vector2f& displaySize, sf::Time dt);
+#define IM_VEC4_CLASS_EXTRA                                             \
+    ImVec4(const sf::Color & c)                                         \
+        : ImVec4(c.r / 255.f, c.g / 255.f, c.b / 255.f, c.a / 255.f) {  \
+    }                                                                   \
+    operator sf::Color() const {                                        \
+        return sf::Color(                                               \
+            static_cast<sf::Uint8>(x * 255.f),                          \
+            static_cast<sf::Uint8>(y * 255.f),                          \
+            static_cast<sf::Uint8>(z * 255.f),                          \
+            static_cast<sf::Uint8>(w * 255.f));                         \
+    }
 
-		IMGUI_SFML_API void Render(sf::RenderTarget& target);
-
-		IMGUI_SFML_API void Shutdown();
-
-		IMGUI_SFML_API void UpdateFontTexture();
-		IMGUI_SFML_API sf::Texture& GetFontTexture();
-
-		// joystick functions
-		IMGUI_SFML_API void SetActiveJoystickId(unsigned int joystickId);
-		IMGUI_SFML_API void SetJoytickDPadThreshold(float threshold);
-		IMGUI_SFML_API void SetJoytickLStickThreshold(float threshold);
-
-		IMGUI_SFML_API void SetJoystickMapping(int action, unsigned int joystickButton);
-		IMGUI_SFML_API void SetDPadXAxis(sf::Joystick::Axis dPadXAxis, bool inverted = false);
-		IMGUI_SFML_API void SetDPadYAxis(sf::Joystick::Axis dPadYAxis, bool inverted = false);
-		IMGUI_SFML_API void SetLStickXAxis(sf::Joystick::Axis lStickXAxis, bool inverted = false);
-		IMGUI_SFML_API void SetLStickYAxis(sf::Joystick::Axis lStickYAxis, bool inverted = false);
-	}
-
-	// custom ImGui widgets for SFML stuff
-
-
-	// Draw_list overloads. All positions are in relative coordinates (relative to top-left of the current window)
-	IMGUI_SFML_API void DrawLine(const sf::Vector2f& a, const sf::Vector2f& b, const sf::Color& col, float thickness = 1.0f);
-	IMGUI_SFML_API void DrawRect(const sf::FloatRect& rect, const sf::Color& color, float rounding = 0.0f, int rounding_corners = 0x0F, float thickness = 1.0f);
-	IMGUI_SFML_API void DrawRectFilled(const sf::FloatRect& rect, const sf::Color& color, float rounding = 0.0f, int rounding_corners = 0x0F);
-}
-
-#endif //# IMGUI_SFML_H
+#define ImTextureID unsigned int

@@ -294,9 +294,10 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="global.cpp" />
     <ClCompile Include="Graphic\Graphics.cpp" />
+    <ClCompile Include="Graphic\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Graphic\imgui_impl_win32.cpp" />
     <ClCompile Include="Graphic\Shader.cpp" />
     <ClCompile Include="Graphic\Texture.cpp" />
-    <ClCompile Include="imgui-SFML.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Managers\AssetsManager.cpp" />
@@ -314,12 +315,12 @@
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="global.hpp" />
     <ClInclude Include="Graphic\Graphics.hpp" />
+    <ClInclude Include="Graphic\imgui_impl_opengl3.hpp" />
+    <ClInclude Include="Graphic\imgui_impl_win32.hpp" />
     <ClInclude Include="Graphic\OpenGL.hpp" />
     <ClInclude Include="Graphic\Shader.hpp" />
     <ClInclude Include="Graphic\Texture.hpp" />
     <ClInclude Include="imconfig.h" />
-    <ClInclude Include="imgui-SFML.h" />
-    <ClInclude Include="imgui-SFML_export.h" />
     <ClInclude Include="Level.hpp" />
     <ClInclude Include="macros.hpp" />
     <ClInclude Include="Managers\AssetsManager.hpp" />
