@@ -1,10 +1,77 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include <optional>
 #include <vector>
 #include <array>
 
 #include "./../Math/Vector.hpp"
+#include "Graphic/Graphics.hpp"
+
+struct Keyboard {
+	enum Key {
+		A = 0,
+		Z,
+		E,
+		R,
+		T,
+		Y,
+		U,
+		I,
+		O,
+		P,
+		Q,
+		S,
+		D,
+		F,
+		G,
+		H,
+		J,
+		K,
+		L,
+		M,
+		W,
+		X,
+		C,
+		V,
+		B,
+		N,
+		F1,
+		F2,
+		F3,
+		F4,
+		F5,
+		F6,
+		F7,
+		F8,
+		F9,
+		F10,
+		F11,
+		F12,
+		DEL,
+		Return,
+		Space,
+		Escape,
+		Quote,
+		LSYS,
+		LCTRL,
+		LALT,
+		LSHIFT,
+		RSYS,
+		RCTRL,
+		RALT,
+		RSHIFT,
+		Count = 101
+	};
+};
+
+
+struct Mouse {
+	enum Button {
+		Left = 0,
+		Right,
+		Middle,
+		Count = 5
+	};
+};
 
 struct Joystick_Button {
 	enum X360 {
@@ -27,9 +94,9 @@ struct Inputs_Info {
 		bool just_released : 1;
 	};
 
-	std::array<Action_Info, sf::Keyboard::KeyCount>    key_infos;
-	std::array<Action_Info, sf::Mouse::ButtonCount>    mouse_infos;
-	std::array<Action_Info, sf::Joystick::ButtonCount> joystick_buttons_infos;
+	std::array<Action_Info, Keyboard::Count>    key_infos;
+	std::array<Action_Info, Mouse::Count>       mouse_infos;
+	std::array<Action_Info, 32>                 joystick_buttons_infos;
 
 	Vector2f joystick_axis;
 
@@ -46,23 +113,20 @@ struct Inputs_Info {
 		bool focused : 1;
 	};
 
-	[[nodiscard]] Vector2f mouse_world_pos(sf::View& v) const noexcept;
-	[[nodiscard]] bool is_just_released(sf::Keyboard::Key k) const noexcept;
-	[[nodiscard]] bool is_just_released(sf::Mouse::Button b) const noexcept;
-	[[nodiscard]] bool is_just_released(int b              ) const noexcept;
-	[[nodiscard]] bool is_just_pressed(sf::Keyboard::Key k) const noexcept;
-	[[nodiscard]] bool is_just_pressed(sf::Mouse::Button b) const noexcept;
-	[[nodiscard]] bool is_just_pressed(int b              ) const noexcept;
-	[[nodiscard]] bool is_pressed(sf::Keyboard::Key k) const noexcept;
-	[[nodiscard]] bool is_pressed(sf::Mouse::Button b) const noexcept;
-	[[nodiscard]] bool is_pressed(int x              ) const noexcept;
+	[[nodiscard]] Vector2f mouse_world_pos(render::View_Info& v) const noexcept;
+	[[nodiscard]] Vector2f mouse_world_pos(Rectanglef& v       ) const noexcept;
+	[[nodiscard]] bool is_just_released(Keyboard::Key k) const noexcept;
+	[[nodiscard]] bool is_just_released(Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_just_released(int b          ) const noexcept;
+	[[nodiscard]] bool is_just_pressed(Keyboard::Key k) const noexcept;
+	[[nodiscard]] bool is_just_pressed(Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_just_pressed(int b          ) const noexcept;
+	[[nodiscard]] bool is_pressed(Keyboard::Key k) const noexcept;
+	[[nodiscard]] bool is_pressed(Mouse::Button b) const noexcept;
+	[[nodiscard]] bool is_pressed(int x          ) const noexcept;
 };
 
 class InputsManager {
-private:
-	InputsManager();
-	~InputsManager();
-
 private:
 	inline static std::list<Inputs_Info> records{};
 	inline static std::unordered_map<std::uint64_t, std::list<Inputs_Info>> loaded_record{};
@@ -71,68 +135,63 @@ public:
 
 	static decltype(records)::iterator get_iterator() noexcept;
 
-	static std::string nameOfKey(sf::Keyboard::Key) noexcept;
-
 	static void update(float dt);
 
-	static sf::Keyboard::Key getLastKeyPressed() noexcept;
-
-	static bool isTextJustEntered() noexcept;
-	static sf::Uint32 getTextEntered() noexcept;
+	static Keyboard::Key getLastKeyPressed() noexcept;
 
 	static bool isLastSequence(
-		const std::vector<sf::Keyboard::Key>& keys,
-		const std::vector<sf::Keyboard::Key>& modifiers = {}
+		const std::vector<Keyboard::Key>& keys,
+		const std::vector<Keyboard::Key>& modifiers = {}
 	) noexcept;
 	static bool isLastSequenceJustFinished(
-		std::initializer_list<sf::Keyboard::Key> keys,
-		std::initializer_list<sf::Keyboard::Key> modifiers = {}
+		std::initializer_list<Keyboard::Key> keys,
+		std::initializer_list<Keyboard::Key> modifiers = {}
 	) noexcept;
-
-	static int countKeyPressed() noexcept;
 
 	static bool isKeyPressed() noexcept;
 	static bool isKeyPressed(const int &key) {
-		return isKeyPressed(static_cast<sf::Keyboard::Key>(key));
+		return isKeyPressed(static_cast<Keyboard::Key>(key));
 	};
 	static bool isKeyJustPressed() noexcept;
-	static bool isKeyPressed(const sf::Keyboard::Key &key);
+	static bool isKeyPressed(const Keyboard::Key &key);
 
 	static bool isKeyJustPressed(const int &key) {
-		return isKeyJustPressed(static_cast<sf::Keyboard::Key>(key));
+		return isKeyJustPressed(static_cast<Keyboard::Key>(key));
 	};
-	static bool isKeyJustPressed(const sf::Keyboard::Key &key);
+	static bool isKeyJustPressed(const Keyboard::Key &key);
 	
 	static bool isKeyJustReleased() noexcept;
 	static bool isKeyJustReleased(const int &key) {
-		return isKeyJustReleased(static_cast<sf::Keyboard::Key>(key));
+		return isKeyJustReleased(static_cast<Keyboard::Key>(key));
 	};
-	static bool isKeyJustReleased(const sf::Keyboard::Key &key);
+	static bool isKeyJustReleased(const Keyboard::Key &key);
 
 	static bool isMousePressed(const int &button) {
-		return isMousePressed(static_cast<sf::Mouse::Button>(button));
+		return isMousePressed(static_cast<Mouse::Button>(button));
 	};
-	static bool isMousePressed(const sf::Mouse::Button &button);
+	static bool isMousePressed(const Mouse::Button &button);
 
 	static bool isMouseJustPressed(const int &button) {
-		return isMouseJustPressed(static_cast<sf::Mouse::Button>(button));
+		return isMouseJustPressed(static_cast<Mouse::Button>(button));
 	};
-	static bool isMouseJustPressed(const sf::Mouse::Button &button);
+	static bool isMouseJustPressed(const Mouse::Button &button);
 	
 	static bool isMouseJustReleased(const int &button) {
-		return isMouseJustReleased(static_cast<sf::Mouse::Button>(button));
+		return isMouseJustReleased(static_cast<Mouse::Button>(button));
 	};
-	static bool isMouseJustReleased(const sf::Mouse::Button &button);
+	static bool isMouseJustReleased(const Mouse::Button &button);
 
 	static bool isWindowFocused() noexcept;
 
 	static float getLastScroll() noexcept;
 
 	static Vector2u getWindowSize() noexcept;
-	static Vector2f getMousePosInView(const sf::View& view);
+	static Vector2f getMousePosInView(const Rectanglef& view) noexcept;
+	static Vector2f getMousePosInView(const render::View_Info& view) noexcept;
 	static Vector2f getMouseScreenPos();
 	static Vector2f getMouseScreenDelta() noexcept;
-	static Vector2f getMouseDeltaInView(const sf::View& view) noexcept;
+	static Vector2f getMouseDeltaInView(const Rectanglef& view) noexcept;
+	static Vector2f getMouseDeltaInView(const render::View_Info& view) noexcept;
 
 	static float get_dt() noexcept;
 
@@ -147,11 +206,9 @@ public:
 	static size_t size(std::uint64_t id) noexcept;
 	static Input_Iterator end(std::uint64_t id) noexcept;
 private:
-	static int get_vkey(sf::Keyboard::Key) noexcept;
-
-	// For now i'll put that here, but it needs to be in his own stuff
-	// Maybe when i'll make a custom renderer i'll look into matrix, view and whatnot.
-	static Vector2f applyInverseView(const sf::View& view, Vector2f p) noexcept;
+	static Vector2f applyInverseView(const render::View_Info& view, Vector2f p) noexcept;
+	static int get_vkey(Keyboard::Key k) noexcept;
+	static int get_vkey(Mouse::Button k) noexcept;
 };
 
 using IM = InputsManager;

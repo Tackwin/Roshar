@@ -16,11 +16,8 @@ namespace asset {
 	Store_t Store;
 }
 
-[[nodiscard]] sf::Texture& Store_t::get_texture(Key k) noexcept {
+[[nodiscard]] Texture& Store_t::get_texture(Key k) noexcept {
 	return textures.at(k).asset;
-}
-[[nodiscard]] Texture& Store_t::get_my_texture(Key k) noexcept {
-	return my_textures.at(k).asset;
 }
 [[nodiscard]] Shader& Store_t::get_shader(Key k) noexcept {
 	return shaders.at(k).asset;
@@ -29,9 +26,9 @@ namespace asset {
 [[nodiscard]] std::optional<Key> Store_t::load_texture(std::filesystem::path path) noexcept {
 	auto k = xstd::uuid();
 
-	auto new_texture = Asset_t<sf::Texture>{};
+	auto new_texture = Asset_t<Texture>{};
 	new_texture.path = path;
-	bool loaded = new_texture.asset.loadFromFile(path.string());
+	bool loaded = new_texture.asset.load_file(path.string());
 
 	if (loaded) {
 		textures[k] = std::move(new_texture);
@@ -45,25 +42,6 @@ namespace asset {
 
 [[nodiscard]] bool Store_t::load_texture(Key k, std::filesystem::path path) noexcept {
 	auto& new_texture = textures.at(k);
-	new_texture.path = path;
-	bool loaded = new_texture.asset.loadFromFile(path.string());
-
-	if (loaded) {
-		textures_loaded[std::filesystem::canonical(path).string()] = k;
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
-[[nodiscard]] std::optional<Key> Store_t::load_my_texture(std::filesystem::path path) noexcept {
-	auto x = xstd::uuid();
-	return load_my_texture(x, path) ? std::optional{ x } : std::nullopt;
-}
-
-[[nodiscard]] bool Store_t::load_my_texture(Key k, std::filesystem::path path) noexcept {
-	auto& new_texture = my_textures[k];
 	new_texture.path = path;
 	bool loaded = new_texture.asset.load_file(path.string());
 
@@ -104,19 +82,10 @@ namespace asset {
 [[nodiscard]] Key Store_t::make_texture() noexcept {
 	auto k = xstd::uuid();
 
-	textures.emplace(k, Asset_t<sf::Texture>{});
+	textures.emplace(k, Asset_t<Texture>{});
 
 	return k;
 }
-
-[[nodiscard]] Key Store_t::make_my_texture() noexcept {
-	auto k = xstd::uuid();
-
-	my_textures.emplace(k, Asset_t<Texture>{});
-
-	return k;
-}
-
 
 static int attribs[] = {
 	WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
@@ -129,13 +98,13 @@ static int attribs[] = {
 
 void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 	auto gl = wglCreateContextAttribsARB(
-		(HDC)platform::handle_window, (HGLRC)platform::main_opengl_context, attribs
+		(HDC)platform::handle_dc_window, (HGLRC)platform::main_opengl_context, attribs
 	);
 
 	file::monitor_dir(
 		[gl] {
 			if (!wglMakeCurrent(
-				(HDC)platform::handle_window, gl
+				(HDC)platform::handle_dc_window, gl
 			)) std::abort();
 		},
 		dir,
@@ -147,11 +116,7 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 			{
 				auto it = textures_loaded.find(path.string());
 				if (it != END(textures_loaded) && textures.count(it->second)) {
-					textures.at(it->second).asset.loadFromFile(path.string());
-				}
-
-				if (it != END(textures_loaded) && my_textures.count(it->second)) {
-					my_textures.at(it->second).asset.load_file(path.string());
+					textures.at(it->second).asset.load_file(path.string());
 				}
 			}
 
@@ -180,7 +145,7 @@ void Store_t::load_known_textures() noexcept {
 
 #define X(str, x)\
 	printf("Loading " str " ... ");\
-	opt = load_my_texture(str);\
+	opt = load_texture(str);\
 	if (opt) {\
 		Known_Textures::x = *opt;\
 		printf("sucess :) !\n");\

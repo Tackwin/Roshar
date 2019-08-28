@@ -1,11 +1,11 @@
 #pragma once
 #include <optional>
-#include <SFML/Graphics.hpp>
 
 #include "Level.hpp"
 #include "Editor.hpp"
 
 #include "Managers/InputsManager.hpp"
+#include "Graphic/Graphics.hpp"
 
 struct Game {
 	Editor editor;
@@ -40,13 +40,14 @@ struct Game {
 
 	float camera_speed{ 10 };
 	float camera_idle_radius{ 0.3f };
-	sf::View camera;
+	Rectanglef camera;
+	Rectanglef ui_view;
 
 	double timeshots{ 0 };
 
 	void input() noexcept;
 	void update(std::uint64_t dt) noexcept;
-	void render(sf::RenderTarget& target) noexcept;
+	void render(render::Orders& target) noexcept;
 
 private:
 	std::uint64_t fixed_point_timeshot{ 0 };

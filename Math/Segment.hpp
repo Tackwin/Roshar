@@ -45,24 +45,7 @@ struct Segment2 {
 		return (A - B).length2();
 	}
 
-#ifdef SFML_GRAPHICS_HPP
-	void render(sf::RenderTarget& target, Vector4d color) const noexcept {
-		Vector2<T>::renderLine(target, A, B, color, color);
-	}
-#endif
 };
-
-template<typename T>
-void to_json(nlohmann::json& json, const Segment2<T>& seg) noexcept {
-	json["A"] = Vector2<T>::saveJson(seg.A);
-	json["B"] = Vector2<T>::saveJson(seg.B);
-}
-
-template<typename T>
-void from_json(const nlohmann::json& json, Segment2<T>& seg) noexcept {
-	seg.A = Vector2<T>::loadJson(json.at("A"));
-	seg.B = Vector2<T>::loadJson(json.at("B"));
-}
 
 using Segment2f = Segment2<float>;
 using Segment2d = Segment2<double>;

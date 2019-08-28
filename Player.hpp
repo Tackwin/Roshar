@@ -3,11 +3,11 @@
 #include <vector>
 #include <unordered_set>
 
-#include <SFML/Graphics.hpp>
-
 #include "Managers/InputsManager.hpp"
 
 #include "Math/Vector.hpp"
+
+#include "Graphic/Graphics.hpp"
 
 struct Player {
 	Vector2f pos;
@@ -70,7 +70,7 @@ struct Player {
 
 	void input(Input_Iterator this_record) noexcept;
 	void update(float dt) noexcept;
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 
 	void jump() noexcept;
 	void maintain_jump() noexcept;
@@ -94,6 +94,7 @@ private:
 
 	bool dragging{ false };
 	Vector2f start_drag_pos;
+	Vector2f start_drag_world_pos;
 	double start_drag_time;
 
 

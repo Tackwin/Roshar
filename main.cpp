@@ -1,7 +1,6 @@
 #ifndef NATIVE
 
 #include <stdio.h>
-#include <SFML/Graphics.hpp>
 #include <optional>
 
 #include "Math/Vector.hpp"

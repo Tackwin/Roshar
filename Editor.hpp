@@ -1,7 +1,7 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include <optional>
 #include "Math/Vector.hpp"
+#include "Graphic/Graphics.hpp"
 
 struct Level;
 struct Block;
@@ -53,7 +53,7 @@ class Editor {
 public:
 	std::string save_path;
 
-	void render(sf::RenderTarget& target) noexcept;
+	void render(render::Orders& target) noexcept;
 	void update(float dt) noexcept;
 
 	void end_drag(Vector2f start, Vector2f end) noexcept;

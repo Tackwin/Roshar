@@ -21,13 +21,16 @@
 #include "Graphic/imgui_impl_win32.hpp"
 #include "Graphic/imgui_impl_opengl3.hpp"
 
+#include "Managers/InputsManager.hpp"
+#include "Game.hpp"
+
 static int attribs[] = {
 	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
 	0
 };
 
 extern void update_game(std::uint64_t dt) noexcept;
-extern void render_game(std::vector<render::Order>& orders) noexcept;
+extern void render_game(render::Orders& orders) noexcept;
 
 void APIENTRY opengl_debug(
 	GLenum source,
@@ -47,10 +50,11 @@ IMGUI_IMPL_API LRESULT  ImGui_ImplWin32_WndProcHandler(
 	HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 );
 
-void render_orders(const std::vector<render::Order>& orders) noexcept;
+void render_orders(render::Orders& orders) noexcept;
 
 LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept {
 	ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
+
 	switch (msg) {
 	case WM_SYSCOMMAND:
 		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
@@ -103,8 +107,8 @@ int WINAPI WinMain(
 		Class_Name,
 		Window_Title,
 		WS_OVERLAPPEDWINDOW,
-		0,
-		0,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
 		1280,
 		720,
 		NULL,
@@ -167,7 +171,7 @@ int WINAPI WinMain(
 		return 1;
 	}
 
-	platform::handle_window = dc_window;
+	platform::handle_dc_window = dc_window;
 
 	asset::Store.monitor_path("shaders/");
 	asset::Store.monitor_path("textures/");
@@ -178,13 +182,20 @@ int WINAPI WinMain(
 	wglSwapIntervalEXT(0);
 
 	MSG msg{};
-	auto last_time_frame = microseconds();
 
 	render::Sprite_Info o;
 
-	std::vector<render::Order> orders;
+	render::Orders orders;
 	ShowWindow(window_handle, SW_SHOWDEFAULT);
 
+	float max_dt = 0;
+	size_t last_dt_count = 200;
+	std::vector<float> last_dt;
+
+	game = new Game;
+	defer{ delete game; };
+
+	auto last_time_frame = microseconds();
 	while (msg.message != WM_QUIT) {
 		std::uint64_t dt = microseconds() - last_time_frame;
 		last_time_frame = microseconds();
@@ -202,14 +213,38 @@ int WINAPI WinMain(
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::Begin("azeaz");
-		ImGui::Button("Test");
+		ImGui::Begin("Environment");
+		ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
+		ImGui::InputFloat("Gather speed", &Environment.gather_speed);
+		ImGui::InputFloat("Gather step", &Environment.gather_step);
+		ImGui::InputFloat("Drag", &Environment.drag);
+		ImGui::InputFloat("Binding range", &Environment.binding_range);
+		ImGui::InputFloat("Gravity", &Environment.gravity);
+		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
+		ImGui::InputFloat("Speed up", &Environment.speed_up_step);
+		ImGui::End();
+
+		ImGui::Begin("Perf");
+
+		float avg = 0;
+		for (auto x : last_dt) avg += x;
+		avg /= last_dt_count;
+
+		ImGui::Text(
+			"current dt: %llu ms, avg(%u): %llu ms, max: %llu",
+			dt / 1000,
+			last_dt_count,
+			avg / 1000,
+			max_dt / 1000
+		);
+		ImGui::Text("Fps: %d", (size_t)(1'000'000.0 / dt));
+
 		ImGui::End();
 
 		update_game(dt);
 		render_game(orders);
 		render_orders(orders);
-		orders.resize(0);
+		orders.list.resize(0);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -224,13 +259,13 @@ int WINAPI WinMain(
 	return 0;
 }
 
-void render_orders(const std::vector<render::Order>& orders) noexcept {
+void render_orders(render::Orders& orders) noexcept {
 	glClearColor(0.6f, 0.3f, 0.4f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector<render::View_Info> view_stack;
 
-	for (const auto& x : orders) {
+	for (const auto& x : orders.list) {
 		switch (x.kind) {
 		case render::Order::Kind::Sprite:
 			render::immediate(x.sprite);
@@ -240,6 +275,12 @@ void render_orders(const std::vector<render::Order>& orders) noexcept {
 			break;
 		case render::Order::Kind::Circle:
 			render::immediate(x.circle);
+			break;
+		case render::Order::Kind::Arrow:
+			render::immediate(x.arrow);
+			break;
+		case render::Order::Kind::Line:
+			render::immediate(x.line);
 			break;
 		case render::Order::Kind::View_Push: {
 			auto y = x.view;
@@ -398,7 +439,7 @@ void APIENTRY opengl_debug(
 	GLenum type,
 	GLuint id,
 	GLenum severity,
-	GLsizei length,
+	GLsizei,
 	const GLchar* message,
 	const void*
 ) noexcept {

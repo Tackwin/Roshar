@@ -3,15 +3,11 @@
 #include "dyn_struct.hpp"
 #include "Graphic/Graphics.hpp"
 
-void render_game(std::vector<render::Order>& o) noexcept {
-	o.push_back(render::push_view({ 0, 0 }, {1280, 720}));
-	o.push_back(render::sprite(
-		{ 50, 50 }, { 100, 100 }, asset::Known_Textures::Rock, { 0, 0 }, 0, { 1, 1, 0.5, 1 }
-	));
-	o.push_back(render::rectangle({ 150, 150 }, { 100, 100 }, { 1, 0, 1, 1 }));
-	o.push_back(render::circle(50, { 300, 300 }, { 1, 0, 1, 1 }));
+void render_game(render::Orders& o) noexcept {
+	game->render(o);
 }
-void update_game(std::uint64_t) noexcept {
+void update_game(std::uint64_t dt) noexcept {
+	game->update(dt);
 }
 
 Game* game = nullptr;
@@ -22,7 +18,7 @@ void Game::input() noexcept {
 	this_record = IM::get_iterator();
 	if (!IM::isWindowFocused()) return;
 	
-	if (IM::isKeyJustPressed(sf::Keyboard::E)) {
+	if (IM::isKeyJustPressed(Keyboard::E)) {
 		in_editor = !in_editor;
 		if (!in_editor) {
 			current_level.resume();
@@ -32,11 +28,11 @@ void Game::input() noexcept {
 		}
 	}
 
-	if (in_replay && IM::isKeyJustPressed(sf::Keyboard::Return)) {
+	if (in_replay && IM::isKeyJustPressed(Keyboard::Return)) {
 		to_swap_level = load_level(next_level_path);
 		in_replay = false;
 	}
-	if (IM::isKeyPressed(sf::Keyboard::Escape)) {
+	if (IM::isKeyPressed(Keyboard::Escape)) {
 		if (in_replay || in_full_test || in_test) {
 			to_swap_level = copy_level;
 			in_test = false;
@@ -45,24 +41,24 @@ void Game::input() noexcept {
 		}
 	}
 
-	if (IM::isKeyJustPressed(sf::Keyboard::F10)) {
+	if (IM::isKeyJustPressed(Keyboard::F10)) {
 		to_swap_level = copy_level;
 		return go_in_full_test();
 	}
-	if (in_test && IM::isKeyJustPressed(sf::Keyboard::Return)) {
+	if (in_test && IM::isKeyJustPressed(Keyboard::Return)) {
 		in_test = false;
 	}
 
-	if (in_replay && IM::isKeyJustPressed(sf::Keyboard::F11)) {
+	if (in_replay && IM::isKeyJustPressed(Keyboard::F11)) {
 		auto test_file_save = current_level.save_path.replace_extension(".test");
 		IM::save_range(test_file_save, *begin_record, std::next(*end_record));
 	}
 
-	if (!in_replay && IM::isKeyJustPressed(sf::Keyboard::F11)) {
+	if (!in_replay && IM::isKeyJustPressed(Keyboard::F11)) {
 		to_swap_level = copy_level;
 		return go_in_test();
 	}
-	if (IM::isKeyJustPressed(sf::Keyboard::Quote)) {
+	if (IM::isKeyJustPressed(Keyboard::Quote)) {
 		died = true;
 	}
 
@@ -111,11 +107,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 		start_record = IM::get_iterator();
 		timeshots = 0;
 
-		camera.setSize(
-			current_level.camera_start.size.x,
-			-current_level.camera_start.size.y
-		);
-		camera.setCenter(current_level.camera_start.center());
+		camera = current_level.camera_start;
 		editor.save_path = current_level.save_path.string();
 
 		if (in_full_test) return go_in_test();
@@ -176,15 +168,15 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 void Game::update_camera(float dt) noexcept {
 	auto camera_target = current_level.player.pos;
-	auto camera_pos = (Vector2f)camera.getCenter();
-	auto camera_size = (Vector2f)camera.getSize();
+	auto camera_pos = camera.center();
+	auto camera_size = camera.size;
 	auto dist = (camera_target - camera_pos).length();
 
 	if (dist > camera_idle_radius) {
 		Vector2f dt_pos = camera_target - camera_pos;
 		Vector2f to_move =
 			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
-		camera.move(to_move);
+		camera.pos += to_move;
 		camera_pos += to_move;
 	}
 
@@ -195,32 +187,38 @@ void Game::update_camera(float dt) noexcept {
 	}
 }
 
-void Game::render(sf::RenderTarget& target) noexcept {
-	target.setView(camera);
+void Game::render(render::Orders& target) noexcept {
+	target.push_view(camera);
 
 	current_level.render(target);
 	if (in_editor) editor.render(target);
 
-	auto view = target.getView();
-	defer{ target.setView(view); };
-	target.setView(target.getDefaultView());
-	sf::RectangleShape shape(
-		{ (float)Environment.window_width, (float)Environment.window_height }
-	);
-	shape.setPosition(0, 0);
+	ui_view = {
+		{0, 0},
+		{(float)Environment.window_width, (float)Environment.window_height}
+	};
+
+	target.push_view(ui_view);
+	defer{ target.pop_view(); };
+
+	Vector4d color = { 0, 0, 0, 0 };
 	if (camera_fade_out_timer > 0) {
 		auto alpha = 1 - (camera_fade_out_timer / Camera_Fade_Time);
 
-		shape.setFillColor(Vector4d{ 0, 0, 0, alpha });
-		target.draw(shape);
+		color = { 0, 0, 0, alpha };
 	}
 	if (camera_fade_out_timer <= 0 && camera_fade_in_timer > 0) {
 		auto alpha = camera_fade_in_timer / Camera_Fade_Time;
 		auto gray = 1 - alpha;
 
-		shape.setFillColor(Vector4d{ gray, gray, gray, alpha });
-		target.draw(shape);
+		color = { gray, gray, gray, alpha };
 	}
+
+	target.push_rectangle(
+		{ 0, 0 },
+		{ (float)Environment.window_width, (float)Environment.window_height },
+		color
+	);
 }
 
 void Game::go_in_replay() noexcept {

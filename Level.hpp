@@ -4,14 +4,14 @@
 #include <optional>
 #include <vector>
 
-#include <SFML/Graphics.hpp>
-
 #include "Managers/InputsManager.hpp"
 #include "Managers/AssetsManager.hpp"
 #include "Math/Rectangle.hpp"
 #include "Math/Vector.hpp"
 #include "Memory/ValuePtr.hpp"
 #include "dyn_struct.hpp"
+
+#include "Graphic/Graphics.hpp"
 
 #include "Player.hpp"
 
@@ -27,7 +27,7 @@ struct Block {
 
 	Vector2f pos;
 	Vector2f size;
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Kill_Zone {
@@ -35,7 +35,7 @@ struct Kill_Zone {
 	
 	Vector2f pos;
 	Vector2f size;
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Next_Zone {
@@ -46,7 +46,7 @@ struct Next_Zone {
 	Vector2f pos;
 	Vector2f size;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Trigger_Zone {
@@ -56,7 +56,7 @@ struct Trigger_Zone {
 	Rectanglef rec;
 	bool triggered{ false };
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Door {
@@ -70,7 +70,7 @@ struct Door {
 	std::vector<std::uint64_t> mustnt_triggered;
 	std::vector<std::uint64_t> must_have_keys;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Dry_Zone {
@@ -78,7 +78,7 @@ struct Dry_Zone {
 
 	Rectanglef rec;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Dispenser {
@@ -95,7 +95,7 @@ struct Dispenser {
 
 	Dispenser() noexcept;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Projectile {
@@ -106,7 +106,7 @@ struct Projectile {
 
 	float r;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Prest_Source {
@@ -117,7 +117,7 @@ struct Prest_Source {
 	float prest;
 	Vector2f pos;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Rock {
@@ -129,12 +129,10 @@ struct Rock {
 	Vector2f pos;
 	Vector2f velocity;
 
-	mutable sf::Sprite sprite;
-
 	std::vector<Vector2f> bindings;
 	float mass;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Auto_Binding_Zone {
@@ -145,7 +143,7 @@ struct Auto_Binding_Zone {
 	Vector2f binding;
 	std::uint64_t uuid;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Friction_Zone {
@@ -155,14 +153,12 @@ struct Friction_Zone {
 
 	float friction{ 1 };
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Decor_Sprite {
 	float opacity{ 1 };
 	bool editor_selected{ false };
-
-	mutable sf::Sprite sprite;
 
 	std::filesystem::path texture_path;
 	asset::Key texture_key;
@@ -170,22 +166,18 @@ struct Decor_Sprite {
 
 	Rectanglef rec;
 
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Key_Item {
-	inline static asset::Key Texture_Key{ 0 };
 	inline static Vector2f Key_World_Size{ 0.15f, 0.3f };
 
 	bool editor_selected{ false };
 
-	mutable sf::Sprite sprite;
-
 	Vector2f pos;
 	std::uint64_t id;
 
-	Key_Item() noexcept;
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 };
 
 struct Level {
@@ -224,7 +216,7 @@ struct Level {
 
 	void input(IM::Input_Iterator record) noexcept;
 	void update(float dt) noexcept;
-	void render(sf::RenderTarget& target) const noexcept;
+	void render(render::Orders& target) const noexcept;
 
 	void pause() noexcept;
 	void resume() noexcept;

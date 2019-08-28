@@ -1,12 +1,27 @@
 #pragma once
 
-#include "Managers/AssetsManager.hpp"
-#include "Math/Vector.hpp"
-#include "Math/Rectangle.hpp"
+#include <vector>
+
 #include <GL/glew.h>
 #include <GL/wglew.h>
 
+#include "Managers/AssetsManager.hpp"
+#include "Math/Vector.hpp"
+#include "Math/Rectangle.hpp"
+
 namespace render {
+
+	struct Arrow_Info {
+		Vector2f a;
+		Vector2f b;
+		Vector4d color;
+	};
+
+	struct Line_Info {
+		Vector2f a;
+		Vector2f b;
+		Vector4d color;
+	};
 
 	struct Sprite_Info {
 		Vector2f pos;
@@ -36,6 +51,7 @@ namespace render {
 
 	struct View_Info {
 		Rectanglef world_bounds;
+		Rectanglef screen_bounds;
 	};
 
 	struct Order {
@@ -43,6 +59,8 @@ namespace render {
 			Rectangle_Info rectangle;
 			Circle_Info circle;
 			Sprite_Info sprite;
+			Arrow_Info arrow;
+			Line_Info line;
 			View_Info view;
 		};
 
@@ -57,19 +75,30 @@ namespace render {
 			View_Push,
 			View_Pop,
 			Circle,
+			Arrow,
+			Line,
 			Count
 		} kind;
 	};
 
-	extern View_Info current_view;
 
+	Order arrow(
+		Vector2f a,
+		Vector2f b,
+		Vector4d color
+	) noexcept;
+	Order line(
+		Vector2f a,
+		Vector2f b,
+		Vector4d color
+	) noexcept;
 	Order sprite(
 		Vector2f pos,
 		Vector2f size,
 		asset::Key texture,
 		Vector2f origin = { 0, 0 },
 		float rotation = 0.f,
-		Vector4d color = {1, 1, 1, 1},
+		Vector4d color = { 1, 1, 1, 1 },
 		asset::Key shader = 0
 	) noexcept;
 	Order circle(
@@ -90,7 +119,84 @@ namespace render {
 	Order push_view(Rectanglef bounds) noexcept;
 	Order pop_view() noexcept;
 
+	struct Orders {
+		std::vector<Order> list;
+
+		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
+			list.push_back(arrow(a, b, color));
+		}
+		void push_line(Vector2f a, Vector2f b, Vector4d color) noexcept {
+			list.push_back(line(a, b, color));
+		}
+
+		void push_rectangle(
+			Vector2f pos,
+			Vector2f size,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0, 0, 0, 0 }
+		) noexcept {
+			list.push_back(rectangle(pos, size, color, outline, outline_color));
+		}
+
+		void push_rectangle(
+			Rectanglef rec,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0, 0, 0, 0 }
+		) noexcept {
+			list.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
+		}
+
+		void push_circle(
+			float r,
+			Vector2f pos,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0., 0., 0., 0. }
+		) noexcept {
+			list.push_back(circle(r, pos, color, outline, outline_color));
+		}
+
+		void push_sprite(
+			Vector2f pos,
+			Vector2f size,
+			asset::Key texture,
+			Vector2f origin = { 0, 0 },
+			float rotation = 0.f,
+			Vector4d color = { 1, 1, 1, 1 },
+			asset::Key shader = 0
+		) noexcept {
+			list.push_back(sprite(pos, size, texture, origin, rotation, color, shader));
+		}
+
+		void push_sprite(
+			Rectanglef rec,
+			asset::Key texture,
+			Vector2f origin = { 0, 0 },
+			float rotation = 0.f,
+			Vector4d color = { 1, 1, 1, 1 },
+			asset::Key shader = 0
+		) noexcept {
+			list.push_back(sprite(rec.pos, rec.size, texture, origin, rotation, color, shader));
+		}
+
+		void push_view(Vector2f pos, Vector2f size) noexcept {
+			push_view({ pos, size });
+		}
+		void push_view(Rectanglef bounds) noexcept {
+			list.push_back(render::push_view(bounds));
+		}
+		void pop_view() noexcept {
+			list.push_back(render::pop_view());
+		}
+	};
+
+	extern View_Info current_view;
+
 	void immediate(Sprite_Info    info) noexcept;
 	void immediate(Circle_Info    info) noexcept;
 	void immediate(Rectangle_Info info) noexcept;
+	void immediate(Arrow_Info     info) noexcept;
+	void immediate(Line_Info      info) noexcept;
 }

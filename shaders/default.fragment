@@ -25,6 +25,6 @@ void main() {
     	texel.x * color.x,
     	texel.y * color.y,
     	texel.z * color.z,
-    	texel.w
+    	texel.w * color.w
     );
 }

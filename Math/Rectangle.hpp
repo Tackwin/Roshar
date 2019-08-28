@@ -52,13 +52,15 @@ struct Rectangle_t {
 		pos(pos),
 		size(size)
 	{
-		if (this->size.x < 0) {
-			this->pos.x += this->size.x;
-			this->size.x = -this->size.x;
-		}
-		if (this->size.y < 0) {
-			this->pos.y += this->size.y;
-			this->size.y = -this->size.y;
+		if constexpr (!std::is_unsigned_v<T>) {
+			if (this->size.x < 0) {
+				this->pos.x += this->size.x;
+				this->size.x = -this->size.x;
+			}
+			if (this->size.y < 0) {
+				this->pos.y += this->size.y;
+				this->size.y = -this->size.y;
+			}
 		}
 	}
 
@@ -66,23 +68,6 @@ struct Rectangle_t {
 	Rectangle_t& operator=(const Rectangle_t&) = default;
 	Rectangle_t(Rectangle_t&&) = default;
 	Rectangle_t& operator=(Rectangle_t&&) = default;
-
-#ifdef SFML_GRAPHICS_HPP
-
-	Rectangle_t(const sf::FloatRect& rec) : 
-		x(rec.left), y(rec.top), w(rec.width), h(rec.height)
-	{
-		if (size.x < 0) {
-			pos.x += size.x;
-			size.x = -size.x;
-		}
-		if (size.y < 0) {
-			pos.y += size.y;
-			size.y = -size.y;
-		}
-	}
-
-#endif
 
 	bool intersect(const Rectangle_t<T>& other) const {
 		return !(
@@ -122,6 +107,13 @@ struct Rectangle_t {
 		T sumOfWidth = w + other.w;
 
 		return y > other.y && distEdgeToEdge < sumOfWidth;
+	}
+
+	Rectangle_t<T> zoom(float factor) noexcept {
+		return {
+			center() - size * factor * 0.5,
+			size * factor
+		};
 	}
 
 	Vector<2, T> center() const {
@@ -222,27 +214,6 @@ struct Rectangle_t {
 	bool in(const Vector<2, U>& p) const {
 		return p.inRect(pos, size);
 	}
-
-#ifdef SFML_GRAPHICS_HPP
-
-	void render(sf::RenderTarget& target, Vector4f color) const noexcept {
-		sf::RectangleShape shape{ size };
-		shape.setPosition(pos);
-		shape.setFillColor(color);
-		target.draw(shape);
-	}
-	void render(
-		sf::RenderTarget& target, Vector4f in, Vector4f on, float thick = 0.01f
-	) const noexcept {
-		sf::RectangleShape shape{ size };
-		shape.setPosition(pos);
-		shape.setFillColor(in);
-		shape.setOutlineColor(on);
-		shape.setOutlineThickness(thick * std::min(w, h));
-		target.draw(shape);
-	}
-
-#endif
 
 	static Rectangle_t<T> hull(std::vector<Rectangle_t<T>> recs) noexcept {
 		Rectangle_t<T> hull = recs[0];

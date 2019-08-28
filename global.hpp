@@ -25,17 +25,13 @@ extern std::filesystem::path Exe_Path;
 extern std::mutex Main_Mutex;
 extern Environment_t Environment;
 
-namespace sf {
-	class RenderWindow;
-};
-extern sf::RenderWindow* window;
-
 // We need to store this as a global because of the stupid sfml's api decison to permit to query
 // the state of the scroll wheel only trough polling...
 extern float wheel_scroll;
 
 namespace platform {
 	extern void* handle_window;
+	extern void* handle_dc_window;
 	extern void* main_opengl_context;
 	extern void* asset_opengl_context;
 }

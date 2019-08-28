@@ -92,6 +92,32 @@ render::Order render::sprite(
 	return order;
 }
 
+render::Order render::arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
+	Arrow_Info info;
+	info.a = a;
+	info.b = b;
+	info.color = color;
+
+	Order order;
+	order.arrow = info;
+	order.kind = Order::Kind::Arrow;
+
+	return order;
+}
+
+render::Order render::line(Vector2f a, Vector2f b, Vector4d color) noexcept {
+	Line_Info info;
+	info.a = a;
+	info.b = b;
+	info.color = color;
+
+	Order order;
+	order.line = info;
+	order.kind = Order::Kind::Line;
+
+	return order;
+}
+
 
 void render::immediate(Sprite_Info info) noexcept {
 	static GLuint quad_vao{ 0 };
@@ -118,7 +144,7 @@ void render::immediate(Sprite_Info info) noexcept {
 
 	glActiveTexture(GL_TEXTURE0);
 	if (info.texture)
-		glBindTexture(GL_TEXTURE_2D, asset::Store.get_my_texture(info.texture).get_texture_id());
+		glBindTexture(GL_TEXTURE_2D, asset::Store.get_texture(info.texture).get_texture_id());
 
 	auto& shader = asset::Store.get_shader(info.shader);
 	shader.use();
@@ -224,8 +250,6 @@ void render::immediate(Rectangle_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
-	glActiveTexture(GL_TEXTURE0);
-
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
@@ -240,4 +264,106 @@ void render::immediate(Rectangle_Info info) noexcept {
 
 	glBindVertexArray(quad_vao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+void render::immediate(Arrow_Info info) noexcept {
+	static GLuint head_vao{ 0 };
+	static GLuint head_vbo{ 0 };
+	static GLuint quad_vao{ 0 };
+	static GLuint quad_vbo{ 0 };
+
+	auto size = V2F((info.a - info.b).length() / 10.f);
+
+	if (!head_vao) {
+		static float head_vertices[] = {
+			+0.0f, +0.0f, 1.0f,
+			-1.0f, +1.0f, 1.0f,
+			-1.0f, -1.0f, 1.0f,
+		};
+
+		// setup plane VAO
+		glGenVertexArrays(1, &head_vao);
+		glBindVertexArray(head_vao);
+		glGenBuffers(1, &head_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, head_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(head_vertices), &head_vertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+		static float quad_vertices[] = {
+			// positions    
+			0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			1.0f, 1.0f, 0.0f,
+			1.0f, 0.0f, 0.0f
+		};
+
+		// setup plane VAO
+		glGenVertexArrays(1, &quad_vao);
+		glBindVertexArray(quad_vao);
+		glGenBuffers(1, &quad_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	}
+
+
+	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
+	shader.use();
+	shader.set_window_size({ Environment.window_width, Environment.window_height });
+	shader.set_view(current_view.world_bounds);
+	shader.set_origin({ 0, 0 });
+	shader.set_position(info.b);
+	shader.set_primary_color(info.color);
+	shader.set_rotation((float)(info.b - info.a).angleX());
+	shader.set_size(size);
+	shader.set_use_texture(false);
+	shader.set_texture(0);
+
+	glBindVertexArray(head_vao);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
+
+	shader.set_origin({ 0.5, 0 });
+	shader.set_position(info.a);
+	shader.set_size({ (info.a - info.b).length() - size.x, size.y });
+
+	glBindVertexArray(quad_vao);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+void render::immediate(Line_Info info) noexcept {
+	static GLuint vao{ 0 };
+	static GLuint vbo{ 0 };
+
+	if (!vao) {
+		static float vertices[6] = {
+			0, 0, 1,
+			1, 0, 1
+		};
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	}
+
+
+	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
+	shader.use();
+	shader.set_window_size({ Environment.window_width, Environment.window_height });
+	shader.set_view(current_view.world_bounds);
+	shader.set_origin({ 0, 0 });
+	shader.set_position(info.b);
+	shader.set_primary_color(info.color);
+	shader.set_rotation((float)(info.b - info.a).angleX());
+	shader.set_size(V2F((info.b - info.a).length()));
+	shader.set_use_texture(false);
+	shader.set_texture(0);
+
+	glBindVertexArray(vao);
+	glDrawArrays(GL_LINES, 0, 2);
+
 }

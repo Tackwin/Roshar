@@ -31,6 +31,8 @@ public:
 	void bind(size_t unit = 0u) const;
 
 	size_t get_texture_id() const;
+
+	Vector2u get_size() noexcept;
 private:
 	TextureInfo info;
 };

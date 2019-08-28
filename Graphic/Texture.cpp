@@ -111,3 +111,7 @@ void Texture::bind(size_t unit) const {
 size_t Texture::get_texture_id() const {
 	return info.id;
 }
+
+Vector2u Texture::get_size() noexcept {
+	return { info.width, info.height };
+}

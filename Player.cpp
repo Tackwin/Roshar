@@ -26,22 +26,22 @@ void Player::input(Input_Iterator this_record) noexcept {
 		stop_move_sideway();
 	}
 
-	if (this_record->is_pressed(sf::Keyboard::Q)) {
-		if (this_record->is_just_pressed(sf::Keyboard::Q)) start_move_sideway();
+	if (this_record->is_pressed(Keyboard::Q)) {
+		if (this_record->is_just_pressed(Keyboard::Q)) start_move_sideway();
 		move_sideway(Player::Left);
 	}
-	else if (this_record->is_just_released(sf::Keyboard::Q)) {
+	else if (this_record->is_just_released(Keyboard::Q)) {
 		stop_move_sideway();
 	}
-	if (this_record->is_pressed(sf::Keyboard::D)) {
-		if (this_record->is_just_pressed(sf::Keyboard::D)) start_move_sideway();
+	if (this_record->is_pressed(Keyboard::D)) {
+		if (this_record->is_just_pressed(Keyboard::D)) start_move_sideway();
 		move_sideway(Player::Right);
 	}
-	else if (this_record->is_just_released(sf::Keyboard::D)) {
+	else if (this_record->is_just_released(Keyboard::D)) {
 		stop_move_sideway();
 	}
 	if (
-		this_record->is_pressed(sf::Keyboard::S) ||
+		this_record->is_pressed(Keyboard::S) ||
 		wanted_motion.y < -1 * this_record->Joystick_Dead_Zone
 	) {
 		fall_back();
@@ -49,15 +49,15 @@ void Player::input(Input_Iterator this_record) noexcept {
 	else {
 		falling_back = false;
 	}
-	if (this_record->is_just_pressed(sf::Mouse::Left)) {
+	if (this_record->is_just_pressed(Mouse::Left)) {
 		start_drag();
 	}
-	else if (!this_record->is_pressed(sf::Mouse::Left)) {
+	else if (!this_record->is_pressed(Mouse::Left)) {
 		dragging = false;
 	}
 
 	if (
-		this_record->is_just_pressed(sf::Keyboard::Space) ||
+		this_record->is_just_pressed(Keyboard::Space) ||
 		this_record->is_just_pressed(Joystick_Button::A)
 	) {
 		if (floored || coyotee_timer > 0) {
@@ -69,16 +69,16 @@ void Player::input(Input_Iterator this_record) noexcept {
 	}
 	if (jump_strength_modifier_timer > 0) {
 		if (
-			this_record->is_pressed(sf::Keyboard::Space) ||
+			this_record->is_pressed(Keyboard::Space) ||
 			this_record->is_pressed(Joystick_Button::A)
 		) maintain_jump();
 		if (
-			this_record->is_pressed(sf::Keyboard::Z) ||
+			this_record->is_pressed(Keyboard::Z) ||
 			wanted_motion.y > this_record->Joystick_Dead_Zone
 		) directional_up();
 	}
 	if (
-		this_record->is_just_pressed(sf::Mouse::Right) ||
+		this_record->is_just_pressed(Mouse::Right) ||
 		this_record->is_just_pressed(Joystick_Button::B)
 	) {
 		own.basic_bindings.clear();
@@ -91,8 +91,8 @@ void Player::input(Input_Iterator this_record) noexcept {
 		if (
 			(
 				(
-					this_record->is_pressed(sf::Keyboard::LControl) &&
-					this_record->is_just_pressed(sf::Keyboard::Z)
+					this_record->is_pressed(Keyboard::LCTRL) &&
+					this_record->is_just_pressed(Keyboard::Z)
 				) ||
 				this_record->is_just_pressed(Joystick_Button::RB)
 			) &&
@@ -139,32 +139,13 @@ void Player::update(float dt) noexcept {
 	forces = {};
 }
 
-void Player::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(size);
-	shape.setOutlineColor(Vector4f{ 1.0, 0.0, 0.0, 1.0 });
-	shape.setOutlineThickness(0.01f);
-	shape.setPosition(pos);
-	shape.setFillColor(sf::Color::Cyan);
-	target.draw(shape);
+void Player::render(render::Orders& target) const noexcept {
+	target.push_rectangle(pos, size, { 0, 1, 1, 1 });
 
-	for (auto& binding : own.basic_bindings) {
-		Vector2f::renderArrow(
-			target,
-			pos + size / 2,
-			pos + size / 2 + binding,
-			{ 1, 0, 1, 1 },
-			{ 1, 0, 1, 1 }
-		);
-	}
-	for (auto& binding : forced.basic_bindings) {
-		Vector2f::renderArrow(
-			target,
-			pos + size / 2,
-			pos + size / 2 + binding,
-			{ 0, 1, 1, 1 },
-			{ 0, 1, 1, 1 }
-		);
-	}
+	for (auto& binding : own.basic_bindings)
+		target.push_arrow(pos + size / 2, pos + size / 2 + binding, { 1, 0, 1, 1 });
+	for (auto& binding : forced.basic_bindings)
+		target.push_arrow(pos + size / 2, pos + size / 2 + binding, { 1, 0, 1, 1 });
 
 	if (dragging) {
 		auto prest_gathered =
@@ -177,21 +158,8 @@ void Player::render(sf::RenderTarget& target) const noexcept {
 
 		prest_gathered *= .1f;
 
-		sf::CircleShape circle_shape;
-		circle_shape.setRadius(prest_gathered);
-		circle_shape.setOrigin(prest_gathered, prest_gathered);
-		circle_shape.setPosition(mouse_world_pos);
-		circle_shape.setFillColor(sf::Color::Green);
-		circle_shape.setOutlineThickness(0.01f);
-		circle_shape.setOutlineColor(sf::Color::White);
-		target.draw(circle_shape);
-
-		Vector2f::renderLine(
-			target,
-			target.mapPixelToCoords(start_drag_pos),
-			mouse_world_pos,
-			{ 0, 1, 0, 1 }
-		);
+		target.push_circle(prest_gathered, mouse_world_pos, { 0, 1, 0, 1 });
+		target.push_arrow(start_drag_world_pos, mouse_world_pos, { 0, 1, 0, 1 });
 	}
 
 }
@@ -255,6 +223,7 @@ void Player::add_own_binding(Vector2f x) noexcept {
 void Player::start_drag() noexcept {
 	dragging = true;
 	start_drag_pos = mouse_screen_pos;
+	start_drag_world_pos = IM::getMousePosInView(game->camera);
 	start_drag_time = game->timeshots;
 
 	for (const auto& x : game->current_level.rocks) {
@@ -271,7 +240,6 @@ void Player::start_drag() noexcept {
 
 void Player::on_drag() noexcept {
 	auto dt = mouse_screen_pos - start_drag_pos;
-	dt.y *= -1;
 	if (dt.length2() < Drag_Dead_Zone * Drag_Dead_Zone) return;
 	defer{
 		dragged_rock = 0;

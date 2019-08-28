@@ -12,241 +12,169 @@
 
 void match_and_destroy_keys(Player& p, Door& d) noexcept;
 
-void Block::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(size);
-	shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-	shape.setOutlineThickness(0.00f);
-	shape.setPosition(pos);
-	target.draw(shape);
+void Block::render(render::Orders& target) const noexcept {
+	target.push_rectangle(pos, size, {1, 1, 1, 1});
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
-		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+		auto alpha = std::sin((sin_time += 1) * 0.001);
 
 		float size_up = 0.04f;
 
-		shape.setSize(size + V2F(size_up));
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(0.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(pos - V2F(size_up / 2));
-		target.draw(shape);
-	}
-}
-
-void Kill_Zone::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(size);
-	shape.setFillColor(Vector4f{ 0.1f, 1.f, 0.5f, 1.f });
-	shape.setOutlineColor(Vector4f{ 1.f, 1.f, 1.f, 1.f });
-	shape.setOutlineThickness(0.01f);
-	shape.setPosition(pos);
-	target.draw(shape);
-
-	if (editor_selected) {
-		thread_local std::uint64_t sin_time = 0;
-		auto alpha = std::sinf((sin_time += 1) * 0.001f);
-
-
-		float size_up = 0.04f;
-
-		shape.setSize(size + V2F(size_up));
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(pos - V2F(size_up / 2));
-		target.draw(shape);
-	}
-}
-
-void Next_Zone::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(size);
-	shape.setFillColor(Vector4f{ 0.1f, 0.1f, 0.1f, 1.f });
-	shape.setOutlineColor(Vector4f{ 1.f, 1.f, 1.f, 1.f });
-	shape.setOutlineThickness(0.01f);
-	shape.setPosition(pos);
-	target.draw(shape);
-
-	if (editor_selected) {
-		thread_local std::uint64_t sin_time = 0;
-		auto alpha = std::sinf((sin_time += 1) * 0.001f);
-
-		float size_up = 0.04f;
-
-		shape.setSize(size + V2F(size_up));
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(pos - V2F(size_up / 2));
-		target.draw(shape);
-	}
-}
-
-void Dry_Zone::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(rec.size);
-	shape.setPosition(rec.pos);
-	shape.setFillColor(Vector4d{ 0.5, 0.0, 0.0, 0.5 });
-	target.draw(shape);
-
-	if (editor_selected) {
-		thread_local std::uint64_t sin_time = 0;
-		auto alpha = std::sinf((sin_time += 1) * 0.001f);
-
-		float size_up = 0.04f;
-
-		shape.setSize(rec.size + V2F(size_up));
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(rec.pos - V2F(size_up / 2));
-		target.draw(shape);
-	}
-}
-
-void Rock::render(sf::RenderTarget& target) const noexcept {
-	sprite.setTexture(asset::Store.get_texture(asset::Known_Textures::Rock));
-	sprite.setTextureRect({
-		0,
-		0,
-		(int)asset::Store.get_texture(asset::Known_Textures::Rock).getSize().x,
-		(int)asset::Store.get_texture(asset::Known_Textures::Rock).getSize().y
-	});
-	sprite.setOrigin(
-		asset::Store.get_texture(asset::Known_Textures::Rock).getSize().x / 2.f,
-		asset::Store.get_texture(asset::Known_Textures::Rock).getSize().y / 2.f
-	);
-
-	sprite.setPosition(pos);
-	sprite.setScale(
-		2 * r / sprite.getTextureRect().width,
-		2 * r / sprite.getTextureRect().height
-	);
-	target.draw(sprite);
-
-	for (auto& binding : bindings) {
-		Vector2f::renderArrow(
-			target,
-			pos,
-			pos + binding,
-			{ 1, 0, 1, 1 },
-			{ 1, 0, 1, 1 }
+		target.push_rectangle(
+			pos - V2F(size_up / 2),
+			size + V2F(size_up / 2),
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
 		);
 	}
+}
+
+void Kill_Zone::render(render::Orders& target) const noexcept {
+	target.push_rectangle(pos, size, { 0.1, 1, 0.5, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f);
 
-		sf::CircleShape shape(r, 5);
-		shape.setPosition(pos);
-		shape.setRadius(r);
-		shape.setOrigin(shape.getRadius(), shape.getRadius());
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		target.draw(shape);
+
+		float size_up = 0.04f;
+
+		target.push_rectangle(
+			pos - V2F(size_up / 2),
+			size + V2F(size_up / 2),
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
 	}
 }
 
-void Trigger_Zone::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(rec.size);
-	shape.setPosition(rec.pos);
-	shape.setFillColor(sf::Color::Magenta);
-	target.draw(shape);
+void Next_Zone::render(render::Orders& target) const noexcept {
+	target.push_rectangle(pos, size, { 0.1, 0.1, 0.1, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f);
 
-		shape.setSize(rec.size);
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(rec.pos);
-		target.draw(shape);
+		float size_up = 0.04f;
+
+		target.push_rectangle(
+			pos - V2F(size_up / 2),
+			size + V2F(size_up / 2),
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
 	}
 }
 
-void Door::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(rec.size);
-	shape.setPosition(rec.pos);
-	shape.setFillColor(Vector4d{ 0.9, 0.9, 0.9, closed ? 1.0 : 0.1 });
-	target.draw(shape);
+void Dry_Zone::render(render::Orders& target) const noexcept {
+	target.push_rectangle(rec, { 0.5, 0.0, 0.0, 0.5 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f);
 
-		shape.setSize(rec.size);
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(rec.pos);
-		target.draw(shape);
+		float size_up = 0.04f;
+
+		target.push_rectangle(
+			rec.pos - V2F(size_up / 2),
+			rec.size + V2F(size_up / 2),
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
 	}
 }
 
-void Friction_Zone::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(rec.size);
-	shape.setPosition(rec.pos);
-	shape.setFillColor(
-		Vector4d{ std::atan(friction) * 0.9, std::atan(friction) * 0.9, 0.1, 1}
-	);
-	target.draw(shape);
+void Rock::render(render::Orders& target) const noexcept {
+	target.push_sprite(pos, { 2 * r, 2 * r }, asset::Known_Textures::Rock, { r, r });
+
+	for (auto& binding : bindings) target.push_arrow(pos, pos + binding, { 1, 0, 1, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f);
 
-		shape.setSize(rec.size);
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(rec.pos);
-		target.draw(shape);
+		target.push_circle(
+			r,
+			pos,
+			{ 1., 1., 1., alpha * alpha }
+		);
 	}
 }
 
-void Prest_Source::render(sf::RenderTarget& target) const noexcept {
+void Trigger_Zone::render(render::Orders& target) const noexcept {
+	target.push_rectangle(rec, { 1, 0.0, 1, 1 });
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		target.push_rectangle(
+			rec,
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
+	}
+}
+
+void Door::render(render::Orders& target) const noexcept {
+	target.push_rectangle(rec, { 0.9, 0.9, 0.9, closed ? 1.0 : 0.1 });
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		target.push_rectangle(
+			rec,
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
+	}
+}
+
+void Friction_Zone::render(render::Orders& target) const noexcept {
+	target.push_rectangle(rec, { std::atan(friction) * 0.9, std::atan(friction) * 0.9, 0.1, 1 });
+
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.001f);
+
+		target.push_rectangle(
+			rec,
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
+	}
+}
+
+void Prest_Source::render(render::Orders& target) const noexcept {
 	auto r = std::sqrt(prest) * Radius_Multiplier;
 
-	sf::CircleShape shape;
-	shape.setRadius(r);
-	shape.setOrigin(r, r);
-	shape.setPosition(pos);
-	shape.setFillColor(sf::Color::Cyan);
-	target.draw(shape);
-
-	if (!editor_selected) return;
-
-	shape.setRadius(r + 0.04f);
-	shape.setOrigin(shape.getRadius(), shape.getRadius());
-	shape.setPosition(pos);
-	shape.setFillColor(Vector4d{ 1.0, 1.0, 1.0, 0.1 });
-	target.draw(shape);
+	if (editor_selected) target.push_circle(r + 0.04f, pos, { 1.0, 1.0, 1.0, 0.1 });
+	else                 target.push_circle(r, pos, { 0, 1, 1, 1 });
 }
 
-void Auto_Binding_Zone::render(sf::RenderTarget& target) const noexcept {
-	sf::RectangleShape shape(rec.size);
-	shape.setPosition(rec.pos);
-	shape.setFillColor(Vector4d{ 0.9, 0.1, 0.9, 1.0 });
-	target.draw(shape);
-    
-	Vector2f::renderArrow(
-		target,
-		rec.center() - binding / 2,
-		rec.center() + binding / 2,
-		{ 1, 1, 1, 1 },
-		{ 1, 1,1, 1 }
-	);
+void Auto_Binding_Zone::render(render::Orders& target) const noexcept {
+	target.push_rectangle(rec, { 0.9, 0.1, 0.9, 1.0 });
+	target.push_arrow(rec.center() - binding / 2, rec.center() + binding / 2, { 1, 1, 1, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f);
 
-		shape.setSize(rec.size);
-		shape.setOutlineColor(Vector4f{ 1.f, 0.f, 0.f, 1.f });
-		shape.setOutlineThickness(.01f);
-		shape.setFillColor(Vector4f{ 1.f, 1.f, 1.f, alpha * alpha });
-		shape.setPosition(rec.pos);
-		target.draw(shape);
+		target.push_rectangle(
+			rec,
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
 	}
 }
 
@@ -254,26 +182,11 @@ Dispenser::Dispenser() noexcept {
 	timer = (1 / hz) - std::fmodf(offset_timer, 1 / hz);
 }
 
-void Dispenser::render(sf::RenderTarget& target) const noexcept {
-	sf::CircleShape shape(proj_r);
-	shape.setFillColor(Vector4f{ 0.4f, 0.3f, 0.2f, 1.f });
-	shape.setOrigin(shape.getRadius(), shape.getRadius());
-	shape.setPosition(start_pos);
-	target.draw(shape);
-
-	ImGui::Begin("Dispenser");
-	ImGui::PushID(this);
-	ImGui::Text("%f", timer);
-	ImGui::PopID();
-	ImGui::End();
+void Dispenser::render(render::Orders& target) const noexcept {
+	target.push_circle(proj_r, start_pos, { 0.4, 0.3, 0.2, 1. });
 
 	if (editor_selected) {
-		shape.setOutlineThickness(0.1f);
-		target.draw(shape);
-
-		shape.setFillColor(sf::Color::Transparent);
-		shape.setPosition(end_pos);
-		target.draw(shape);
+		target.push_circle(proj_r, start_pos, { 0.4, 0.3, 0.2, 1. }, 0.1f);
 
 		std::size_t i = 0;
 		auto proj_timer = offset_timer + ++i / hz - timer;
@@ -288,60 +201,39 @@ void Dispenser::render(sf::RenderTarget& target) const noexcept {
 	}
 }
 
-void Projectile::render(sf::RenderTarget& target) const noexcept {
-	sf::CircleShape shape(r);
-	shape.setFillColor(Vector4f{ 0.2f, 0.3f, 0.4f, 1.f });
-	shape.setOrigin(shape.getRadius(), shape.getRadius());
-	shape.setPosition(pos);
-	target.draw(shape);
+void Projectile::render(render::Orders& target) const noexcept {
+	target.push_circle(r, pos, { 0.2, 0.3, 0.4, 1. });
 }
 
-void Decor_Sprite::render(sf::RenderTarget& target) const noexcept {
-	sprite.setPosition(rec.pos.x, rec.pos.y + rec.size.y);
-	if (sprite.getTexture()) {
-		sprite.setScale(
-			rec.size.x / sprite.getTextureRect().width,
-			-rec.size.y / sprite.getTextureRect().height
-	);
-	}
-	sprite.setColor(Vector4d{ 1, 1, 1, opacity * 1. });
-	target.draw(sprite);
+void Decor_Sprite::render(render::Orders& target) const noexcept {
+	target.push_sprite(rec, texture_key, {0, 0}, 0.f, { 1, 1, 1, opacity * 1. });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.001f) * 0.5 + 0.25;
 
-		sf::RectangleShape shape;
-		shape.setPosition(rec.pos);
-		shape.setSize(rec.size);
-		shape.setFillColor(Vector4d{ alpha, alpha, alpha, alpha });
-		target.draw(shape);
+		target.push_rectangle(
+			rec,
+			{ 1, 1, 1, alpha * alpha },
+			0.01f,
+			{ 1.0, 0.0, 0.0, 1.0 }
+		);
 	}
 }
 
-Key_Item::Key_Item() noexcept {
-	sprite.setTexture(asset::Store.textures[asset::Known_Textures::Key_Item].asset);
-}
-
-void Key_Item::render(sf::RenderTarget& target) const noexcept {
-	sprite.setScale(
-		Key_World_Size.x / sprite.getTextureRect().width,
-		-Key_World_Size.y / sprite.getTextureRect().height
-	);
-	sprite.setPosition(pos);
+void Key_Item::render(render::Orders& target) const noexcept {
+	Vector4d color{ 1, 1, 1, 1 };
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
 		auto alpha = std::sinf((sin_time += 1) * 0.0001f) * 0.5 + 0.25;
 
-		sprite.setColor(Vector4d{ alpha, alpha, alpha, alpha });
+		color = { alpha, alpha, alpha, alpha };
 	}
-	else {
-		sprite.setColor(sf::Color::White);
-	}
-	target.draw(sprite);
+
+	target.push_sprite(pos, Key_World_Size, asset::Known_Textures::Key_Item, { 0, 0 }, 0, color);
 }
 
-void Level::render(sf::RenderTarget& target) const noexcept {
+void Level::render(render::Orders& target) const noexcept {
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
 	renders(friction_zones);
@@ -361,18 +253,11 @@ void Level::render(sf::RenderTarget& target) const noexcept {
 	renders(projectiles);
 	renders(rocks);
 
-	for (auto& x : markers) {
-		sf::CircleShape shape(0.05f);
-		shape.setPosition(x);
-		shape.setFillColor(sf::Color::Red);
-		target.draw(shape);
-	}
+	for (auto& x : markers) target.push_circle(0.05f, x, { 1, 0, 0, 1 });
 
 	player.render(target);
 
-	for (const auto& x : debug_vectors) {
-		Vector2f::renderArrow(target, x.a, x.a + x.b, { 1, 1, 0, 1 }, { 1, 1, 0, 1 });
-	}
+	for (const auto& x : debug_vectors) target.push_arrow(x.a, x.a + x.b, { 1, 1, 0, 1 });
 }
 
 void Level::input(IM::Input_Iterator record) noexcept {
@@ -381,10 +266,10 @@ void Level::input(IM::Input_Iterator record) noexcept {
 	window_size = record->window_size;
 
 	player.input(record);
-	if (record->is_just_pressed(sf::Keyboard::Return)) {
+	if (record->is_just_pressed(Keyboard::Return)) {
 		markers.push_back(player.pos);
 
-		if (record->is_pressed(sf::Keyboard::LShift)) markers.clear();
+		if (record->is_pressed(Keyboard::LSHIFT)) markers.clear();
 	}
 }
 
@@ -394,9 +279,6 @@ void Level::update(float dt) noexcept {
 		if (!x.texture_loaded) {
 			// >TODO
 			(void)asset::Store.load_texture(x.texture_key, x.texture_path);
-			auto texture_size = asset::Store.textures.at(x.texture_key).asset.getSize();
-
-			x.sprite.setTextureRect({ 0, 0, (int)texture_size.x, (int)texture_size.y });
 			x.texture_loaded = true;
 		}
 	}
@@ -822,9 +704,9 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	player["pos"] = level.player.pos;
     
 	auto cam = level.camera_start;
-	cam.size = game->camera.getSize();
+	cam.size = game->camera.size;
 	cam.size.y *= -1;
-	cam.pos = game->camera.getCenter();
+	cam.pos = game->camera.center();
 	cam.pos -= cam.size / 2;
 	str["camera"] = cam;
 }
@@ -880,7 +762,7 @@ void to_dyn_struct(dyn_struct& str, const Rock& x) noexcept {
 void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
 	x.texture_path = (std::string)str["texture_path"];
-    
+
 	auto& texture_loaded = asset::Store.textures_loaded;
 	if (!texture_loaded.count(x.texture_path.string())) {
 		x.texture_key = asset::Store.make_texture();
@@ -888,9 +770,8 @@ void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	else {
 		x.texture_key = std::find_if(
 			BEG_END(texture_loaded), [p = x.texture_path.string()](auto x) {return x.first == p; }
-            )->second;
+		)->second;
 	}
-	x.sprite.setTexture(asset::Store.textures.at(x.texture_key).asset);
 }
 void to_dyn_struct(dyn_struct& str, const Decor_Sprite& x) noexcept {
 	str = dyn_struct::structure_t{};

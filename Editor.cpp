@@ -16,7 +16,7 @@
 
 #include "Collision.hpp"
 
-void Editor::render(sf::RenderTarget& target) noexcept {
+void Editor::render(render::Orders& target) noexcept {
 	ImGui::Begin("Editor");
 	defer{ ImGui::End(); };
 
@@ -112,9 +112,9 @@ void Editor::render(sf::RenderTarget& target) noexcept {
 		decor.texture_key = *key;
 		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
-		decor.rec = { game->camera.getCenter(), texture.asset.getSize() };
+		decor.rec.pos = game->camera.center();
+		decor.rec.size = { (float)texture.asset.get_size().x, (float)texture.asset.get_size().y };
 		decor.rec.pos -= decor.rec.size / 2;
-		decor.sprite.setTexture(texture.asset);
 		game->current_level.decor_sprites.push_back(decor);
 	}
 
@@ -474,23 +474,14 @@ is there.",
 		Vector2f end = get_mouse_pos();
 
 		Rectangle_t rec{ start, end - start };
-		sf::RectangleShape shape;
-		shape.setPosition(rec.pos);
-		shape.setSize(rec.size);
-		shape.setFillColor(Vector4d{ 0.2, 0.5, 0.2, 0.5 });
-		target.draw(shape);
 
-		auto view = target.getView();
-		defer{ target.setView(view); };
-		target.setView(target.getDefaultView());
+		target.push_rectangle(rec, { 0.2, 0.5, 0.2, 0.5 });
 	}
 
 	if (start_selection) {
-		sf::RectangleShape shape;
-		shape.setPosition(*start_selection);
-		shape.setSize(get_mouse_pos() - *start_selection);
-		shape.setFillColor(Vector4d{ 0, 1, 0, 0.5 });
-		target.draw(shape);
+		target.push_rectangle(
+			*start_selection, get_mouse_pos() - *start_selection, { 0, 1, 0, .5 }
+		);
 	}
 
 	for (const auto& d : game->current_level.doors) {
@@ -504,7 +495,7 @@ is there.",
 
 			Vector2f end = it->rec.center();
 
-			Vector2f::renderLine(target, start, end, { 0.1, 1.0, 0.1, 1.0 });
+			target.push_line(start, end, { 0.1, 1.0, 0.1, 1.0 });
 		}
 
 		for (const auto& x : d.mustnt_triggered) {
@@ -515,7 +506,7 @@ is there.",
 
 			Vector2f end = it->rec.center();
 
-			Vector2f::renderLine(target, start, end, { 1.0, 0.1, 0.1, 1.0 });
+			target.push_line(start, end, { 1.0, 0.1, 0.1, 1.0 });
 		}
 
 		for (const auto& x : d.must_have_keys) {
@@ -526,50 +517,41 @@ is there.",
 
 			Vector2f end = it->pos;
 
-			Vector2f::renderLine(target, start, end, { 0.1, 1.0, 0.1, 1.0 });
+			target.push_line(start, end, { 0.1, 1.0, 0.1, 1.0 });
 		}
 	}
 
 	if (snap_grid) {
 		auto& cam = game->camera;
-		std::vector<std::array<sf::Vertex, 2>> vertices;
 
-		size_t n = (size_t)(std::abs(cam.getSize().x) / snap_grid);
+		size_t n = (size_t)(std::abs(cam.w) / snap_grid);
 		for (size_t x = 0; x <= n; ++x) {
-			Vector2f A = (Vector2f)cam.getCenter() - (Vector2f)cam.getSize() / 2;
-			Vector2f B = (Vector2f)cam.getCenter() - (Vector2f)cam.getSize() / 2;
+			Vector2f A = cam.center() - cam.size / 2;
+			Vector2f B = cam.center() - cam.size / 2;
 			A = snap_grid * (Vector2i)(A / snap_grid);
 			B = snap_grid * (Vector2i)(B / snap_grid);
 
-			B.y = cam.getCenter().y + cam.getSize().y / 2;
+			B.y = cam.center().y + cam.h / 2;
 
 			A.x += x * snap_grid;
 			B.x += x * snap_grid;
 
-			std::array<sf::Vertex, 2> v;
-			v[0] = sf::Vertex(A, sf::Color(50, 50, 50, 50));
-			v[1] = sf::Vertex(B, sf::Color(50, 50, 50, 50));
-			vertices.push_back(v);
+			target.push_line(A, B, { 0.2, 0.2, 0.2, 0.2 });
 		}
-		n = (size_t)(std::abs(cam.getSize().y) / snap_grid);
+		n = (size_t)(std::abs(cam.h) / snap_grid);
 		for (size_t y = 0; y <= n; ++y) {
-			Vector2f A = (Vector2f)cam.getCenter() - (Vector2f)cam.getSize() / 2;
-			Vector2f B = (Vector2f)cam.getCenter() - (Vector2f)cam.getSize() / 2;
+			Vector2f A = cam.center() - cam.size / 2;
+			Vector2f B = cam.center() - cam.size / 2;
 			A = snap_grid * (Vector2i)(A / snap_grid);
 			B = snap_grid * (Vector2i)(B / snap_grid);
 
-			B.x = cam.getCenter().x + cam.getSize().x / 2;
+			B.x = cam.center().x + cam.w / 2;
 
 			A.y -= y * snap_grid;
 			B.y -= y * snap_grid;
 
-			std::array<sf::Vertex, 2> v;
-			v[0] = sf::Vertex(A, sf::Color(50, 50, 50, 50));
-			v[1] = sf::Vertex(B, sf::Color(50, 50, 50, 50));
-			vertices.push_back(v);
+			target.push_line(A, B, { 0.2, 0.2, 0.2, 0.2 });
 		}
-
-		for (const auto& x : vertices) target.draw(x.data(), 2, sf::Lines);
 	}
 }
 
@@ -577,13 +559,13 @@ void Editor::update(float dt) noexcept {
 	sin_time += std::cosf(sin_time) * dt;
 	if (!IM::isWindowFocused()) return;
 
-	bool shift = IM::isKeyPressed(sf::Keyboard::LShift);
-	auto ctrl = IM::isKeyPressed(sf::Keyboard::LControl);
+	bool shift = IM::isKeyPressed(Keyboard::LSHIFT);
+	auto ctrl = IM::isKeyPressed(Keyboard::LCTRL);
 	auto scale = IM::getLastScroll();
 
 	if (shift) scale /= 10;
 
-	if (!edit_texture) game->camera.zoom(math::scale_zoom(-scale + 1));
+	if (!edit_texture) game->camera = game->camera.zoom(math::scale_zoom(-scale + 1));
 	else for (auto& b : game->current_level.decor_sprites) {
 		if (b.editor_selected) {
 			auto center = b.rec.pos + b.rec.size / 2;
@@ -592,18 +574,18 @@ void Editor::update(float dt) noexcept {
 		}
 	}
 
-	if (IM::isKeyJustPressed(sf::Keyboard::F12)) {
+	if (IM::isKeyJustPressed(Keyboard::F12)) {
 		set_camera_bound();
 	}
 
 	if (require_dragging) {
-		if (IM::isMouseJustPressed(sf::Mouse::Left) && !pos_start_drag) {
+		if (IM::isMouseJustPressed(Mouse::Left) && !pos_start_drag) {
 			pos_start_drag = get_mouse_pos();
 			drag_offset.clear();
 			for (auto& b : game->current_level.decor_sprites)
 				if (b.editor_selected) drag_offset.push_back(get_mouse_pos() - b.rec.pos);
 		}
-		if (edit_texture && IM::isMousePressed(sf::Mouse::Left)) {
+		if (edit_texture && IM::isMousePressed(Mouse::Left)) {
 			size_t i = 0;
 			for (auto& b : game->current_level.decor_sprites) {
 				if (b.editor_selected) {
@@ -611,13 +593,13 @@ void Editor::update(float dt) noexcept {
 				}
 			}
 		}
-		if (IM::isMouseJustReleased(sf::Mouse::Left) && pos_start_drag) {
+		if (IM::isMouseJustReleased(Mouse::Left) && pos_start_drag) {
 			Vector2f pos_end_drag = get_mouse_pos();
 			end_drag(*pos_start_drag, pos_end_drag);
 			pos_start_drag = std::nullopt;
 		}
 	}
-	if (element_creating && element_to_create && IM::isMouseJustPressed(sf::Mouse::Left)) {
+	if (element_creating && element_to_create && IM::isMouseJustPressed(Mouse::Left)) {
 		switch (*element_to_create) {
 			case Creating_Element::Prest: {
 				Prest_Source p;
@@ -645,10 +627,10 @@ void Editor::update(float dt) noexcept {
 		}
 	}
     
-	if (IM::isMousePressed(sf::Mouse::Middle) && !IM::isMouseJustPressed(sf::Mouse::Middle)) {
-		game->camera.move(-1 * IM::getMouseDeltaInView(game->camera));
+	if (IM::isMousePressed(Mouse::Middle) && !IM::isMouseJustPressed(Mouse::Middle)) {
+		game->camera.pos += -1 * IM::getMouseDeltaInView(game->camera);
 	}
-	if (IM::isMouseJustPressed(sf::Mouse::Left)) {
+	if (IM::isMouseJustPressed(Mouse::Left)) {
 		if (placing_player) {
 			placing_player = false;
 
@@ -659,10 +641,10 @@ void Editor::update(float dt) noexcept {
 			require_dragging = true;
 		}
 	}
-	if (IM::isMouseJustPressed(sf::Mouse::Right)) {
+	if (IM::isMouseJustPressed(Mouse::Right)) {
 		start_selection = get_mouse_pos();
 	}
-	else if (start_selection && IM::isMouseJustReleased(sf::Mouse::Right)) {
+	else if (start_selection && IM::isMouseJustReleased(Mouse::Right)) {
 		defer{ start_selection.reset(); };
 		Rectanglef rec{*start_selection, get_mouse_pos() - *start_selection};
 
@@ -698,13 +680,13 @@ void Editor::update(float dt) noexcept {
 			for (auto& b : game->current_level.decor_sprites) b.editor_selected = false;
 		}
 	}
-	if (IM::isKeyJustReleased(sf::Keyboard::Delete)) delete_all_selected();
-	snap_vertical = IM::isKeyPressed(sf::Keyboard::LShift) && IM::isKeyPressed(sf::Keyboard::V);
-	snap_horizontal = IM::isKeyPressed(sf::Keyboard::LShift) && IM::isKeyPressed(sf::Keyboard::H);
+	if (IM::isKeyJustReleased(Keyboard::DEL)) delete_all_selected();
+	snap_vertical = IM::isKeyPressed(Keyboard::LSHIFT) && IM::isKeyPressed(Keyboard::V);
+	snap_horizontal = IM::isKeyPressed(Keyboard::LSHIFT) && IM::isKeyPressed(Keyboard::H);
 }
 
 Vector2f Editor::get_mouse_pos() const noexcept {
-	auto pos = IM::getMousePosInView(game->camera);;
+	auto pos = IM::getMousePosInView(game->camera);
 	if (snap_grid == 0) return pos;
 
 	return snap_grid * (Vector2i)(pos / snap_grid);
@@ -818,9 +800,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 }
 
 void Editor::set_camera_bound() noexcept {
-	Vector2f center = game->camera.getCenter();
-	Vector2f size = game->camera.getSize();
-	game->current_level.camera_bound = { center - size / 2, size };
+	game->current_level.camera_bound = game->camera;
 }
 
 void Editor::delete_all_selected() noexcept {

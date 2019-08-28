@@ -1,6 +1,5 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
 #include <unordered_map>
 #include <filesystem>
 #include <functional>
@@ -38,19 +37,13 @@ namespace asset {
 
 		std::unordered_map<std::string, std::uint64_t> textures_loaded;
 
-		std::unordered_map<std::uint64_t, Asset_t<sf::Texture>> textures;
 		std::unordered_map<std::uint64_t, Asset_t<Shader>> shaders;
-		std::unordered_map<std::uint64_t, Asset_t<Texture>> my_textures;
+		std::unordered_map<std::uint64_t, Asset_t<Texture>> textures;
 
-		[[nodiscard]] sf::Texture& get_texture(Key k) noexcept;
+		[[nodiscard]] Texture& get_texture(Key k) noexcept;
 		[[nodiscard]] Key make_texture() noexcept;
 		[[nodiscard]] std::optional<Key> load_texture(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_texture(Key k, std::filesystem::path path) noexcept;
-
-		[[nodiscard]] Texture& get_my_texture(Key k) noexcept;
-		[[nodiscard]] Key make_my_texture() noexcept;
-		[[nodiscard]] std::optional<Key> load_my_texture(std::filesystem::path path) noexcept;
-		[[nodiscard]] bool load_my_texture(Key k, std::filesystem::path path) noexcept;
 
 		[[nodiscard]] Shader& get_shader(Key k) noexcept;
 		[[nodiscard]] std::optional<Key> load_shader(
