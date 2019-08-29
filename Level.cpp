@@ -90,7 +90,7 @@ void Dry_Zone::render(render::Orders& target) const noexcept {
 }
 
 void Rock::render(render::Orders& target) const noexcept {
-	target.push_sprite(pos, { 2 * r, 2 * r }, asset::Known_Textures::Rock, { r, r });
+	target.push_sprite(pos, { 2 * r, 2 * r }, asset::Known_Textures::Rock, { .5, .5 });
 
 	for (auto& binding : bindings) target.push_arrow(pos, pos + binding, { 1, 0, 1, 1 });
 
@@ -703,12 +703,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	player["prest"] = level.player.prest;
 	player["pos"] = level.player.pos;
     
-	auto cam = level.camera_start;
-	cam.size = game->camera.size;
-	cam.size.y *= -1;
-	cam.pos = game->camera.center();
-	cam.pos -= cam.size / 2;
-	str["camera"] = cam;
+	str["camera"] = game->camera;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {
 	x.pos = (Vector2f)str["pos"];

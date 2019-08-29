@@ -168,23 +168,19 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 void Game::update_camera(float dt) noexcept {
 	auto camera_target = current_level.player.pos;
-	auto camera_pos = camera.center();
-	auto camera_size = camera.size;
-	auto dist = (camera_target - camera_pos).length();
+	auto camera_center = camera.center();
+	auto dist = (camera_target - camera_center).length();
 
 	if (dist > camera_idle_radius) {
-		Vector2f dt_pos = camera_target - camera_pos;
+		Vector2f dt_pos = camera_target - camera_center;
 		Vector2f to_move =
 			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
 		camera.pos += to_move;
-		camera_pos += to_move;
 	}
 
-	if (current_level.camera_bound.area() > 0) {
-		Rectanglef camera_rect = { camera_pos - camera_size / 2, camera_size };
-		camera_rect = camera_rect.restrict_in(current_level.camera_bound);
-		camera.setCenter(camera_rect.center());
-	}
+	if (current_level.camera_bound.area() > 0)
+		camera = camera.restrict_in(current_level.camera_bound);
+
 }
 
 void Game::render(render::Orders& target) noexcept {

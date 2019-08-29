@@ -15,15 +15,18 @@ uniform vec2 screen_bounds;
 
 void main() {
 	vec2 object_space = vec2(
-		in_pos.x - size.x * origin.x,
-		in_pos.y - size.y * origin.y
+		in_pos.x - origin.x,
+		in_pos.y - origin.y
 	);
 	
-	object_space.x = object_space.x * size.x;
 	object_space.y = object_space.y * size.y;
+	object_space.x = object_space.x * size.x;
 
-	mat2 rot = mat2(cos(rotation), -sin(rotation), sin(rotation), cos(rotation));
-	object_space = object_space * rot;
+	float r = -rotation;
+
+	mat2 rot = mat2(cos(r), -sin(r), sin(r), cos(r));
+	object_space = rot * object_space;
+	
 
 	pos = vec3(
 		object_pos.x + object_space.x,

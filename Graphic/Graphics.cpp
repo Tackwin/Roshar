@@ -142,9 +142,9 @@ void render::immediate(Sprite_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
-	glActiveTexture(GL_TEXTURE0);
-	if (info.texture)
-		glBindTexture(GL_TEXTURE_2D, asset::Store.get_texture(info.texture).get_texture_id());
+	if (asset::Store.textures.contains(info.texture)) {
+		asset::Store.get_texture(info.texture).bind();
+	}
 
 	auto& shader = asset::Store.get_shader(info.shader);
 	shader.use();
@@ -155,11 +155,13 @@ void render::immediate(Sprite_Info info) noexcept {
 	shader.set_primary_color(info.color);
 	shader.set_rotation(info.rotation);
 	shader.set_size(info.size);
+	shader.set_use_texture((bool)info.texture);
 	shader.set_texture(0);
-	shader.set_use_texture(true);
 
 	glBindVertexArray(quad_vao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void render::immediate(Circle_Info info) noexcept {
@@ -210,6 +212,8 @@ void render::immediate(Circle_Info info) noexcept {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
+	
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
@@ -249,6 +253,8 @@ void render::immediate(Rectangle_Info info) noexcept {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
@@ -308,6 +314,7 @@ void render::immediate(Arrow_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
@@ -324,7 +331,7 @@ void render::immediate(Arrow_Info info) noexcept {
 	glBindVertexArray(head_vao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 
-	shader.set_origin({ 0.5, 0 });
+	shader.set_origin({ 0, 0.5 });
 	shader.set_position(info.a);
 	shader.set_size({ (info.a - info.b).length() - size.x, size.y });
 
@@ -350,6 +357,7 @@ void render::immediate(Line_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();

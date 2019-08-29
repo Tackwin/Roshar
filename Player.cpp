@@ -159,9 +159,10 @@ void Player::render(render::Orders& target) const noexcept {
 		prest_gathered *= .1f;
 
 		target.push_circle(prest_gathered, mouse_world_pos, { 0, 1, 0, 1 });
-		target.push_arrow(start_drag_world_pos, mouse_world_pos, { 0, 1, 0, 1 });
+		target.push_arrow(
+			IM::applyInverseView(game->camera, start_drag_pos), mouse_world_pos, { 0, 1, 0, 1 }
+		);
 	}
-
 }
 
 void Player::clear_all_basic_bindings() noexcept {
@@ -223,7 +224,6 @@ void Player::add_own_binding(Vector2f x) noexcept {
 void Player::start_drag() noexcept {
 	dragging = true;
 	start_drag_pos = mouse_screen_pos;
-	start_drag_world_pos = IM::getMousePosInView(game->camera);
 	start_drag_time = game->timeshots;
 
 	for (const auto& x : game->current_level.rocks) {

@@ -5,6 +5,8 @@
 #include <cassert>
 #include <Windows.h>
 
+#include <SFML/Graphics.hpp>
+
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include "../OS/file.hpp"
@@ -292,12 +294,12 @@ void InputsManager::update(float dt) {
 		records.empty() ? Vector2f{} : records.back().mouse_screen_pos;
 
 	POINT p;
-	RECT r;
 	GetCursorPos(&p);
-	GetWindowRect((HWND)platform::handle_window, &r);
+	ScreenToClient((HWND)platform::handle_window, &p);
 
 	new_record.mouse_screen_pos = {
-		(float)(p.x - r.left), (float)(Environment.window_height - (p.y - r.top))
+		(float)p.x,
+		(float)(Environment.window_height - p.y)
 	};
 	new_record.mouse_screen_delta = new_record.mouse_screen_pos - last_mouse_screen_pos;
 
@@ -309,6 +311,12 @@ void InputsManager::update(float dt) {
 	records.push_back(new_record);
 }
 
+Vector2f IM::applyInverseView(const Rectanglef& view, Vector2f p) noexcept {
+	render::View_Info info;
+	info.screen_bounds = { {0, 0}, {1, 1} };
+	info.world_bounds = view;
+	return applyInverseView(info, p);
+}
 
 Vector2f IM::applyInverseView(const render::View_Info& view, Vector2f p) noexcept {
 	if (records.empty()) return {};
@@ -377,53 +385,6 @@ std::uint64_t IM::load_record(std::filesystem::path path) noexcept {
 	return load_record_at(path, id) ? id : 0;
 }
 
-struct Inputs_Info_0 {
-	struct Action_Info {
-		bool pressed : 1;
-		bool just_pressed : 1;
-		bool just_released : 1;
-	};
-
-	std::array<Action_Info, Keyboard::Count> key_infos;
-	std::array<Action_Info, Mouse::Count>    mouse_infos;
-
-	Vector2f mouse_screen_pos;
-	Vector2f mouse_screen_delta;
-	Vector2u window_size;
-
-	float scroll;
-	float dt;
-
-	struct {
-		bool mouse_captured : 1;
-		bool key_captured : 1;
-		bool focused : 1;
-	};
-};
-
-Inputs_Info to_up_to_date(Inputs_Info_0 in) noexcept {
-	Inputs_Info out = {};
-	for (size_t i = 0; i < in.mouse_infos.size(); ++i) {
-		out.mouse_infos[i].pressed       = in.mouse_infos[i].pressed;
-		out.mouse_infos[i].just_pressed  = in.mouse_infos[i].just_pressed;
-		out.mouse_infos[i].just_released = in.mouse_infos[i].just_released;
-	}
-	for (size_t i = 0; i < in.key_infos.size(); ++i) {
-		out.key_infos[i].pressed       = in.key_infos[i].pressed;
-		out.key_infos[i].just_pressed  = in.key_infos[i].just_pressed;
-		out.key_infos[i].just_released = in.key_infos[i].just_released;
-	}
-	out.mouse_screen_pos = in.mouse_screen_pos;
-	out.mouse_screen_delta = in.mouse_screen_delta;
-	out.window_size = in.window_size;
-	out.dt = in.dt;
-	out.scroll = in.scroll;
-	out.mouse_captured = in.mouse_captured;
-	out.key_captured = in.key_captured;
-	out.focused = in.focused;
-	return out;
-}
-
 bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 	auto expected = file::read_whole_file(path);
 	if (!expected) return 0;
@@ -432,17 +393,7 @@ bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 
 	std::uint8_t version = bytes[0];
 	switch (version) {
-		case 0: {
-			for (size_t i = 1; i < bytes.size();) {
-				Inputs_Info_0 info;
-				for (size_t j = 0; j < sizeof(Inputs_Info_0); ++j, ++i) {
-					reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
-				}
-				loaded_record[id].push_back(to_up_to_date(info));
-			}
-			return true;
-		}
-		case 1: {
+		case Inputs_Info::Version: {
 			for (size_t i = 1; i < bytes.size();) {
 				Inputs_Info info;
 				for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
@@ -503,14 +454,14 @@ int IM::get_vkey(Keyboard::Key key) noexcept {
 		case Keyboard::Y:          return 'Y';          
 		case Keyboard::Z:          return 'Z';          
 		case Keyboard::Escape:     return VK_ESCAPE;    
-		case Keyboard::LCTRL:   return VK_LCONTROL;  
+		case Keyboard::LCTRL:      return VK_LCONTROL;  
 		case Keyboard::LSHIFT:     return VK_LSHIFT;    
 		case Keyboard::LALT:       return VK_LMENU;     
-		case Keyboard::LSYS:    return VK_LWIN;      
-		case Keyboard::RCTRL:   return VK_RCONTROL;  
+		case Keyboard::LSYS:       return VK_LWIN;      
+		case Keyboard::RCTRL:      return VK_RCONTROL;  
 		case Keyboard::RSHIFT:     return VK_RSHIFT;    
 		case Keyboard::RALT:       return VK_RMENU;     
-		case Keyboard::RSYS:    return VK_RWIN;      
+		case Keyboard::RSYS:       return VK_RWIN;      
 		case Keyboard::Quote:      return VK_OEM_7;     
 		case Keyboard::F1:         return VK_F1;        
 		case Keyboard::F2:         return VK_F2;        
@@ -525,7 +476,8 @@ int IM::get_vkey(Keyboard::Key key) noexcept {
 		case Keyboard::F11:        return VK_F11;       
 		case Keyboard::F12:        return VK_F12;       
 		case Keyboard::Space:      return VK_SPACE;     
-		case Keyboard::DEL:     return VK_DELETE;    
+		case Keyboard::DEL:        return VK_DELETE;    
+		case Keyboard::Return:     return VK_RETURN;
 		/*case Keyboard::Num0:       return '0';          
 		case Keyboard::Num1:       return '1';          
 		case Keyboard::Num2:       return '2';          
@@ -578,6 +530,8 @@ int IM::get_vkey(Keyboard::Key key) noexcept {
 		case Keyboard::F15:        return VK_F15;       
 		case Keyboard::Pause:      return VK_PAUSE;     */
 	}
+	assert("Logic error.");
+	return 0;
 }
 
 int IM::get_vkey(Mouse::Button key) noexcept {

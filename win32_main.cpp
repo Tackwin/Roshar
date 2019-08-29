@@ -25,7 +25,9 @@
 #include "Game.hpp"
 
 static int attribs[] = {
+#ifndef NDEBUG
 	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+#endif
 	0
 };
 
@@ -56,6 +58,9 @@ LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) no
 	ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 
 	switch (msg) {
+	case WM_MOUSEWHEEL:
+		wheel_scroll = GET_WHEEL_DELTA_WPARAM(wParam) / 120.f;
+		break;
 	case WM_SYSCOMMAND:
 		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
 			return 0;
@@ -120,7 +125,7 @@ int WINAPI WinMain(
 	platform::handle_window = window_handle;
 
 	RECT window_rect;
-	if (!GetWindowRect(window_handle, &window_rect)) {
+	if (!GetClientRect(window_handle, &window_rect)) {
 		// >TODO error handling
 		printf(get_last_error_message()->c_str());
 		return 1;
@@ -132,6 +137,7 @@ int WINAPI WinMain(
 	auto gl_context = *create_gl_context(window_handle);
 	defer{ destroy_gl_context(gl_context); };
 
+#ifndef NDEBUG
 	GLint flags;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
 	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
@@ -140,6 +146,7 @@ int WINAPI WinMain(
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 		glDebugMessageCallback((GLDEBUGPROCARB)opengl_debug, nullptr);
 	}
+#endif
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -444,7 +451,8 @@ void APIENTRY opengl_debug(
 	const void*
 ) noexcept {
 	constexpr GLenum To_Ignore[] = {
-		131185
+		131185,
+		131204
 	};
 
 	constexpr GLenum To_Break_On[] = {
