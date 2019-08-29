@@ -426,7 +426,6 @@ void IM::forget_record(std::uint64_t id) noexcept {
 int IM::get_vkey(Keyboard::Key key) noexcept {
 	switch (key)
 	{
-		default:                       return 0;            
 		case Keyboard::A:          return 'A';          
 		case Keyboard::B:          return 'B';          
 		case Keyboard::C:          return 'C';          

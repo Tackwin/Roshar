@@ -7,6 +7,7 @@ render::View_Info render::current_view;
 render::Order render::push_view(Rectanglef bounds) noexcept {
 	View_Info info;
 
+	info.screen_bounds = { {0, 0}, {1, 1} };
 	info.world_bounds = bounds;
 
 	Order order;
@@ -118,6 +119,26 @@ render::Order render::line(Vector2f a, Vector2f b, Vector4d color) noexcept {
 	return order;
 }
 
+render::Order render::point_light(
+	Vector2f pos,
+	Vector4d color,
+	float intensity,
+	float angle,
+	float spread
+) noexcept {
+	Point_Light_Info info;
+	info.pos = pos;
+	info.color = color;
+	info.angle = angle;
+	info.spread = spread;
+	info.intensity = intensity;
+
+	Order order;
+	order.kind = Order::Kind::Point_Light;
+	order.point_light = info;
+
+	return order;
+}
 
 void render::immediate(Sprite_Info info) noexcept {
 	static GLuint quad_vao{ 0 };
@@ -138,12 +159,14 @@ void render::immediate(Sprite_Info info) noexcept {
 		glGenBuffers(1, &quad_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
+		auto label = "sprite_info_vbo";
+		glObjectLabel(GL_BUFFER, quad_vbo, strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
 	if (asset::Store.textures.contains(info.texture)) {
-		asset::Store.get_texture(info.texture).bind();
+		asset::Store.get_texture(info.texture).bind(4);
 	}
 
 	auto& shader = asset::Store.get_shader(info.shader);
@@ -156,7 +179,7 @@ void render::immediate(Sprite_Info info) noexcept {
 	shader.set_rotation(info.rotation);
 	shader.set_size(info.size);
 	shader.set_use_texture((bool)info.texture);
-	shader.set_texture(0);
+	shader.set_texture(4);
 
 	glBindVertexArray(quad_vao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -209,12 +232,12 @@ void render::immediate(Circle_Info info) noexcept {
 		glBufferData(
 			GL_ARRAY_BUFFER, 2 * Half_Prec * 3 * sizeof(GLfloat), vertices, GL_STATIC_DRAW
 		);
+		auto label = "circle_info_vbo";
+		glObjectLabel(GL_BUFFER, vbo, strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 	
-	glBindTexture(GL_TEXTURE_2D, 0);
-
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
@@ -250,11 +273,11 @@ void render::immediate(Rectangle_Info info) noexcept {
 		glGenBuffers(1, &quad_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
+		auto label = "rectangle_info_vbo";
+		glObjectLabel(GL_BUFFER, quad_vbo, strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
-
-	glBindTexture(GL_TEXTURE_2D, 0);
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
@@ -314,8 +337,6 @@ void render::immediate(Arrow_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
-	glBindTexture(GL_TEXTURE_2D, 0);
-
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
@@ -353,11 +374,11 @@ void render::immediate(Line_Info info) noexcept {
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
+		auto label = "line_info_vbo";
+		glObjectLabel(GL_BUFFER, vbo, strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
-
-	glBindTexture(GL_TEXTURE_2D, 0);
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
 	shader.use();
@@ -374,4 +395,15 @@ void render::immediate(Line_Info info) noexcept {
 	glBindVertexArray(vao);
 	glDrawArrays(GL_LINES, 0, 2);
 
+}
+
+void render::immediate(Point_Light_Info info) noexcept {
+	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Light);
+	shader.use();
+
+	auto pre = "light_points[" + std::to_string(info.idx) + "].";
+
+	shader.set_uniform(pre + "pos", info.pos);
+	shader.set_uniform(pre + "color", info.color);
+	shader.set_uniform(pre + "intensity", info.intensity);
 }

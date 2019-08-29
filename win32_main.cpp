@@ -16,6 +16,7 @@
 #include "Math/Vector.hpp"
 #include "Graphic/Graphics.hpp"
 #include "Graphic/OpenGL.hpp"
+#include "Graphic/FrameBuffer.hpp"
 
 #include <imgui.h>
 #include "Graphic/imgui_impl_win32.hpp"
@@ -23,6 +24,8 @@
 
 #include "Managers/InputsManager.hpp"
 #include "Game.hpp"
+
+constexpr Vector2u Gl_Buffer_Size = { 1920, 1080 };
 
 static int attribs[] = {
 #ifndef NDEBUG
@@ -251,7 +254,8 @@ int WINAPI WinMain(
 		update_game(dt);
 		render_game(orders);
 		render_orders(orders);
-		orders.list.resize(0);
+		orders.lights.resize(0);
+		orders.objects.resize(0);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -267,13 +271,32 @@ int WINAPI WinMain(
 }
 
 void render_orders(render::Orders& orders) noexcept {
-	glClearColor(0.6f, 0.3f, 0.4f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
+	static Texture_Buffer texture_target{ Gl_Buffer_Size };
+	static G_Buffer   g_buffer{ Gl_Buffer_Size };
+	static HDR_Buffer hdr_buffer{ Gl_Buffer_Size };
 	std::vector<render::View_Info> view_stack;
 
-	for (const auto& x : orders.list) {
+	glViewport(0, 0, Gl_Buffer_Size.x, Gl_Buffer_Size.y);
+
+	g_buffer.set_active();
+	glClearColor(0, 0, 0, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	for (size_t i = 0; i < orders.objects.size(); ++i) {
+		auto& x = orders.objects[i];
+
 		switch (x.kind) {
+		case render::Order::Kind::View_Pop: {
+			assert(!view_stack.empty());
+			view_stack.pop_back();
+			if (!view_stack.empty()) render::current_view = view_stack.back();
+			break;
+		}
+		case render::Order::Kind::View_Push: {
+			view_stack.push_back(x.view);
+			render::current_view = view_stack.back();
+			break;
+		}
 		case render::Order::Kind::Sprite:
 			render::immediate(x.sprite);
 			break;
@@ -289,21 +312,58 @@ void render_orders(render::Orders& orders) noexcept {
 		case render::Order::Kind::Line:
 			render::immediate(x.line);
 			break;
-		case render::Order::Kind::View_Push: {
-			auto y = x.view;
-			view_stack.push_back(x.view);
-			render::current_view = y;
-			break;
-		}
-		case render::Order::Kind::View_Pop: {
-			assert(!view_stack.empty());
-			view_stack.pop_back();
-			render::current_view = view_stack.back();
-			break;
-		}
+		default: assert("Logic error.");
 		}
 	}
 
+	hdr_buffer.set_active();
+	g_buffer.set_active_texture();
+	glClearColor(0.6f, 0.3f, 0.4f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	for (size_t j = 0; j < orders.lights.size(); ++j) {
+		auto& x = orders.lights[j];
+		switch (x.kind) {
+		case render::Order::Kind::Point_Light:
+			render::immediate(x.point_light);
+			break;
+		}
+	}
+
+	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Light);
+	shader.use();
+	shader.set_uniform("buffer_position", 0);
+	shader.set_uniform("buffer_normal", 1);
+	shader.set_uniform("buffer_albedo", 2);
+
+	g_buffer.render_quad();
+
+	texture_target.set_active();
+	hdr_buffer.set_active_texture();
+
+	static float gamma{ 2.2f };
+	static float exposure{ 1 };
+
+	ImGui::Begin("Hdr");
+	defer{ ImGui::End(); };
+
+	ImGui::InputFloat("gamma", &gamma);
+	ImGui::InputFloat("exposure", &exposure);
+
+	auto& shader_hdr = asset::Store.get_shader(asset::Known_Shaders::HDR);
+	shader_hdr.use();
+	shader_hdr.set_uniform("gamma", gamma);
+	shader_hdr.set_uniform("exposure", exposure);
+	shader_hdr.set_uniform("hdr_texture", 0);
+
+	glViewport(0, 0, (GLsizei)Environment.window_width, (GLsizei)Environment.window_height);
+
+	hdr_buffer.render_quad();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	texture_target.render_quad();
 }
 
 std::optional<std::string> get_last_error_message() noexcept {
@@ -456,7 +516,7 @@ void APIENTRY opengl_debug(
 	};
 
 	constexpr GLenum To_Break_On[] = {
-		1280, 1282, 1286
+		1280, 1281, 1282, 1286
 	};
 
 	if (std::find(BEG_END(To_Ignore), id) != std::end(To_Ignore)) return;
@@ -476,7 +536,7 @@ void APIENTRY opengl_debug(
 	printf("\n\n");
 
 	if (std::find(BEG_END(To_Break_On), id) != std::end(To_Break_On)) {
-		//DebugBreak();
+		DebugBreak();
 	}
 }
 

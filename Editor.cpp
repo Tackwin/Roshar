@@ -811,7 +811,7 @@ void Editor::delete_all_selected() noexcept {
 			}
 		}
 	};
-    
+
 	iter(game->current_level.rocks);
 	iter(game->current_level.doors);
 	iter(game->current_level.blocks);

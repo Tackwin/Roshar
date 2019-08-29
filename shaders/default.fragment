@@ -1,6 +1,8 @@
 #version 330 core
 
-layout (location = 0) out vec4 FragColor;
+layout (location = 0) out vec3 g_position;
+layout (location = 1) out vec3 g_normal;
+layout (location = 2) out vec4 g_albedo;
 
 in vec2 texture_coord;
 in vec3 pos;
@@ -21,10 +23,14 @@ void main() {
 	vec4 texel = vec4(1);
 	if (use_color_texture) texel = texture(color_texture, texture_coord);
 
-    FragColor = vec4(
+    g_albedo = vec4(
     	texel.x * color.x,
     	texel.y * color.y,
     	texel.z * color.z,
     	texel.w * color.w
     );
+
+    g_normal = vec3(1, 0, 1);
+
+    g_position = pos;
 }

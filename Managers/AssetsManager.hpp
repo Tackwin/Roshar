@@ -31,6 +31,8 @@ namespace asset {
 	};
 	struct Known_Shaders {
 		inline static Key Default{ 1 };
+		inline static Key Light{ 2 };
+		inline static Key HDR{ 3 };
 	};
 
 	struct Store_t {

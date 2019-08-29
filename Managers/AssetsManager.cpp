@@ -154,8 +154,8 @@ void Store_t::load_known_textures() noexcept {
 		printf("failed :( !\n");\
 	}
 
-	X("textures/key.png", Key_Item);
-	X("textures/rock.png", Rock);
+	X("textures/rock.png", Rock    );
+	X("textures/key.png",  Key_Item);
 
 #undef X
 }
@@ -177,5 +177,7 @@ void Store_t::load_known_shaders() noexcept {
 	}
 
 	X("shaders/default.vertex", "shaders/default.fragment", Default);
+	X("shaders/light.vertex",   "shaders/light.fragment",   Light  );
+	X("shaders/hdr.vertex",     "shaders/hdr.fragment",     HDR    );
 #undef X
 }

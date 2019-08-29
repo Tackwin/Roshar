@@ -122,6 +122,8 @@ bool Shader::build_shaders() noexcept {
 	info.fragment_linked = true;
 	info.vertex_linked = true;
 
+	cache_loc.clear();
+
 	return true;
 }
 
@@ -181,6 +183,36 @@ void Shader::set_window_size(Vector2u size) noexcept {
 
 void Shader::set_use_texture(bool x) noexcept {
 	glUniform1i(loc("use_color_texture"), x);
+}
+
+void Shader::set_uniform(const std::string& name, Vector2f x) noexcept {
+	if (!cache_loc.contains(name)) {
+		cache_loc[name] = glGetUniformLocation(info.programId, name.c_str());
+	}
+
+	glUniform2fv(cache_loc[name], 1, &x.x);
+}
+void Shader::set_uniform(const std::string& name, Vector4d x) noexcept {
+	if (!cache_loc.contains(name)) {
+		cache_loc[name] = glGetUniformLocation(info.programId, name.c_str());
+	}
+
+	Vector4f y = (Vector4f)x;
+	glUniform4fv(cache_loc[name], 1, &y.x);
+}
+void Shader::set_uniform(const std::string& name, float x) noexcept {
+	if (!cache_loc.contains(name)) {
+		cache_loc[name] = glGetUniformLocation(info.programId, name.c_str());
+	}
+
+	glUniform1f(cache_loc[name], x);
+}
+void Shader::set_uniform(const std::string& name, int x) noexcept {
+	if (!cache_loc.contains(name)) {
+		cache_loc[name] = glGetUniformLocation(info.programId, name.c_str());
+	}
+
+	glUniform1i(cache_loc[name], x);
 }
 
 

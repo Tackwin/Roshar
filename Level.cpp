@@ -233,6 +233,11 @@ void Key_Item::render(render::Orders& target) const noexcept {
 	target.push_sprite(pos, Key_World_Size, asset::Known_Textures::Key_Item, { 0, 0 }, 0, color);
 }
 
+void Point_Light::render(render::Orders& target) const noexcept {
+	target.push_circle(std::sqrtf(intensity), pos, color);
+	target.push_point_light(pos, color, intensity);
+}
+
 void Level::render(render::Orders& target) const noexcept {
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
@@ -247,6 +252,7 @@ void Level::render(render::Orders& target) const noexcept {
 	renders(dispensers);
 
 	renders(decor_sprites);
+	renders(point_lights);
 
 	renders(key_items);
 	renders(prest_sources);
@@ -533,6 +539,7 @@ void Level::resume() noexcept {
 	iter(next_zones);
 	iter(kill_zones);
 	iter(dispensers);
+	iter(point_lights);
 	iter(decor_sprites);
 	iter(trigger_zones);
 	iter(prest_sources);
@@ -588,6 +595,17 @@ void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept {
 void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept {
 	str = dyn_struct::structure_t{};
 	str["rec"] = x.rec;
+}
+void from_dyn_struct(const dyn_struct& str, Point_Light& x) noexcept {
+	x.color = (Vector4d)str["color"];
+	x.pos = (Vector2f)str["pos"];
+	x.intensity = (float)str["intensity"];
+}
+void to_dyn_struct(dyn_struct& str, const Point_Light& x) noexcept {
+	str = dyn_struct::structure_t{};
+	str["color"] = x.color;
+	str["pos"] = x.pos;
+	str["intensity"] = x.intensity;
 }
 void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
@@ -659,6 +677,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(rocks);
 	X(markers);
 	X(auto_binding_zones);
+	X(point_lights);
 	X(camera_bound);
 #undef X
     
@@ -697,6 +716,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["auto_binding_zones"] = level.auto_binding_zones;
 	str["trigger_zones"] = level.trigger_zones;
 	str["camera_bound"] = level.camera_bound;
+	str["point_lights"] = level.point_lights;
     
 	auto& player = str["player"] = dyn_struct::structure_t{};
     

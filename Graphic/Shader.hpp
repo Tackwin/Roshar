@@ -52,7 +52,14 @@ public:
 	bool build_shaders() noexcept;
 
 
+	void set_uniform(const std::string& name, Vector2f x) noexcept;
+	void set_uniform(const std::string& name, Vector4d x) noexcept;
+	void set_uniform(const std::string& name, float x) noexcept;
+	void set_uniform(const std::string& name, int x) noexcept;
+
 private:
+	std::unordered_map<std::string, size_t> cache_loc;
+
 	std::optional<std::string> check_shader_error(size_t shader) noexcept;
 	std::optional<std::string> check_program_error(size_t program) noexcept;
 

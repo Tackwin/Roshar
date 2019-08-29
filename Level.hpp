@@ -180,6 +180,16 @@ struct Key_Item {
 	void render(render::Orders& target) const noexcept;
 };
 
+struct Point_Light {
+	bool editor_selected{ false };
+
+	Vector2f pos;
+	Vector4d color;
+	float intensity;
+
+	void render(render::Orders& target) const noexcept;
+};
+
 struct Level {
 	// >SEE:
 	// >DEBUG:
@@ -198,6 +208,7 @@ struct Level {
 	std::vector<Next_Zone>          next_zones;
 	std::vector<Dispenser>          dispensers;
 	std::vector<Projectile>         projectiles;
+	std::vector<Point_Light>        point_lights;
 	std::vector<Trigger_Zone>       trigger_zones;
 	std::vector<Prest_Source>       prest_sources;
 	std::vector<Friction_Zone>      friction_zones;
@@ -241,6 +252,8 @@ private:
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Point_Light& light) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Point_Light& light) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Key_Item& x) noexcept;

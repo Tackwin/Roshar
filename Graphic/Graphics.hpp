@@ -54,8 +54,18 @@ namespace render {
 		Rectanglef screen_bounds;
 	};
 
+	struct Point_Light_Info {
+		Vector2f pos;
+		Vector4d color;
+		float intensity;
+		float angle;
+		float spread;
+		size_t idx;
+	};
+
 	struct Order {
 		union {
+			Point_Light_Info point_light;
 			Rectangle_Info rectangle;
 			Circle_Info circle;
 			Sprite_Info sprite;
@@ -71,6 +81,7 @@ namespace render {
 
 		enum class Kind {
 			Sprite = 0,
+			Point_Light,
 			Rectangle,
 			View_Push,
 			View_Pop,
@@ -115,18 +126,39 @@ namespace render {
 		float outline = 0.f,
 		Vector4d outline_color = { 0, 0, 0, 0 }
 	) noexcept;
+	Order point_light(
+		Vector2f pos,
+		Vector4d color,
+		float intensity,
+		float angle,
+		float spread
+	) noexcept;
+
 	Order push_view(Vector2f pos, Vector2f size) noexcept;
 	Order push_view(Rectanglef bounds) noexcept;
 	Order pop_view() noexcept;
 
 	struct Orders {
-		std::vector<Order> list;
+		std::vector<Order> objects;
+		std::vector<Order> lights;
 
 		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
-			list.push_back(arrow(a, b, color));
+			objects.push_back(arrow(a, b, color));
 		}
 		void push_line(Vector2f a, Vector2f b, Vector4d color) noexcept {
-			list.push_back(line(a, b, color));
+			objects.push_back(line(a, b, color));
+		}
+
+		void push_point_light(
+			Vector2f pos,
+			Vector4d color,
+			float intensity,
+			float angle = 0.f,
+			float spread = 3.1415926f * 2.f
+		) noexcept {
+			auto info = point_light(pos, color, intensity, angle, spread);
+			info.point_light.idx = lights.size();
+			lights.push_back(info);
 		}
 
 		void push_rectangle(
@@ -136,7 +168,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			list.push_back(rectangle(pos, size, color, outline, outline_color));
+			objects.push_back(rectangle(pos, size, color, outline, outline_color));
 		}
 
 		void push_rectangle(
@@ -145,7 +177,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			list.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
+			objects.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
 		}
 
 		void push_circle(
@@ -155,7 +187,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0., 0., 0., 0. }
 		) noexcept {
-			list.push_back(circle(r, pos, color, outline, outline_color));
+			objects.push_back(circle(r, pos, color, outline, outline_color));
 		}
 
 		void push_sprite(
@@ -167,7 +199,7 @@ namespace render {
 			Vector4d color = { 1, 1, 1, 1 },
 			asset::Key shader = 0
 		) noexcept {
-			list.push_back(sprite(pos, size, texture, origin, rotation, color, shader));
+			objects.push_back(sprite(pos, size, texture, origin, rotation, color, shader));
 		}
 
 		void push_sprite(
@@ -178,25 +210,26 @@ namespace render {
 			Vector4d color = { 1, 1, 1, 1 },
 			asset::Key shader = 0
 		) noexcept {
-			list.push_back(sprite(rec.pos, rec.size, texture, origin, rotation, color, shader));
+			objects.push_back(sprite(rec.pos, rec.size, texture, origin, rotation, color, shader));
 		}
 
 		void push_view(Vector2f pos, Vector2f size) noexcept {
 			push_view({ pos, size });
 		}
 		void push_view(Rectanglef bounds) noexcept {
-			list.push_back(render::push_view(bounds));
+			objects.push_back(render::push_view(bounds));
 		}
 		void pop_view() noexcept {
-			list.push_back(render::pop_view());
+			objects.push_back(render::pop_view());
 		}
 	};
 
 	extern View_Info current_view;
 
-	void immediate(Sprite_Info    info) noexcept;
-	void immediate(Circle_Info    info) noexcept;
-	void immediate(Rectangle_Info info) noexcept;
-	void immediate(Arrow_Info     info) noexcept;
-	void immediate(Line_Info      info) noexcept;
+	void immediate(Point_Light_Info    info) noexcept;
+	void immediate(Sprite_Info         info) noexcept;
+	void immediate(Circle_Info         info) noexcept;
+	void immediate(Rectangle_Info      info) noexcept;
+	void immediate(Arrow_Info          info) noexcept;
+	void immediate(Line_Info           info) noexcept;
 }

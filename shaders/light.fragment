@@ -1,0 +1,21 @@
+#version 330 core
+const int N_Light_Point = 32;
+
+struct Light_Point {
+    float intensity;
+    vec2 position;
+    vec4 color;
+};
+uniform Light_Point light_points[N_Light_Point];
+
+out vec4 frag_color;
+
+in vec2 text_coord;
+
+uniform sampler2D buffer_position;
+uniform sampler2D buffer_normal;
+uniform sampler2D buffer_albedo;
+
+void main() {
+	frag_color = texture(buffer_albedo, text_coord);
+}

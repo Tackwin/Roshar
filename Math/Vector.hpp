@@ -10,6 +10,7 @@
 #pragma warning(disable: 4201)
 
 static constexpr auto Vector2_Type_Tag = "Vector2<T>"_id;
+static constexpr auto Vector4_Type_Tag = "Vector4<T>"_id;
 
 #define COLOR_UNROLL(x) (x).r, (x).g, (x).b, (x).a
 #define XYZW_UNROLL(v) (v).x, (v).y, (v).z, (v).w
@@ -26,9 +27,9 @@ struct __vec_member<1, T> {
 		};
 		T components[1];
 	};
-    
-	__vec_member() : x(0) {}
-	__vec_member(T x) : x(x) {}
+
+	constexpr __vec_member() : x(0) {}
+	constexpr __vec_member(T x) : x(x) {}
 };
 template<typename T>
 struct __vec_member<2, T> {
@@ -39,9 +40,9 @@ struct __vec_member<2, T> {
 		};
 		T components[2];
 	};
-    
-	__vec_member() : x(0), y(0) {}
-	__vec_member(T x, T y) : x(x), y(y) {}
+
+	constexpr __vec_member() : x(0), y(0) {}
+	constexpr __vec_member(T x, T y) : x(x), y(y) {}
 };
 template<typename T>
 struct __vec_member<3, T> {
@@ -58,9 +59,9 @@ struct __vec_member<3, T> {
 		};
 		T components[3];
 	};
-    
-	__vec_member() : x(0), y(0), z(0) {}
-	__vec_member(T x, T y, T z) : x(x), y(y), z(z) {}
+
+	constexpr __vec_member() : x(0), y(0), z(0) {}
+	constexpr __vec_member(T x, T y, T z) : x(x), y(y), z(z) {}
 };
 template<typename T>
 struct __vec_member<4, T> {
@@ -79,9 +80,9 @@ struct __vec_member<4, T> {
 		};
 		T components[4];
 	};
-    
-	__vec_member() : x(0), y(0), z(0), w(0) {}
-	__vec_member(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+
+	constexpr __vec_member() : x(0), y(0), z(0), w(0) {}
+	constexpr __vec_member(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
 };
 
 
@@ -483,5 +484,16 @@ void from_dyn_struct(const dyn_struct& s, Vector<2, T>& x) noexcept {
 	x.y = (T)s[1];
 }
 
-
+template<typename T>
+void to_dyn_struct(dyn_struct& s, const Vector<4, T>& x) noexcept {
+	s = { x.x, x.y, x.z, x.w };
+	s.type_tag = Vector4_Type_Tag;
+}
+template<typename T>
+void from_dyn_struct(const dyn_struct& s, Vector<4, T>& x) noexcept {
+	x.x = (T)s[0];
+	x.y = (T)s[1];
+	x.z = (T)s[2];
+	x.w = (T)s[3];
+}
 #pragma warning(pop)
