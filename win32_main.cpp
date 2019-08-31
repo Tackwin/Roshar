@@ -364,6 +364,7 @@ void render_orders(render::Orders& orders) noexcept {
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	texture_target.render_quad();
+	hdr_buffer.set_disable_texture();
 }
 
 std::optional<std::string> get_last_error_message() noexcept {

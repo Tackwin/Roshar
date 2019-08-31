@@ -11,7 +11,7 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 	// - position color buffer
 	glGenTextures(1, &pos_buffer);
 	glBindTexture(GL_TEXTURE_2D, pos_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, size.x, size.y, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pos_buffer, 0);
@@ -22,7 +22,7 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 	// - normal color buffer
 	glGenTextures(1, &normal_buffer);
 	glBindTexture(GL_TEXTURE_2D, normal_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, size.x, size.y, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normal_buffer, 0);
@@ -43,7 +43,7 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 	unsigned int attachments[] = {
 		GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2
 	};
-	glDrawBuffers(sizeof(attachments) / sizeof(float), attachments);
+	glDrawBuffers(sizeof(attachments) / sizeof(unsigned int), attachments);
 
 	glGenRenderbuffers(1, &depth_rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
@@ -95,7 +95,7 @@ void G_Buffer::set_active() noexcept {
 	unsigned int attachments[] = {
 		GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2
 	};
-	glDrawBuffers(sizeof(attachments) / sizeof(float), attachments);
+	glDrawBuffers(sizeof(attachments) / sizeof(unsigned int), attachments);
 }
 
 void G_Buffer::set_active_texture() noexcept {
