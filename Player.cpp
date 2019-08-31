@@ -96,7 +96,8 @@ void Player::input(Input_Iterator this_record) noexcept {
 				) ||
 				this_record->is_just_pressed(Joystick_Button::RB)
 			) &&
-			!binding_origin_history.empty()
+			!binding_origin_history.empty() &&
+			!binding_origin_history.back()->empty()
 		) {
 		binding_origin_history.back()->pop_back();
 		binding_origin_history.pop_back();

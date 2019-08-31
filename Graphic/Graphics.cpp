@@ -2,6 +2,12 @@
 
 #include <GL/glew.h>
 
+void render::Orders::clear() noexcept {
+	objects.clear();
+	lights.clear();
+	late.clear();
+}
+
 render::View_Info render::current_view;
 
 render::Order render::push_view(Rectanglef bounds) noexcept {
@@ -75,6 +81,7 @@ render::Order render::sprite(
 	Vector2f origin,
 	float rotation,
 	Vector4d color,
+	asset::Key normal,
 	asset::Key shader
 ) noexcept {
 	Sprite_Info info;
@@ -84,6 +91,7 @@ render::Order render::sprite(
 	info.rotation = rotation;
 	info.color = color;
 	info.texture = texture;
+	info.normal = normal;
 	info.shader = shader ? 0 : asset::Known_Shaders::Default;
 
 	Order order;
@@ -168,6 +176,9 @@ void render::immediate(Sprite_Info info) noexcept {
 	if (asset::Store.textures.contains(info.texture)) {
 		asset::Store.get_texture(info.texture).bind(4);
 	}
+	if (asset::Store.textures.contains(info.normal)) {
+		asset::Store.get_texture(info.normal).bind(5);
+	}
 
 	auto& shader = asset::Store.get_shader(info.shader);
 	shader.use();
@@ -179,6 +190,8 @@ void render::immediate(Sprite_Info info) noexcept {
 	shader.set_rotation(info.rotation);
 	shader.set_size(info.size);
 	shader.set_use_texture((bool)info.texture);
+	shader.set_uniform("use_normal_texture", std::min((int)info.normal, 1));
+	shader.set_uniform("normal_texture", 5);
 	shader.set_texture(4);
 
 	glBindVertexArray(quad_vao);
@@ -248,6 +261,7 @@ void render::immediate(Circle_Info info) noexcept {
 	shader.set_rotation(0);
 	shader.set_size({ info.r, info.r });
 	shader.set_texture(0);
+	shader.set_uniform("use_normal_texture", false);
 	shader.set_use_texture(false);
 
 	glBindVertexArray(vao);
@@ -288,6 +302,7 @@ void render::immediate(Rectangle_Info info) noexcept {
 	shader.set_primary_color(info.color);
 	shader.set_rotation(0);
 	shader.set_size(info.size);
+	shader.set_uniform("use_normal_texture", false);
 	shader.set_use_texture(false);
 	shader.set_texture(0);
 
@@ -346,6 +361,7 @@ void render::immediate(Arrow_Info info) noexcept {
 	shader.set_primary_color(info.color);
 	shader.set_rotation((float)(info.b - info.a).angleX());
 	shader.set_size(size);
+	shader.set_uniform("use_normal_texture", false);
 	shader.set_use_texture(false);
 	shader.set_texture(0);
 
@@ -389,6 +405,7 @@ void render::immediate(Line_Info info) noexcept {
 	shader.set_primary_color(info.color);
 	shader.set_rotation((float)(info.b - info.a).angleX());
 	shader.set_size(V2F((info.b - info.a).length()));
+	shader.set_uniform("use_normal_texture", false);
 	shader.set_use_texture(false);
 	shader.set_texture(0);
 
@@ -403,7 +420,7 @@ void render::immediate(Point_Light_Info info) noexcept {
 
 	auto pre = "light_points[" + std::to_string(info.idx) + "].";
 
-	shader.set_uniform(pre + "pos", info.pos);
+	shader.set_uniform(pre + "position", info.pos);
 	shader.set_uniform(pre + "color", info.color);
 	shader.set_uniform(pre + "intensity", info.intensity);
 }

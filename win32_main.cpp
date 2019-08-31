@@ -13,6 +13,8 @@
 #include <io.h>
 #include <fcntl.h>
 
+#include <magic_enum.hpp>
+
 #include "Math/Vector.hpp"
 #include "Graphic/Graphics.hpp"
 #include "Graphic/OpenGL.hpp"
@@ -94,7 +96,7 @@ int WINAPI WinMain(
 	// Create application window
 	WNDCLASSEX wc = {
 		sizeof(WNDCLASSEX),
-		CS_CLASSDC,
+		CS_CLASSDC | CS_OWNDC,
 		window_proc,
 		0L,
 		0L,
@@ -232,6 +234,20 @@ int WINAPI WinMain(
 		ImGui::InputFloat("Gravity", &Environment.gravity);
 		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
 		ImGui::InputFloat("Speed up", &Environment.speed_up_step);
+		int x = (int)Environment.debug_framebuffer;
+		ImGui::ListBox(
+			"Debug Framebuffer",
+			&x,
+			[](void*, int i, const char** out) {
+				if (i >= (int)Debug_Framebuffer::Count) return false;
+				*out = magic_enum::enum_name<Debug_Framebuffer>((Debug_Framebuffer)i).data();
+				return true;
+			},
+			nullptr,
+			(int)Debug_Framebuffer::Count
+		);
+		Environment.debug_framebuffer = (Debug_Framebuffer)x;
+
 		ImGui::End();
 
 		ImGui::Begin("Perf");
@@ -254,8 +270,7 @@ int WINAPI WinMain(
 		update_game(dt);
 		render_game(orders);
 		render_orders(orders);
-		orders.lights.resize(0);
-		orders.objects.resize(0);
+		orders.clear();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -321,10 +336,12 @@ void render_orders(render::Orders& orders) noexcept {
 	glClearColor(0.6f, 0.3f, 0.4f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	size_t point_light_idx = 0;
 	for (size_t j = 0; j < orders.lights.size(); ++j) {
 		auto& x = orders.lights[j];
 		switch (x.kind) {
 		case render::Order::Kind::Point_Light:
+			x.point_light.idx = point_light_idx++;
 			render::immediate(x.point_light);
 			break;
 		}
@@ -332,9 +349,11 @@ void render_orders(render::Orders& orders) noexcept {
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Light);
 	shader.use();
-	shader.set_uniform("buffer_position", 0);
+	shader.set_uniform("debug", (int)Environment.debug_framebuffer);
+	shader.set_uniform("n_light_points", (int)point_light_idx);
+	shader.set_uniform("buffer_albedo", 0);
 	shader.set_uniform("buffer_normal", 1);
-	shader.set_uniform("buffer_albedo", 2);
+	shader.set_uniform("buffer_position", 2);
 
 	g_buffer.render_quad();
 
@@ -365,6 +384,40 @@ void render_orders(render::Orders& orders) noexcept {
 
 	texture_target.render_quad();
 	hdr_buffer.set_disable_texture();
+
+	for (size_t i = 0; i < orders.late.size(); ++i) {
+		auto& x = orders.late[i];
+
+		switch (x.kind) {
+		case render::Order::Kind::View_Pop: {
+			assert(!view_stack.empty());
+			view_stack.pop_back();
+			if (!view_stack.empty()) render::current_view = view_stack.back();
+			break;
+		}
+		case render::Order::Kind::View_Push: {
+			view_stack.push_back(x.view);
+			render::current_view = view_stack.back();
+			break;
+		}
+		case render::Order::Kind::Sprite:
+			render::immediate(x.sprite);
+			break;
+		case render::Order::Kind::Rectangle:
+			render::immediate(x.rectangle);
+			break;
+		case render::Order::Kind::Circle:
+			render::immediate(x.circle);
+			break;
+		case render::Order::Kind::Arrow:
+			render::immediate(x.arrow);
+			break;
+		case render::Order::Kind::Line:
+			render::immediate(x.line);
+			break;
+		default: assert("Logic error.");
+		}
+	}
 }
 
 std::optional<std::string> get_last_error_message() noexcept {

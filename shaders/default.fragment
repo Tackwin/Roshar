@@ -1,23 +1,18 @@
 #version 330 core
 
-layout (location = 0) out vec4 g_position;
+layout (location = 0) out vec4 g_albedo;
 layout (location = 1) out vec4 g_normal;
-layout (location = 2) out vec4 g_albedo;
+layout (location = 2) out vec4 g_position;
 
 in vec2 texture_coord;
 in vec3 pos;
 
 uniform vec4 color;
-uniform vec2 size;
-uniform vec2 origin;
-uniform vec2 object_pos;
-uniform float rotation;
 
 uniform sampler2D color_texture;
 uniform bool use_color_texture;
-
-uniform vec4 world_bounds;
-uniform vec2 screen_bounds;
+uniform sampler2D normal_texture;
+uniform bool use_normal_texture;
 
 void main() {
 	vec4 texel = vec4(1);
@@ -30,7 +25,10 @@ void main() {
     	texel.w * color.w
     );
 
-    g_normal = vec4(1, 0, 1, 1);
+    g_normal = vec4(0, 0, 0, 1);
+    if (use_normal_texture) {
+    	g_normal = texture(normal_texture, texture_coord);
+    }
 
     g_position = vec4(pos, 1);
 }

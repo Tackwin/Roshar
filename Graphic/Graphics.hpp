@@ -30,6 +30,7 @@ namespace render {
 		float rotation;
 		Vector4d color;
 		asset::Key texture;
+		asset::Key normal;
 		asset::Key shader;
 	};
 
@@ -110,6 +111,7 @@ namespace render {
 		Vector2f origin = { 0, 0 },
 		float rotation = 0.f,
 		Vector4d color = { 1, 1, 1, 1 },
+		asset::Key normal = 0,
 		asset::Key shader = 0
 	) noexcept;
 	Order circle(
@@ -140,7 +142,10 @@ namespace render {
 
 	struct Orders {
 		std::vector<Order> objects;
+		std::vector<Order> late;
 		std::vector<Order> lights;
+
+		void clear() noexcept;
 
 		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
 			objects.push_back(arrow(a, b, color));
@@ -171,6 +176,17 @@ namespace render {
 			objects.push_back(rectangle(pos, size, color, outline, outline_color));
 		}
 
+		void late_push_rectangle(
+			Vector2f pos,
+			Vector2f size,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0, 0, 0, 0 }
+		) noexcept {
+			late.push_back(rectangle(pos, size, color, outline, outline_color));
+		}
+
+
 		void push_rectangle(
 			Rectanglef rec,
 			Vector4d color,
@@ -189,6 +205,15 @@ namespace render {
 		) noexcept {
 			objects.push_back(circle(r, pos, color, outline, outline_color));
 		}
+		void late_push_circle(
+			float r,
+			Vector2f pos,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0., 0., 0., 0. }
+		) noexcept {
+			late.push_back(circle(r, pos, color, outline, outline_color));
+		}
 
 		void push_sprite(
 			Vector2f pos,
@@ -197,9 +222,10 @@ namespace render {
 			Vector2f origin = { 0, 0 },
 			float rotation = 0.f,
 			Vector4d color = { 1, 1, 1, 1 },
+			asset::Key normal = 0,
 			asset::Key shader = 0
 		) noexcept {
-			objects.push_back(sprite(pos, size, texture, origin, rotation, color, shader));
+			objects.push_back(sprite(pos, size, texture, origin, rotation, color, normal, shader));
 		}
 
 		void push_sprite(
@@ -208,9 +234,12 @@ namespace render {
 			Vector2f origin = { 0, 0 },
 			float rotation = 0.f,
 			Vector4d color = { 1, 1, 1, 1 },
+			asset::Key normal = 0,
 			asset::Key shader = 0
 		) noexcept {
-			objects.push_back(sprite(rec.pos, rec.size, texture, origin, rotation, color, shader));
+			objects.push_back(
+				sprite(rec.pos, rec.size, texture, origin, rotation, color, normal, shader)
+			);
 		}
 
 		void push_view(Vector2f pos, Vector2f size) noexcept {
@@ -221,6 +250,16 @@ namespace render {
 		}
 		void pop_view() noexcept {
 			objects.push_back(render::pop_view());
+		}
+
+		void late_push_view(Vector2f pos, Vector2f size) noexcept {
+			late_push_view({ pos, size });
+		}
+		void late_push_view(Rectanglef bounds) noexcept {
+			late.push_back(render::push_view(bounds));
+		}
+		void late_pop_view() noexcept {
+			late.push_back(render::pop_view());
 		}
 	};
 

@@ -164,6 +164,27 @@ void Editor::render(render::Orders& target) noexcept {
 			for (auto& y : game->current_level.friction_zones) if (pred(y)) y.friction = friction;
 	}
 
+	n_selected = std::count_if(BEG_END(game->current_level.point_lights), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Point light");
+		float intensity = { 0 };
+		Vector4f color;
+		if (n_selected == 1) {
+			intensity = std::find_if(BEG_END(game->current_level.point_lights), pred)->intensity;
+			color = (Vector4f)std::find_if(BEG_END(game->current_level.point_lights), pred)->color;
+		}
+
+		ImGui::Text("Intensity");
+		ImGui::SameLine();
+		if (ImGui::InputFloat("intensity", &intensity))
+			for (auto& y : game->current_level.point_lights) if (pred(y)) y.intensity = intensity;
+
+		if (ImGui::InputFloat3("color", &color.x))
+			for (auto& y : game->current_level.point_lights)
+				if (pred(y)) y.color = (Vector4d)color;
+	}
+
 	n_selected = std::count_if(BEG_END(game->current_level.blocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -436,6 +457,9 @@ void Editor::render(render::Orders& target) noexcept {
 					case Creating_Element::Key_Item:
 						*out = "Key_Item";
 						break;
+					case Creating_Element::Point_Light:
+						*out = "Point_Light";
+						break;
 					default:
 					assert(false);
 					break;
@@ -449,7 +473,8 @@ void Editor::render(render::Orders& target) noexcept {
 		require_dragging =
 			element_to_create != Creating_Element::Prest &&
 			element_to_create != Creating_Element::Key_Item &&
-			element_to_create != Creating_Element::Rock;
+			element_to_create != Creating_Element::Rock &&
+			element_to_create != Creating_Element::Point_Light;
 	}
     
 	if (ImGui::BeginPopup("Sure ?")) {
@@ -623,6 +648,14 @@ void Editor::update(float dt) noexcept {
 				game->current_level.key_items.push_back(r);
 				break;
 			}
+			case Creating_Element::Point_Light: {
+				Point_Light r;
+				r.pos = get_mouse_pos();
+				r.color = { 1, 1, 1, 1 };
+				r.intensity = 0.5;
+				game->current_level.point_lights.push_back(r);
+				break;
+			}
 			default: break;
 		}
 	}
@@ -665,6 +698,7 @@ void Editor::update(float dt) noexcept {
 		iter(game->current_level.kill_zones);
 		iter(game->current_level.next_zones);
 		iter(game->current_level.dispensers);
+		iter(game->current_level.point_lights);
 		iter(game->current_level.trigger_zones);
 		iter(game->current_level.prest_sources);
 		iter(game->current_level.friction_zones);
@@ -820,6 +854,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(game->current_level.kill_zones);
 	iter(game->current_level.next_zones);
 	iter(game->current_level.dispensers);
+	iter(game->current_level.point_lights);
 	iter(game->current_level.trigger_zones);
 	iter(game->current_level.prest_sources);
 	iter(game->current_level.decor_sprites);
@@ -835,6 +870,7 @@ void Editor::delete_all_selected() noexcept {
 		S(key_items) +
 		S(kill_zones) +
 		S(next_zones) +
+		S(point_lights) +
 		S(trigger_zones) +
 		S(prest_sources) +
 		S(decor_sprites) +

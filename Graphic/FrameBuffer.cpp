@@ -8,16 +8,15 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 	auto label = "geometry_buffer";
 	glObjectLabel(GL_FRAMEBUFFER, g_buffer, strlen(label) - 1, label);
 
-	// - position color buffer
-	glGenTextures(1, &pos_buffer);
-	glBindTexture(GL_TEXTURE_2D, pos_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+	// - color + specular color buffer
+	glGenTextures(1, &albedo_buffer);
+	glBindTexture(GL_TEXTURE_2D, albedo_buffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pos_buffer, 0);
-	label = "geometry_pos_buffer";
-	glObjectLabel(GL_TEXTURE, pos_buffer, strlen(label) - 1, label);
-
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, albedo_buffer, 0);
+	label = "geometry_color + specular";
+	glObjectLabel(GL_TEXTURE, albedo_buffer, strlen(label) - 1, label);
 
 	// - normal color buffer
 	glGenTextures(1, &normal_buffer);
@@ -29,15 +28,15 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 	label = "geometry_normal_color";
 	glObjectLabel(GL_TEXTURE, normal_buffer, strlen(label) - 1, label);
 
-	// - color + specular color buffer
-	glGenTextures(1, &albedo_buffer);
-	glBindTexture(GL_TEXTURE_2D, albedo_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	// - position color buffer
+	glGenTextures(1, &pos_buffer);
+	glBindTexture(GL_TEXTURE_2D, pos_buffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, albedo_buffer, 0);
-	label = "geometry_color + specular";
-	glObjectLabel(GL_TEXTURE, albedo_buffer, strlen(label) - 1, label);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, pos_buffer, 0);
+	label = "geometry_pos_buffer";
+	glObjectLabel(GL_TEXTURE, pos_buffer, strlen(label) - 1, label);
 
 	// - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
 	unsigned int attachments[] = {
@@ -100,11 +99,11 @@ void G_Buffer::set_active() noexcept {
 
 void G_Buffer::set_active_texture() noexcept {
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, pos_buffer);
+	glBindTexture(GL_TEXTURE_2D, albedo_buffer);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, normal_buffer);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, albedo_buffer);
+	glBindTexture(GL_TEXTURE_2D, pos_buffer);
 }
 
 void G_Buffer::set_disable_texture() noexcept {

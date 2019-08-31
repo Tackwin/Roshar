@@ -90,7 +90,6 @@ namespace asset {
 static int attribs[] = {
 	WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
 	WGL_CONTEXT_MINOR_VERSION_ARB, 0,
-	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 	WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 	//WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
 	0
@@ -154,8 +153,9 @@ void Store_t::load_known_textures() noexcept {
 		printf("failed :( !\n");\
 	}
 
-	X("textures/rock.png", Rock    );
-	X("textures/key.png",  Key_Item);
+	X("textures/rock_n.png", Rock_Normal);
+	X("textures/rock.png",   Rock       );
+	X("textures/key.png",    Key_Item   );
 
 #undef X
 }

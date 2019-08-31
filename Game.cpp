@@ -194,8 +194,8 @@ void Game::render(render::Orders& target) noexcept {
 		{(float)Environment.window_width, (float)Environment.window_height}
 	};
 
-	target.push_view(ui_view);
-	defer{ target.pop_view(); };
+	target.late_push_view(ui_view);
+	defer{ target.late_pop_view(); };
 
 	Vector4d color = { 0, 0, 0, 0 };
 	if (camera_fade_out_timer > 0) {
@@ -210,7 +210,7 @@ void Game::render(render::Orders& target) noexcept {
 		color = { gray, gray, gray, alpha };
 	}
 
-	target.push_rectangle(
+	target.late_push_rectangle(
 		{ 0, 0 },
 		{ (float)Environment.window_width, (float)Environment.window_height },
 		color

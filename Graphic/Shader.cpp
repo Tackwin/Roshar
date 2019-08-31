@@ -215,5 +215,4 @@ void Shader::set_uniform(const std::string& name, int x) noexcept {
 	glUniform1i(cache_loc[name], x);
 }
 
-
 #undef loc

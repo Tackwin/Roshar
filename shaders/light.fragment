@@ -6,6 +6,7 @@ struct Light_Point {
     vec2 position;
     vec4 color;
 };
+uniform int n_light_points;
 uniform Light_Point light_points[N_Light_Point];
 
 out vec4 frag_color;
@@ -16,6 +17,58 @@ uniform sampler2D buffer_position;
 uniform sampler2D buffer_normal;
 uniform sampler2D buffer_albedo;
 
+const int Debug_Default = 0;
+const int Debug_Albedo = 1;
+const int Debug_Normal = 2;
+const int Debug_Position = 3;
+const int Debug_Depth = 4;
+
+uniform int debug;
+
+vec4 light_pixel(vec2 pix) {
+	const float uniform_light = 0.1;
+
+	vec4 albedo = texture(buffer_albedo, pix);
+	vec3 normal = 1 - texture(buffer_normal, pix).xyz * 2;
+	vec3 pos = texture(buffer_position, pix).xyz;
+
+	if (texture(buffer_normal, pix).a == 0) return albedo;
+
+	vec4 result = vec4(1);
+	result.xyz = albedo.xyz * uniform_light;
+
+	vec3 N = normalize(normal);
+
+	for (int i = 0; i < n_light_points; i++) {
+		vec3 L = -normalize(vec3(light_points[i].position, 1) - pos);
+
+		float factor = light_points[i].intensity / dot(pos.xy - light_points[i].position, pos.xy - light_points[i].position);
+
+		result.xyz = result.xyz + albedo.rgb * light_points[i].color.rgb * max(dot(N, L), 0) * factor;
+	}
+
+	return result;
+}
+
 void main() {
-	frag_color = texture(buffer_albedo, text_coord);
+	vec4 normal = texture(buffer_normal, text_coord);
+	if (normal == vec4(0, 0, 0, 0)){
+		discard;
+	}
+
+	if (debug == Debug_Default) {
+		frag_color = light_pixel(text_coord);
+	}
+	if (debug == Debug_Albedo) {
+		frag_color = texture(buffer_albedo, text_coord);
+	}
+	if (debug == Debug_Normal) {
+		frag_color = texture(buffer_normal, text_coord) * 2 - 1;
+	}
+	if (debug == Debug_Position) {
+		frag_color = texture(buffer_position, text_coord);
+	}
+	if (debug == Debug_Depth) {
+		frag_color = vec4(texture(buffer_position, text_coord).w);
+	}
 }

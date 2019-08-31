@@ -28,6 +28,7 @@ namespace asset {
 	struct Known_Textures {
 		inline static Key Key_Item{ 1 };
 		inline static Key Rock{ 2 };
+		inline static Key Rock_Normal{ 2 };
 	};
 	struct Known_Shaders {
 		inline static Key Default{ 1 };

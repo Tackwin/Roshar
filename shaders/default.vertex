@@ -34,12 +34,12 @@ void main() {
 		1.0
 	);
 
-
-	pos.x = 2 * (pos.x - world_bounds.x) / (world_bounds.z) - 1;
-	pos.y = 2 * (pos.y - world_bounds.y) / (world_bounds.w) - 1;
+	vec3 screen_pos = pos;
+	screen_pos.x = 2 * (pos.x - world_bounds.x) / (world_bounds.z) - 1;
+	screen_pos.y = 2 * (pos.y - world_bounds.y) / (world_bounds.w) - 1;
 
 	texture_coord.x = in_pos.x;
 	texture_coord.y = in_pos.y;
 
-    gl_Position = vec4(pos, 1.0);
+    gl_Position = vec4(screen_pos, 1.0);
 }

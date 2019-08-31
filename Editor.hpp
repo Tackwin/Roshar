@@ -21,6 +21,7 @@ class Editor {
 		Auto_Binding_Zone,
 		Friction_Zone,
 		Key_Item,
+		Point_Light,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;

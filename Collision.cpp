@@ -38,6 +38,10 @@ bool test(const Block& b, const Vector2f& v) noexcept {
 		b.pos.y < v.y && v.y < b.pos.y + b.size.y;
 }
 
+bool test(const Point_Light& b, const Rectangle_t<float>& x) noexcept {
+	return x.in(b.pos);
+}
+
 bool test(const Kill_Zone& b, const Player& p) noexcept {
 	if (b.pos.x < p.pos.x + p.size.x && p.pos.x < b.pos.x + b.size.x &&
 		b.pos.y < p.pos.y + p.size.y && p.pos.y < b.pos.y + b.size.y) return true;

@@ -3,6 +3,14 @@
 #include <filesystem>
 #include <mutex>
 
+enum class Debug_Framebuffer {
+	Default = 0,
+	Albedo,
+	Normal,
+	Position,
+	Depth,
+	Count
+};
 struct Environment_t {
 	float gravity{ 9.81f };
 	float drag{ 0.8f };
@@ -19,6 +27,8 @@ struct Environment_t {
 
 	std::uint32_t window_width{ 0 };
 	std::uint32_t window_height{ 0 };
+
+	Debug_Framebuffer debug_framebuffer{ Debug_Framebuffer::Default };
 };
 
 extern std::filesystem::path Exe_Path;

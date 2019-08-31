@@ -90,7 +90,15 @@ void Dry_Zone::render(render::Orders& target) const noexcept {
 }
 
 void Rock::render(render::Orders& target) const noexcept {
-	target.push_sprite(pos, { 2 * r, 2 * r }, asset::Known_Textures::Rock, { .5, .5 });
+	target.push_sprite(
+		pos,
+		{ 2 * r, 2 * r },
+		asset::Known_Textures::Rock,
+		{ .5, .5 },
+		0.f,
+		{1, 1, 1, 1},
+		asset::Known_Textures::Rock_Normal
+	);
 
 	for (auto& binding : bindings) target.push_arrow(pos, pos + binding, { 1, 0, 1, 1 });
 
@@ -234,8 +242,8 @@ void Key_Item::render(render::Orders& target) const noexcept {
 }
 
 void Point_Light::render(render::Orders& target) const noexcept {
-	target.push_circle(std::sqrtf(intensity), pos, color);
 	target.push_point_light(pos, color, intensity);
+	target.late_push_circle(std::sqrtf(intensity), pos, color);
 }
 
 void Level::render(render::Orders& target) const noexcept {
