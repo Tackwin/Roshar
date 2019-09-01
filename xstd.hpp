@@ -115,15 +115,15 @@ namespace xstd {
 		}
 		return nullptr;
 	}
-    
-    template<typename T, typename U> constexpr size_t offset_of(U T::*member) {
-        return (char*)&((T*)nullptr->*member) - (char*)nullptr;
-    }
-    
+
+	template<typename T, typename U> constexpr size_t offset_of(U T::*member) {
+		return (char*)&((T*)nullptr->*member) - (char*)nullptr;
+	}
+
 	template<typename T, typename U>
-        constexpr inline const T* find_member(
+	constexpr inline const T* find_member(
 		const std::vector<T>& vec, size_t offset, U&& u
-        ) noexcept {
+	) noexcept {
 		for (auto& x : vec) {
 			const char* byte = (const char*)& x;
 			byte += offset;
@@ -131,5 +131,19 @@ namespace xstd {
 			if (candidate == u) return &x;
 		}
 		return nullptr;
+	}
+
+	inline std::vector<std::string> split(std::string_view str, std::string_view delim) noexcept {
+		std::vector<std::string> result;
+
+		size_t i = 0;
+		for (; i < str.size(); i += delim.size()) {
+			auto to = str.find_first_of(delim, i);
+			result.push_back((std::string)str.substr(i, to - i));
+			i = to;
+			if (i == str.npos) break;
+		}
+
+		return result;
 	}
 }

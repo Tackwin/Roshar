@@ -38,7 +38,7 @@ bool test(const Block& b, const Vector2f& v) noexcept {
 		b.pos.y < v.y && v.y < b.pos.y + b.size.y;
 }
 
-bool test(const Point_Light& b, const Rectangle_t<float>& x) noexcept {
+bool test(const Torch& b, const Rectangle_t<float>& x) noexcept {
 	return x.in(b.pos);
 }
 

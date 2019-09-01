@@ -25,10 +25,16 @@ namespace asset {
 		std::filesystem::path fragment;
 	};
 
+	template<>
+	struct Asset_t<Texture> {
+		Texture albedo;
+		std::filesystem::path path;
+		std::unique_ptr<Texture> normal;
+	};
+
 	struct Known_Textures {
 		inline static Key Key_Item{ 1 };
 		inline static Key Rock{ 2 };
-		inline static Key Rock_Normal{ 2 };
 	};
 	struct Known_Shaders {
 		inline static Key Default{ 1 };
@@ -43,7 +49,8 @@ namespace asset {
 		std::unordered_map<std::uint64_t, Asset_t<Shader>> shaders;
 		std::unordered_map<std::uint64_t, Asset_t<Texture>> textures;
 
-		[[nodiscard]] Texture& get_texture(Key k) noexcept;
+		[[nodiscard]] Texture* get_normal(Key k) const noexcept;
+		[[nodiscard]] Texture& get_albedo(Key k) noexcept;
 		[[nodiscard]] Key make_texture() noexcept;
 		[[nodiscard]] std::optional<Key> load_texture(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_texture(Key k, std::filesystem::path path) noexcept;

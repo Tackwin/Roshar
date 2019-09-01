@@ -91,13 +91,7 @@ void Dry_Zone::render(render::Orders& target) const noexcept {
 
 void Rock::render(render::Orders& target) const noexcept {
 	target.push_sprite(
-		pos,
-		{ 2 * r, 2 * r },
-		asset::Known_Textures::Rock,
-		{ .5, .5 },
-		0.f,
-		{1, 1, 1, 1},
-		asset::Known_Textures::Rock_Normal
+		pos, { 2 * r, 2 * r }, asset::Known_Textures::Rock, { .5, .5 }, 0.f, {1, 1, 1, 1}
 	);
 
 	for (auto& binding : bindings) target.push_arrow(pos, pos + binding, { 1, 0, 1, 1 });
@@ -241,9 +235,23 @@ void Key_Item::render(render::Orders& target) const noexcept {
 	target.push_sprite(pos, Key_World_Size, asset::Known_Textures::Key_Item, { 0, 0 }, 0, color);
 }
 
-void Point_Light::render(render::Orders& target) const noexcept {
-	target.push_point_light(pos, color, intensity);
-	target.late_push_circle(std::sqrtf(intensity), pos, color);
+void Torch::render(render::Orders& target) const noexcept {
+	Vector2f rand_pos;
+	Vector4d rand_color;
+	float rand_intensity;
+
+#define rand_unit (rand() / (float)RAND_MAX)
+
+	double angles[] = {
+		2 * 3.1415926 * rand_unit, 2 * 3.1415926 * rand_unit, 2 * 3.1415926 * rand_unit
+	};
+
+	rand_pos = pos + random_factor * Vector2f::createUnitVector(2 * 3.1415926 * rand_unit);
+	rand_color = color + random_factor * Vector4d::createUnitVector(angles);
+	rand_intensity = intensity + random_factor * rand_unit;
+
+	target.push_point_light(rand_pos, rand_color, rand_intensity);
+	target.late_push_circle(std::sqrtf(rand_intensity) / 10, rand_pos, rand_color);
 }
 
 void Level::render(render::Orders& target) const noexcept {
@@ -272,6 +280,8 @@ void Level::render(render::Orders& target) const noexcept {
 	player.render(target);
 
 	for (const auto& x : debug_vectors) target.push_arrow(x.a, x.a + x.b, { 1, 1, 0, 1 });
+
+	target.push_ambient_light(ambient_color, ambient_intensity);
 }
 
 void Level::input(IM::Input_Iterator record) noexcept {
@@ -604,16 +614,18 @@ void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept {
 	str = dyn_struct::structure_t{};
 	str["rec"] = x.rec;
 }
-void from_dyn_struct(const dyn_struct& str, Point_Light& x) noexcept {
+void from_dyn_struct(const dyn_struct& str, Torch& x) noexcept {
 	x.color = (Vector4d)str["color"];
 	x.pos = (Vector2f)str["pos"];
 	x.intensity = (float)str["intensity"];
+	if (has(str, "random_factor")) x.random_factor = (float)str["random_factor"];
 }
-void to_dyn_struct(dyn_struct& str, const Point_Light& x) noexcept {
+void to_dyn_struct(dyn_struct& str, const Torch& x) noexcept {
 	str = dyn_struct::structure_t{};
 	str["color"] = x.color;
 	str["pos"] = x.pos;
 	str["intensity"] = x.intensity;
+	str["random_factor"] = x.random_factor;
 }
 void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept {
 	x.rec = (Rectanglef)str["rec"];
@@ -696,6 +708,11 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	player.pos = (Vector2f)str["player"]["pos"];
 	level.player = player;
     
+	if (has(str, "ambient")) {
+		level.ambient_intensity = (float)(str["ambient"]["intensity"]);
+		level.ambient_color = (Vector4d)(str["ambient"]["color"]);
+	}
+
 	if (has(str["camera"], "pos")) {
 		level.camera_start = {
 			{0, 0},
@@ -731,6 +748,11 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	player["prest"] = level.player.prest;
 	player["pos"] = level.player.pos;
     
+	str["ambient"] = {
+		{"color", level.ambient_color},
+		{"intesity", level.ambient_intensity}
+	};
+
 	str["camera"] = game->camera;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {

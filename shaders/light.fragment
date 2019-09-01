@@ -25,26 +25,40 @@ const int Debug_Depth = 4;
 
 uniform int debug;
 
-vec4 light_pixel(vec2 pix) {
-	const float uniform_light = 0.1;
+uniform float ambient_intensity;
+uniform vec4 ambient_color;
+
+
+vec3 light_pixel(vec2 pix) {
+	const float root = 0.7;
+	const float linear = 0.25;
+	const float quadratic = 0.05;
+	const float step = 0.25;
 
 	vec4 albedo = texture(buffer_albedo, pix);
 	vec3 normal = 1 - texture(buffer_normal, pix).xyz * 2;
 	vec3 pos = texture(buffer_position, pix).xyz;
 
-	if (texture(buffer_normal, pix).a == 0) return albedo;
+	if (texture(buffer_normal, pix).a == 0) return albedo.rgb;
 
-	vec4 result = vec4(1);
-	result.xyz = albedo.xyz * uniform_light;
+	vec3 result = albedo.xyz * ambient_intensity;
 
 	vec3 N = normalize(normal);
 
 	for (int i = 0; i < n_light_points; i++) {
-		vec3 L = -normalize(vec3(light_points[i].position, 1) - pos);
+		vec3 L = -normalize(vec3(light_points[i].position, 2) - pos);
+		
+		float dist = distance(pos.xy, light_points[i].position);
 
-		float factor = light_points[i].intensity / dot(pos.xy - light_points[i].position, pos.xy - light_points[i].position);
+		float factor = max(dot(N, L), 0.01) * light_points[i].intensity / (root * sqrt(dist) * linear * dist + quadratic * dist * dist) ;
+		//result.xyz = vec3(factor);
 
-		result.xyz = result.xyz + albedo.rgb * light_points[i].color.rgb * max(dot(N, L), 0) * factor;
+		factor = pow(abs(factor), 1.f);
+
+		factor = round(factor / step) * step;
+
+		result = result + albedo.rgb * light_points[i].color.rgb * factor;
+		//result = N;
 	}
 
 	return result;
@@ -57,7 +71,8 @@ void main() {
 	}
 
 	if (debug == Debug_Default) {
-		frag_color = light_pixel(text_coord);
+		frag_color.rgb = light_pixel(text_coord);
+		frag_color.a = texture(buffer_albedo, text_coord).a;
 	}
 	if (debug == Debug_Albedo) {
 		frag_color = texture(buffer_albedo, text_coord);

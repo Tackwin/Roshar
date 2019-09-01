@@ -35,7 +35,7 @@ Texture& Texture::operator=(Texture&& that) noexcept {
 	return *this;
 }
 
-bool Texture::load_file(const std::string& path) {
+bool Texture::load_file(std::filesystem::path path) {
 	auto comp = 0;
 
 	stbi_set_flip_vertically_on_load(true);
@@ -43,7 +43,7 @@ bool Texture::load_file(const std::string& path) {
 	int w = (int)info.width;
 	int h = (int)info.height;
 	std::uint8_t* data = stbi_load(
-		path.c_str(), &w, &h, &comp, STBI_rgb_alpha
+		path.string().c_str(), &w, &h, &comp, STBI_rgb_alpha
 	);
 	defer{ stbi_image_free(data); };
 	info.width = w;

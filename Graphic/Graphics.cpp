@@ -10,6 +10,43 @@ void render::Orders::clear() noexcept {
 
 render::View_Info render::current_view;
 
+
+void render::Orders::push_ambient_light(Vector4d color, float intensity) noexcept {
+	Order order;
+	order.kind = Order::Kind::Ambient_Light_Push;
+	order.ambient_light.color = color;
+	order.ambient_light.intensity = intensity;
+	lights.push_back(order);
+}
+void render::Orders::pop_ambient_light() noexcept {
+	Order order;
+	order.kind = Order::Kind::Ambient_Light_Pop;
+	lights.push_back(order);
+}
+
+void render::Orders::push_sprite(
+	Vector2f pos,
+	Vector2f size,
+	asset::Key texture,
+	Vector2f origin,
+	float rotation,
+	Vector4d color,
+	asset::Key shader
+) noexcept {
+	objects.push_back(sprite(pos, size, texture, origin, rotation, color, shader));
+}
+
+void render::Orders::push_sprite(
+	Rectanglef rec,
+	asset::Key texture,
+	Vector2f origin,
+	float rotation,
+	Vector4d color,
+	asset::Key shader
+) noexcept {
+	objects.push_back(sprite(rec.pos, rec.size, texture, origin, rotation, color, shader));
+}
+
 render::Order render::push_view(Rectanglef bounds) noexcept {
 	View_Info info;
 
@@ -81,7 +118,6 @@ render::Order render::sprite(
 	Vector2f origin,
 	float rotation,
 	Vector4d color,
-	asset::Key normal,
 	asset::Key shader
 ) noexcept {
 	Sprite_Info info;
@@ -91,7 +127,6 @@ render::Order render::sprite(
 	info.rotation = rotation;
 	info.color = color;
 	info.texture = texture;
-	info.normal = normal;
 	info.shader = shader ? 0 : asset::Known_Shaders::Default;
 
 	Order order;
@@ -174,10 +209,8 @@ void render::immediate(Sprite_Info info) noexcept {
 	}
 
 	if (asset::Store.textures.contains(info.texture)) {
-		asset::Store.get_texture(info.texture).bind(4);
-	}
-	if (asset::Store.textures.contains(info.normal)) {
-		asset::Store.get_texture(info.normal).bind(5);
+		asset::Store.get_albedo(info.texture).bind(4);
+		auto normal = asset::Store.get_normal(info.texture); if (normal) normal->bind(5);
 	}
 
 	auto& shader = asset::Store.get_shader(info.shader);
@@ -190,7 +223,7 @@ void render::immediate(Sprite_Info info) noexcept {
 	shader.set_rotation(info.rotation);
 	shader.set_size(info.size);
 	shader.set_use_texture((bool)info.texture);
-	shader.set_uniform("use_normal_texture", std::min((int)info.normal, 1));
+	shader.set_uniform("use_normal_texture", asset::Store.get_normal(info.texture) ? 1 : 0);
 	shader.set_uniform("normal_texture", 5);
 	shader.set_texture(4);
 

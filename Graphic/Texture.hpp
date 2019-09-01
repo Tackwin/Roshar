@@ -21,7 +21,7 @@ public:
 	Texture(Texture&&) noexcept;
 	Texture& operator=(Texture&&) noexcept;
 
-	bool load_file(const std::string& path);
+	bool load_file(std::filesystem::path path);
 	void create_rgb_null(Vector2u size) const;
 	void create_depth_null(Vector2u size) const;
 

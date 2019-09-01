@@ -16,34 +16,34 @@ namespace asset {
 	Store_t Store;
 }
 
-[[nodiscard]] Texture& Store_t::get_texture(Key k) noexcept {
-	return textures.at(k).asset;
+[[nodiscard]] Texture* Store_t::get_normal(Key k) const noexcept {
+	return textures.at(k).normal ? textures.at(k).normal.get() : nullptr;
+}
+
+[[nodiscard]] Texture& Store_t::get_albedo(Key k) noexcept {
+	return textures.at(k).albedo;
 }
 [[nodiscard]] Shader& Store_t::get_shader(Key k) noexcept {
 	return shaders.at(k).asset;
 }
 
 [[nodiscard]] std::optional<Key> Store_t::load_texture(std::filesystem::path path) noexcept {
-	auto k = xstd::uuid();
-
-	auto new_texture = Asset_t<Texture>{};
-	new_texture.path = path;
-	bool loaded = new_texture.asset.load_file(path.string());
-
-	if (loaded) {
-		textures[k] = std::move(new_texture);
-		textures_loaded[std::filesystem::canonical(path).string()] = k;
-		return k;
-	}
-	else {
-		return std::nullopt;
-	}
+	auto x = xstd::uuid();
+	return load_texture(x, path) ? std::optional{ x } : std::nullopt;
 }
 
 [[nodiscard]] bool Store_t::load_texture(Key k, std::filesystem::path path) noexcept {
-	auto& new_texture = textures.at(k);
+	auto& new_texture = textures[k];
 	new_texture.path = path;
-	bool loaded = new_texture.asset.load_file(path.string());
+	bool loaded = new_texture.albedo.load_file(path);
+
+	auto normal_path = path;
+	normal_path.replace_filename(path.stem().string() + "_n.png");
+
+	if (std::filesystem::is_regular_file(normal_path)) {
+		new_texture.normal = std::make_unique<Texture>();
+		new_texture.normal->load_file(normal_path);
+	}
 
 	if (loaded) {
 		textures_loaded[std::filesystem::canonical(path).string()] = k;
@@ -113,10 +113,28 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 			path = std::filesystem::canonical(Exe_Path / d / path);
 
 			{
-				auto it = textures_loaded.find(path.string());
+				// >SLOW(Tackwin)
+				auto suffixes = xstd::split(path.stem().string(), "_");
+
+				auto key = path.parent_path() / (suffixes.front() + path.extension().string());
+
+				auto it = textures_loaded.find(key.string());
+				
 				if (it != END(textures_loaded) && textures.count(it->second)) {
-					textures.at(it->second).asset.load_file(path.string());
+					auto& asset = textures.at(it->second);
+
+					if (suffixes.size() == 1) {
+						asset.albedo.load_file(path.string());
+						return;
+					}
+
+					auto last = suffixes.back();
+					if (last == "n") {
+						if (!asset.normal) asset.normal = std::make_unique<Texture>();
+						asset.normal->load_file(path.string());
+					}
 				}
+
 			}
 
 			for (auto& [_, x] : shaders){
@@ -153,9 +171,8 @@ void Store_t::load_known_textures() noexcept {
 		printf("failed :( !\n");\
 	}
 
-	X("textures/rock_n.png", Rock_Normal);
-	X("textures/rock.png",   Rock       );
-	X("textures/key.png",    Key_Item   );
+	X("textures/rock.png",         Rock           );
+	X("textures/key.png",          Key_Item       );
 
 #undef X
 }

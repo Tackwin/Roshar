@@ -170,7 +170,7 @@ struct Decor_Sprite {
 };
 
 struct Key_Item {
-	inline static Vector2f Key_World_Size{ 0.15f, 0.3f };
+	inline static Vector2f Key_World_Size{ 0.16f, 0.36f };
 
 	bool editor_selected{ false };
 
@@ -180,12 +180,14 @@ struct Key_Item {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Point_Light {
+struct Torch {
 	bool editor_selected{ false };
 
 	Vector2f pos;
 	Vector4d color;
 	float intensity;
+
+	float random_factor;
 
 	void render(render::Orders& target) const noexcept;
 };
@@ -208,7 +210,7 @@ struct Level {
 	std::vector<Next_Zone>          next_zones;
 	std::vector<Dispenser>          dispensers;
 	std::vector<Projectile>         projectiles;
-	std::vector<Point_Light>        point_lights;
+	std::vector<Torch>        point_lights;
 	std::vector<Trigger_Zone>       trigger_zones;
 	std::vector<Prest_Source>       prest_sources;
 	std::vector<Friction_Zone>      friction_zones;
@@ -222,6 +224,9 @@ struct Level {
 
 	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
 	Rectanglef camera_start;
+
+	Vector4d ambient_color{ 1, 1, 1, 1 };
+	float ambient_intensity{ 1 };
 
 	std::vector<Decor_Sprite> decor_sprites;
 
@@ -252,8 +257,8 @@ private:
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
-extern void from_dyn_struct(const dyn_struct& str, Point_Light& light) noexcept;
-extern void to_dyn_struct(dyn_struct& str, const Point_Light& light) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Torch& light) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Torch& light) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Key_Item& x) noexcept;

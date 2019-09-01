@@ -28,6 +28,13 @@ void Editor::render(render::Orders& target) noexcept {
 		if (!element_to_create) element_to_create = (Creating_Element)0;
 	}
 
+	if (ImGui::CollapsingHeader("Level parameter")) {
+		Vector4f x = (Vector4f)game->current_level.ambient_color;
+		ImGui::ColorPicker4("Ambient Color", &x.x);
+		ImGui::SliderFloat("Ambient Intensity", &game->current_level.ambient_intensity, 0, 1);
+		game->current_level.ambient_color = (Vector4d)x;
+	}
+
 	ImGui::Separator();
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
@@ -113,7 +120,9 @@ void Editor::render(render::Orders& target) noexcept {
 		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
 		decor.rec.pos = game->camera.center();
-		decor.rec.size = { (float)texture.asset.get_size().x, (float)texture.asset.get_size().y };
+		decor.rec.size = {
+			(float)texture.albedo.get_size().x, (float)texture.albedo.get_size().y
+		};
 		decor.rec.pos -= decor.rec.size / 2;
 		game->current_level.decor_sprites.push_back(decor);
 	}
@@ -169,9 +178,12 @@ void Editor::render(render::Orders& target) noexcept {
 		ImGui::Separator();
 		ImGui::Text("Point light");
 		float intensity = { 0 };
+		float random_factor = { 0 };
 		Vector4f color;
 		if (n_selected == 1) {
 			intensity = std::find_if(BEG_END(game->current_level.point_lights), pred)->intensity;
+			random_factor =
+				std::find_if(BEG_END(game->current_level.point_lights), pred)->random_factor;
 			color = (Vector4f)std::find_if(BEG_END(game->current_level.point_lights), pred)->color;
 		}
 
@@ -180,9 +192,17 @@ void Editor::render(render::Orders& target) noexcept {
 		if (ImGui::InputFloat("intensity", &intensity))
 			for (auto& y : game->current_level.point_lights) if (pred(y)) y.intensity = intensity;
 
-		if (ImGui::InputFloat3("color", &color.x))
+		ImGui::Text("Random Factor");
+		ImGui::SameLine();
+		if (ImGui::InputFloat("Random Factor", &random_factor))
+			for (auto& y : game->current_level.point_lights)
+				if (pred(y)) y.random_factor = random_factor;
+
+		if (ImGui::ColorEdit4("color", &color.x))
 			for (auto& y : game->current_level.point_lights)
 				if (pred(y)) y.color = (Vector4d)color;
+
+
 	}
 
 	n_selected = std::count_if(BEG_END(game->current_level.blocks), pred);
@@ -457,8 +477,8 @@ void Editor::render(render::Orders& target) noexcept {
 					case Creating_Element::Key_Item:
 						*out = "Key_Item";
 						break;
-					case Creating_Element::Point_Light:
-						*out = "Point_Light";
+					case Creating_Element::Torch:
+						*out = "Torch";
 						break;
 					default:
 					assert(false);
@@ -474,7 +494,7 @@ void Editor::render(render::Orders& target) noexcept {
 			element_to_create != Creating_Element::Prest &&
 			element_to_create != Creating_Element::Key_Item &&
 			element_to_create != Creating_Element::Rock &&
-			element_to_create != Creating_Element::Point_Light;
+			element_to_create != Creating_Element::Torch;
 	}
     
 	if (ImGui::BeginPopup("Sure ?")) {
@@ -648,11 +668,12 @@ void Editor::update(float dt) noexcept {
 				game->current_level.key_items.push_back(r);
 				break;
 			}
-			case Creating_Element::Point_Light: {
-				Point_Light r;
+			case Creating_Element::Torch: {
+				Torch r;
 				r.pos = get_mouse_pos();
-				r.color = { 1, 1, 1, 1 };
 				r.intensity = 0.5;
+				r.color = { 1, 1, 1, 1 };
+				r.random_factor = 0;
 				game->current_level.point_lights.push_back(r);
 				break;
 			}

@@ -96,6 +96,7 @@ using Vector2u = Vector2<std::uint32_t>;
 using Vector2i = Vector2<std::int32_t>;
 using Vector2f = Vector2<float>;
 using Vector2d = Vector2<double>;
+using Vector3f = Vector3<float>;
 using Vector3d = Vector3<double>;
 using Vector4u = Vector4<std::uint32_t>;
 using Vector4f = Vector4<float>;
@@ -106,7 +107,7 @@ struct Vector : public __vec_member<D, T> {
     
 #pragma region STATIC
     
-	static Vector<D, T> createUnitVector(float angles[D]) {
+	static Vector<D, T> createUnitVector(float angles[D - 1]) {
 		Vector<D, T> result;
 		result[0] = cosf(angles[0]);
 		for (size_t i = 1u; i < D; ++i) {
@@ -124,7 +125,7 @@ struct Vector : public __vec_member<D, T> {
 	static Vector<2, T> createUnitVector(float angles) { // i'm not doing all the shit above for 2d
 		return { cosf(angles), sinf(angles) };
 	}
-	static Vector<D, T> createUnitVector(double angles[D]) {
+	static Vector<D, T> createUnitVector(double angles[D - 1]) {
 		Vector<D, T> result;
 		result[0] = static_cast<T>(cos(angles[0]));
 		for (size_t i = 1u; i < D; ++i) {

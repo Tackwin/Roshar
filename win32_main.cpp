@@ -253,7 +253,7 @@ int WINAPI WinMain(
 		ImGui::Begin("Perf");
 
 		float avg = 0;
-		for (auto x : last_dt) avg += x;
+		for (auto y : last_dt) avg += y;
 		avg /= last_dt_count;
 
 		ImGui::Text(
@@ -336,6 +336,9 @@ void render_orders(render::Orders& orders) noexcept {
 	glClearColor(0.6f, 0.3f, 0.4f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	std::vector<render::Ambient_Light> ambient_lights;
+	ambient_lights.push_back({ .color = {1, 1, 1, 1}, .intensity = {1} });
+
 	size_t point_light_idx = 0;
 	for (size_t j = 0; j < orders.lights.size(); ++j) {
 		auto& x = orders.lights[j];
@@ -344,11 +347,23 @@ void render_orders(render::Orders& orders) noexcept {
 			x.point_light.idx = point_light_idx++;
 			render::immediate(x.point_light);
 			break;
+		case render::Order::Kind::Ambient_Light_Push:
+			ambient_lights.push_back(x.ambient_light);
+			break;
+		case render::Order::Kind::Ambient_Light_Pop:
+			assert(!ambient_lights.empty());
+			ambient_lights.pop_back();
+			break;
 		}
 	}
 
 	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Light);
 	shader.use();
+	if (!ambient_lights.empty()) {
+		auto& back = ambient_lights.back();
+		shader.set_uniform("ambient_light", back.color / 255);
+		shader.set_uniform("ambient_intensity", back.intensity);
+	}
 	shader.set_uniform("debug", (int)Environment.debug_framebuffer);
 	shader.set_uniform("n_light_points", (int)point_light_idx);
 	shader.set_uniform("buffer_albedo", 0);
@@ -360,7 +375,7 @@ void render_orders(render::Orders& orders) noexcept {
 	texture_target.set_active();
 	hdr_buffer.set_active_texture();
 
-	static float gamma{ 2.2f };
+	static float gamma{ .7f };
 	static float exposure{ 1 };
 
 	ImGui::Begin("Hdr");

@@ -25,7 +25,7 @@ void main() {
     	texel.w * color.w
     );
 
-    g_normal = vec4(0, 0, 0, 1);
+    g_normal = vec4(0.5, 0.5, 1, 1);
     if (use_normal_texture) {
     	g_normal = texture(normal_texture, texture_coord);
     }

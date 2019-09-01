@@ -30,7 +30,6 @@ namespace render {
 		float rotation;
 		Vector4d color;
 		asset::Key texture;
-		asset::Key normal;
 		asset::Key shader;
 	};
 
@@ -64,9 +63,15 @@ namespace render {
 		size_t idx;
 	};
 
+	struct Ambient_Light {
+		Vector4d color;
+		float intensity;
+	};
+
 	struct Order {
 		union {
 			Point_Light_Info point_light;
+			Ambient_Light ambient_light;
 			Rectangle_Info rectangle;
 			Circle_Info circle;
 			Sprite_Info sprite;
@@ -82,6 +87,8 @@ namespace render {
 
 		enum class Kind {
 			Sprite = 0,
+			Ambient_Light_Push,
+			Ambient_Light_Pop,
 			Point_Light,
 			Rectangle,
 			View_Push,
@@ -111,7 +118,6 @@ namespace render {
 		Vector2f origin = { 0, 0 },
 		float rotation = 0.f,
 		Vector4d color = { 1, 1, 1, 1 },
-		asset::Key normal = 0,
 		asset::Key shader = 0
 	) noexcept;
 	Order circle(
@@ -146,6 +152,9 @@ namespace render {
 		std::vector<Order> lights;
 
 		void clear() noexcept;
+
+		void push_ambient_light(Vector4d color, float intensity) noexcept;
+		void pop_ambient_light() noexcept;
 
 		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
 			objects.push_back(arrow(a, b, color));
@@ -222,11 +231,8 @@ namespace render {
 			Vector2f origin = { 0, 0 },
 			float rotation = 0.f,
 			Vector4d color = { 1, 1, 1, 1 },
-			asset::Key normal = 0,
 			asset::Key shader = 0
-		) noexcept {
-			objects.push_back(sprite(pos, size, texture, origin, rotation, color, normal, shader));
-		}
+		) noexcept;
 
 		void push_sprite(
 			Rectanglef rec,
@@ -234,13 +240,8 @@ namespace render {
 			Vector2f origin = { 0, 0 },
 			float rotation = 0.f,
 			Vector4d color = { 1, 1, 1, 1 },
-			asset::Key normal = 0,
 			asset::Key shader = 0
-		) noexcept {
-			objects.push_back(
-				sprite(rec.pos, rec.size, texture, origin, rotation, color, normal, shader)
-			);
-		}
+		) noexcept;
 
 		void push_view(Vector2f pos, Vector2f size) noexcept {
 			push_view({ pos, size });
