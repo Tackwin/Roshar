@@ -24,6 +24,8 @@ struct G_Buffer {
 	void render_quad() noexcept;
 	void copy_depth_to(uint32_t id = 0) noexcept;
 	void copy_depth_to(uint32_t id, Rectanglef viewport) noexcept;
+
+	void clear(Vector4d color) noexcept;
 private:
 	Vector2u size;
 

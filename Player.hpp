@@ -25,8 +25,6 @@ struct Player {
 
 	std::unordered_set<std::uint64_t> auto_binded_from_zones;
 	std::vector<Vector2f> flat_velocities;
-
-	std::unordered_set<size_t> colliding_blocks;
 	
 	struct {
 		std::vector<Vector2f> basic_bindings;

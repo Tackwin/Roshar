@@ -33,7 +33,9 @@ vec3 light_pixel(vec2 pix) {
 	const float root = 0.7;
 	const float linear = 0.25;
 	const float quadratic = 0.05;
-	const float step = 0.25;
+	
+	const float step = 0.05;
+	const float distance_step = 100;
 
 	vec4 albedo = texture(buffer_albedo, pix);
 	vec3 normal = 1 - texture(buffer_normal, pix).xyz * 2;
@@ -49,11 +51,13 @@ vec3 light_pixel(vec2 pix) {
 		vec3 L = -normalize(vec3(light_points[i].position, 2) - pos);
 		
 		float dist = distance(pos.xy, light_points[i].position);
+		float attenuation = (root * sqrt(dist) * linear * dist + quadratic * dist * dist);
+		attenuation = distance_step * ceil(attenuation / distance_step);
 
-		float factor = max(dot(N, L), 0.01) * light_points[i].intensity / (root * sqrt(dist) * linear * dist + quadratic * dist * dist) ;
+		float factor = max(dot(N, L), 0.01) * light_points[i].intensity / attenuation;
 		//result.xyz = vec3(factor);
 
-		factor = pow(abs(factor), 1.f);
+		factor = pow(abs(factor), 1/2.f);
 
 		factor = round(factor / step) * step;
 

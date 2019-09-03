@@ -22,6 +22,14 @@ bool test(const Key_Item& b, const Rectangle_t<float>& x) noexcept {
 	return x.in(b.pos);
 }
 
+bool test(const Player& x, const Rectangle_t<float>& rec) noexcept {
+	return rec.intersect({ x.pos, x.size });
+}
+bool test(const Moving_Block& x, const Rectangle_t<float>& rec) noexcept {
+	return rec.intersect(x.rec);
+}
+
+
 bool test(const Block& b, const Player& p) noexcept {
 	if (b.pos.x < p.pos.x + p.size.x && p.pos.x < b.pos.x + b.size.x &&
 		b.pos.y < p.pos.y + p.size.y && p.pos.y < b.pos.y + b.size.y) return true;

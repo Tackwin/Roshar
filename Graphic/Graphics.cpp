@@ -149,11 +149,12 @@ render::Order render::arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
 	return order;
 }
 
-render::Order render::line(Vector2f a, Vector2f b, Vector4d color) noexcept {
+render::Order render::line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
 	Line_Info info;
 	info.a = a;
 	info.b = b;
 	info.color = color;
+	info.thickness = thickness;
 
 	Order order;
 	order.line = info;
@@ -414,9 +415,11 @@ void render::immediate(Line_Info info) noexcept {
 	static GLuint vbo{ 0 };
 
 	if (!vao) {
-		static float vertices[6] = {
-			0, 0, 1,
-			1, 0, 1
+		static float vertices[] = {
+			0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,
+			1.0f, 1.0f, 0.0f,
+			1.0f, 0.0f, 0.0f
 		};
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
@@ -433,17 +436,17 @@ void render::immediate(Line_Info info) noexcept {
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
 	shader.set_view(current_view.world_bounds);
-	shader.set_origin({ 0, 0 });
-	shader.set_position(info.b);
+	shader.set_origin({ info.thickness * .5f, 0 });
+	shader.set_position(info.a);
 	shader.set_primary_color(info.color);
 	shader.set_rotation((float)(info.b - info.a).angleX());
-	shader.set_size(V2F((info.b - info.a).length()));
+	shader.set_size({ (info.b - info.a).length(), info.thickness });
 	shader.set_uniform("use_normal_texture", false);
 	shader.set_use_texture(false);
 	shader.set_texture(0);
 
 	glBindVertexArray(vao);
-	glDrawArrays(GL_LINES, 0, 2);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 }
 

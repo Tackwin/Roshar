@@ -252,17 +252,17 @@ void to_dyn_struct(dyn_struct& str, const Rectangle_t<T>& x) noexcept {
 }
 
 template<typename T>
-double distTo2(const Vector<2, T>& vec, const Rectangle_t<T> & rec) noexcept {
+double dist_to2(const Vector<2, T>& vec, const Rectangle_t<T> & rec) noexcept {
 	if (
 		(vec.x < rec.x || vec.x > rec.x + rec.w) &&
 		(rec.y < vec.y && vec.y < rec.y + rec.h)
-		) {
+	) {
 		return (rec.x - vec.x) * (rec.x - vec.x);
 	}
 	if (
 		(vec.y < rec.y || vec.y > rec.y + rec.h) &&
 		(rec.x < vec.x && vec.x < rec.x + rec.w)
-		) {
+	) {
 		return (rec.y - vec.y) * (rec.y - vec.y);
 	}
 

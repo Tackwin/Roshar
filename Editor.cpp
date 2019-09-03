@@ -173,7 +173,34 @@ void Editor::render(render::Orders& target) noexcept {
 			for (auto& y : game->current_level.friction_zones) if (pred(y)) y.friction = friction;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.point_lights), pred);
+	n_selected = std::count_if(BEG_END(game->current_level.moving_blocks), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Moving blocks");
+		float t{ 0 };
+		float speed{ 0 };
+		bool looping{ false };
+		bool reverse{ false };
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(game->current_level.moving_blocks), pred);
+			t = it->t / it->max_t;
+			looping = it->looping;
+			reverse = it->reverse;
+			speed = it->speed;
+		}
+
+		if (ImGui::SliderFloat("t", &t, 0, 1)) 
+			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.t = t * y.max_t;
+		if (ImGui::InputFloat("Speed", &speed))
+			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.speed = speed;
+		if (ImGui::Checkbox("Looping", &looping))
+			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.looping = looping;
+		if (ImGui::Checkbox("Reverse", &reverse))
+			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.reverse = reverse;
+		ImGui::Text("To add a way point press A");
+	}
+
+	n_selected = std::count_if(BEG_END(game->current_level.torches), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Point light");
@@ -181,25 +208,25 @@ void Editor::render(render::Orders& target) noexcept {
 		float random_factor = { 0 };
 		Vector4f color;
 		if (n_selected == 1) {
-			intensity = std::find_if(BEG_END(game->current_level.point_lights), pred)->intensity;
+			intensity = std::find_if(BEG_END(game->current_level.torches), pred)->intensity;
 			random_factor =
-				std::find_if(BEG_END(game->current_level.point_lights), pred)->random_factor;
-			color = (Vector4f)std::find_if(BEG_END(game->current_level.point_lights), pred)->color;
+				std::find_if(BEG_END(game->current_level.torches), pred)->random_factor;
+			color = (Vector4f)std::find_if(BEG_END(game->current_level.torches), pred)->color;
 		}
 
 		ImGui::Text("Intensity");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("intensity", &intensity))
-			for (auto& y : game->current_level.point_lights) if (pred(y)) y.intensity = intensity;
+			for (auto& y : game->current_level.torches) if (pred(y)) y.intensity = intensity;
 
 		ImGui::Text("Random Factor");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Random Factor", &random_factor))
-			for (auto& y : game->current_level.point_lights)
+			for (auto& y : game->current_level.torches)
 				if (pred(y)) y.random_factor = random_factor;
 
 		if (ImGui::ColorEdit4("color", &color.x))
-			for (auto& y : game->current_level.point_lights)
+			for (auto& y : game->current_level.torches)
 				if (pred(y)) y.color = (Vector4d)color;
 
 
@@ -480,6 +507,9 @@ void Editor::render(render::Orders& target) noexcept {
 					case Creating_Element::Torch:
 						*out = "Torch";
 						break;
+					case Creating_Element::Moving_Block:
+						*out = "Moving_Block";
+						break;
 					default:
 					assert(false);
 					break;
@@ -540,7 +570,7 @@ is there.",
 
 			Vector2f end = it->rec.center();
 
-			target.push_line(start, end, { 0.1, 1.0, 0.1, 1.0 });
+			target.push_line(start, end, { 0.1, 1.0, 0.1, 1.0 }, .01f);
 		}
 
 		for (const auto& x : d.mustnt_triggered) {
@@ -551,7 +581,7 @@ is there.",
 
 			Vector2f end = it->rec.center();
 
-			target.push_line(start, end, { 1.0, 0.1, 0.1, 1.0 });
+			target.push_line(start, end, { 1.0, 0.1, 0.1, 1.0 }, .01f);
 		}
 
 		for (const auto& x : d.must_have_keys) {
@@ -562,12 +592,23 @@ is there.",
 
 			Vector2f end = it->pos;
 
-			target.push_line(start, end, { 0.1, 1.0, 0.1, 1.0 });
+			target.push_line(start, end, { 0.1, 1.0, 0.1, 1.0 }, .01f);
 		}
+	}
+
+	for (const auto& x : game->current_level.moving_blocks) {
+		float pixel = game->camera.area() / (Environment.window_height * Environment.window_width);
+		for (size_t i = 1; i < x.waypoints.size(); ++i)
+			target.push_line(x.waypoints[i - 1], x.waypoints[i], { 1, 1, 1, 0.8 }, pixel);
+
+		for (const auto& y : x.waypoints) target.push_circle(0.1f, y, { 0.8, 0.8, 1.0, 1.0 });
 	}
 
 	if (snap_grid) {
 		auto& cam = game->camera;
+
+		target.late_push_view(cam);
+		defer{ target.late_pop_view(); };
 
 		size_t n = (size_t)(std::abs(cam.w) / snap_grid);
 		for (size_t x = 0; x <= n; ++x) {
@@ -581,7 +622,7 @@ is there.",
 			A.x += x * snap_grid;
 			B.x += x * snap_grid;
 
-			target.push_line(A, B, { 0.2, 0.2, 0.2, 0.2 });
+			target.late_push_line(A, B, { 0.6, 0.6, 0.6, 0.6 }, cam.w / Environment.window_width);
 		}
 		n = (size_t)(std::abs(cam.h) / snap_grid);
 		for (size_t y = 0; y <= n; ++y) {
@@ -592,10 +633,10 @@ is there.",
 
 			B.x = cam.center().x + cam.w / 2;
 
-			A.y -= y * snap_grid;
-			B.y -= y * snap_grid;
+			A.y += y * snap_grid;
+			B.y += y * snap_grid;
 
-			target.push_line(A, B, { 0.2, 0.2, 0.2, 0.2 });
+			target.late_push_line(A, B, { 0.6, 0.6, 0.6, 0.6 }, cam.h / Environment.window_height);
 		}
 	}
 }
@@ -621,6 +662,17 @@ void Editor::update(float dt) noexcept {
 
 	if (IM::isKeyJustPressed(Keyboard::F12)) {
 		set_camera_bound();
+	}
+
+	if (IM::isKeyJustPressed(Keyboard::A)) {
+		for (auto& x : game->current_level.moving_blocks) {
+			if (!x.editor_selected) continue;
+
+			x.waypoints.push_back(get_mouse_pos());
+
+			if (x.waypoints.size() > 1)
+				x.max_t += x.waypoints.back().dist_to(*(END(x.waypoints) - 2));
+		}
 	}
 
 	if (require_dragging) {
@@ -674,13 +726,13 @@ void Editor::update(float dt) noexcept {
 				r.intensity = 0.5;
 				r.color = { 1, 1, 1, 1 };
 				r.random_factor = 0;
-				game->current_level.point_lights.push_back(r);
+				game->current_level.torches.push_back(r);
 				break;
 			}
 			default: break;
 		}
 	}
-    
+
 	if (IM::isMousePressed(Mouse::Middle) && !IM::isMouseJustPressed(Mouse::Middle)) {
 		game->camera.pos += -1 * IM::getMouseDeltaInView(game->camera);
 	}
@@ -719,8 +771,9 @@ void Editor::update(float dt) noexcept {
 		iter(game->current_level.kill_zones);
 		iter(game->current_level.next_zones);
 		iter(game->current_level.dispensers);
-		iter(game->current_level.point_lights);
+		iter(game->current_level.torches);
 		iter(game->current_level.trigger_zones);
+		iter(game->current_level.moving_blocks);
 		iter(game->current_level.prest_sources);
 		iter(game->current_level.friction_zones);
 		iter(game->current_level.auto_binding_zones);
@@ -841,6 +894,14 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			game->current_level.doors.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Moving_Block: {
+			RETURN_IF_AREA_0;
+			Moving_Block new_block;
+			new_block.rec = rec;
+
+			game->current_level.moving_blocks.emplace_back(std::move(new_block));
+			break;
+		}
 		case Creating_Element::Auto_Binding_Zone: {
 			RETURN_IF_AREA_0;
 			Auto_Binding_Zone new_block;
@@ -870,12 +931,13 @@ void Editor::delete_all_selected() noexcept {
 	iter(game->current_level.rocks);
 	iter(game->current_level.doors);
 	iter(game->current_level.blocks);
+	iter(game->current_level.torches);
 	iter(game->current_level.key_items);
 	iter(game->current_level.dry_zones);
 	iter(game->current_level.kill_zones);
 	iter(game->current_level.next_zones);
 	iter(game->current_level.dispensers);
-	iter(game->current_level.point_lights);
+	iter(game->current_level.moving_blocks);
 	iter(game->current_level.trigger_zones);
 	iter(game->current_level.prest_sources);
 	iter(game->current_level.decor_sprites);
@@ -887,11 +949,12 @@ void Editor::delete_all_selected() noexcept {
 		S(rocks) +
 		S(doors) +
 		S(blocks) +
+		S(torches) +
 		S(dry_zones) +
 		S(key_items) +
 		S(kill_zones) +
 		S(next_zones) +
-		S(point_lights) +
+		S(moving_blocks) +
 		S(trigger_zones) +
 		S(prest_sources) +
 		S(decor_sprites) +

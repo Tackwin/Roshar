@@ -21,6 +21,7 @@ namespace render {
 		Vector2f a;
 		Vector2f b;
 		Vector4d color;
+		float thickness;
 	};
 
 	struct Sprite_Info {
@@ -109,7 +110,8 @@ namespace render {
 	Order line(
 		Vector2f a,
 		Vector2f b,
-		Vector4d color
+		Vector4d color,
+		float thickness
 	) noexcept;
 	Order sprite(
 		Vector2f pos,
@@ -159,8 +161,11 @@ namespace render {
 		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
 			objects.push_back(arrow(a, b, color));
 		}
-		void push_line(Vector2f a, Vector2f b, Vector4d color) noexcept {
-			objects.push_back(line(a, b, color));
+		void push_line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
+			objects.push_back(line(a, b, color, thickness));
+		}
+		void late_push_line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
+			late.push_back(line(a, b, color, thickness));
 		}
 
 		void push_point_light(

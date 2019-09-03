@@ -192,6 +192,25 @@ struct Torch {
 	void render(render::Orders& target) const noexcept;
 };
 
+struct Moving_Block {
+	bool editor_selected{ false };
+
+	std::vector<Vector2f> waypoints;
+
+	float speed{ 1 };
+	bool looping{ false };
+
+	Rectanglef rec;
+
+	void render(render::Orders& target) const noexcept;
+
+	float t{ 0 };
+	float max_t{ 0 };
+	bool reverse{ false };
+
+	bool colliding_player{ false };
+};
+
 struct Level {
 	// >SEE:
 	// >DEBUG:
@@ -204,13 +223,14 @@ struct Level {
 	std::vector<Rock>               rocks;
 	std::vector<Door>               doors;
 	std::vector<Block>              blocks;
+	std::vector<Torch>              torches;
 	std::vector<Dry_Zone>           dry_zones;
 	std::vector<Key_Item>           key_items;
 	std::vector<Kill_Zone>          kill_zones;
 	std::vector<Next_Zone>          next_zones;
 	std::vector<Dispenser>          dispensers;
 	std::vector<Projectile>         projectiles;
-	std::vector<Torch>        point_lights;
+	std::vector<Moving_Block>       moving_blocks;
 	std::vector<Trigger_Zone>       trigger_zones;
 	std::vector<Prest_Source>       prest_sources;
 	std::vector<Friction_Zone>      friction_zones;
@@ -257,6 +277,8 @@ private:
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
+extern void from_dyn_struct(const dyn_struct& str, Moving_Block& block) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Moving_Block& block) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Torch& light) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Torch& light) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dry_Zone& x) noexcept;

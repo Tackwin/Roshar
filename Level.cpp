@@ -241,17 +241,33 @@ void Torch::render(render::Orders& target) const noexcept {
 	float rand_intensity;
 
 #define rand_unit (rand() / (float)RAND_MAX)
+#define PI 3.1415926
 
 	double angles[] = {
-		2 * 3.1415926 * rand_unit, 2 * 3.1415926 * rand_unit, 2 * 3.1415926 * rand_unit
+		2 * PI * rand_unit, 2 * PI * rand_unit, 2 * PI * rand_unit
 	};
 
-	rand_pos = pos + random_factor * Vector2f::createUnitVector(2 * 3.1415926 * rand_unit);
-	rand_color = color + random_factor * Vector4d::createUnitVector(angles);
+	rand_pos = pos + random_factor * rand_unit * Vector2f::createUnitVector(2 * PI * rand_unit);
+	rand_color = color + random_factor * rand_unit * Vector4d::createUnitVector(angles);
 	rand_intensity = intensity + random_factor * rand_unit;
 
 	target.push_point_light(rand_pos, rand_color, rand_intensity);
 	target.late_push_circle(std::sqrtf(rand_intensity) / 10, rand_pos, rand_color);
+}
+
+void Moving_Block::render(render::Orders& target) const noexcept {
+	for (auto& x : waypoints) {
+		target.push_circle(0.1f, x, { 0.1, 0.15, 0.5, 1.0 });
+	}
+
+	Vector4d color{ 0.2, 0.3, 1.0, 1.0 };
+	if (editor_selected) {
+		thread_local std::uint64_t sin_time = 0;
+		auto alpha = std::sinf((sin_time += 1) * 0.0001f) * 0.5 + 0.25;
+
+		color = { alpha, alpha, alpha, alpha };
+	}
+	target.push_rectangle(rec, color);
 }
 
 void Level::render(render::Orders& target) const noexcept {
@@ -268,7 +284,9 @@ void Level::render(render::Orders& target) const noexcept {
 	renders(dispensers);
 
 	renders(decor_sprites);
-	renders(point_lights);
+	renders(torches);
+
+	renders(moving_blocks);
 
 	renders(key_items);
 	renders(prest_sources);
@@ -361,18 +379,84 @@ void Level::update(float dt) noexcept {
 		}
 	}
 
+	constexpr auto path_length = [](const Moving_Block& x) noexcept {
+		double sum = 0;
+		for (size_t i = 1; i < x.waypoints.size(); ++i) {
+			sum += x.waypoints[i - 1].dist_to(x.waypoints[i]);
+		}
+		return (float)sum;
+	};
+
+
+	constexpr auto compute_point_at_traj = [](const Moving_Block& x) noexcept {
+		if (x.waypoints.size() <= 1) return x.waypoints[0];
+		if (x.t == x.max_t) return x.waypoints.back();
+
+		float segment{ 0 };
+		float t{ x.t };
+		size_t i = 0;
+		do {
+			t -= segment;
+			++i;
+
+			segment = x.waypoints[i - 1].dist_to(x.waypoints[i]);
+		} while (t > segment);
+
+		return x.waypoints[i - 1] + t * (x.waypoints[i] - x.waypoints[i - 1]).normalize();
+	};
+
+	for (auto& x : moving_blocks) {
+		if (x.waypoints.empty()) return;
+
+		if (x.reverse) {
+			x.t -= x.speed * dt;
+			if (x.t < 0) {
+				x.colliding_player = false;
+				if (x.looping) {
+					x.t = -x.t;
+					x.reverse = false;
+				}
+				else {
+					x.t += x.max_t;
+				}
+			}
+		}
+		else {
+			x.t += x.speed * dt;
+			if (x.t > x.max_t) {
+				x.colliding_player = false;
+				if (x.looping) {
+					x.t = 2 * x.max_t - x.t;
+					x.reverse = true;
+				}
+				else {
+					x.t -= x.max_t;
+				}
+			}
+		}
+		auto previous = x.rec.center();
+		x.rec.setCenter(compute_point_at_traj(x));
+
+		if (test(player, x.rec)) {
+			x.colliding_player = true;
+		}
+
+		if (x.colliding_player) {
+			auto dt_vec = x.rec.center() - previous;
+			player.pos += dt_vec;
+		}
+	}
+
 	auto previous_player_pos = player.pos;
 	player.update(dt);
 
-	for (auto& d : doors) if (distTo2(player.pos, d.rec) < 1) match_and_destroy_keys(player, d);
+	for (auto& d : doors) if (dist_to2(player.pos, d.rec) < 1) match_and_destroy_keys(player, d);
 
 	test_collisions(dt, previous_player_pos);
 }
 
 void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 	const auto dead_velocity_2 = Environment.dead_velocity * Environment.dead_velocity;
-
-	player.colliding_blocks.clear();
 
 	auto test_solids = [&](bool auto_climb) {
 		auto_climb &= player.velocity.y < 0.1f;
@@ -407,13 +491,32 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 					}
 				}
 
-				player.colliding_blocks.insert(i);
 				if (blocks[i].kind == Block::Kind::Saturated) {
 					player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
 				}
 				flag = true;
 			}
 		}
+
+		for (size_t i = 0; i < moving_blocks.size(); ++i) {
+			moving_blocks[i].colliding_player = false;
+			if (test(player, moving_blocks[i].rec)) {
+				if (auto_climb) {
+					auto dt_y = player.pos.y - (moving_blocks[i].rec.y + moving_blocks[i].rec.h);
+					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
+						player.pos.y = moving_blocks[i].rec.y + moving_blocks[i].rec.h;
+						current_old_player_pos.y = player.pos.y;
+						if (correcting_count-- > 0) goto corrected_position;
+					}
+				}
+
+				moving_blocks[i].colliding_player |=
+					player.pos.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
+				flag = true;
+			}
+		}
+
+
 
 		previous_player_pos = current_old_player_pos;
 		return flag;
@@ -552,12 +655,13 @@ void Level::resume() noexcept {
 	iter(rocks);
 	iter(doors);
 	iter(blocks);
+	iter(torches);
 	iter(key_items);
 	iter(dry_zones);
 	iter(next_zones);
 	iter(kill_zones);
 	iter(dispensers);
-	iter(point_lights);
+	iter(moving_blocks);
 	iter(decor_sprites);
 	iter(trigger_zones);
 	iter(prest_sources);
@@ -585,6 +689,25 @@ void match_and_destroy_keys(Player& p, Door& d) noexcept {
 	}
 }
 
+void from_dyn_struct(const dyn_struct& str, Moving_Block& block) noexcept {
+	block.looping   = (bool)                 str["looping"];
+	block.max_t     = (float)                str["max_t"];
+	block.rec       = (Rectanglef)           str["rec"];
+	block.reverse   = (bool)                 str["reverse"];
+	block.speed     = (float)                str["speed"];
+	block.t         = (float)                str["t"];
+	block.waypoints = (std::vector<Vector2f>)str["waypoints"];
+}
+void to_dyn_struct(dyn_struct& str, const Moving_Block& block) noexcept {
+	str = dyn_struct::structure_t{};
+	str["looping"]   = block.looping;
+	str["max_t"]     = block.max_t;
+	str["rec"]       = block.rec;
+	str["reverse"]   = block.reverse;
+	str["speed"]     = block.speed;
+	str["t"]         = block.t;
+	str["waypoints"] = block.waypoints;
+}
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
 	if (has(str, "kind")) block.kind = (Block::Kind)((int)str["kind"]);
 	block.pos = (Vector2f)str["pos"];
@@ -692,12 +815,13 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(key_items);
 	X(decor_sprites);
 	X(dry_zones);
+	X(moving_blocks)
 	X(doors);
 	X(trigger_zones);
 	X(rocks);
 	X(markers);
 	X(auto_binding_zones);
-	X(point_lights);
+	X(torches);
 	X(camera_bound);
 #undef X
     
@@ -726,22 +850,23 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 }
 void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};
-	str["blocks"] = level.blocks;
-	str["kill_zones"] = level.kill_zones;
-	str["key_items"] = level.key_items;
-	str["next_zones"] = level.next_zones;
-	str["dry_zones"] = level.dry_zones;
-	str["prest_sources"] = level.prest_sources;
-	str["dispensers"] = level.dispensers;
-	str["friction_zones"] = level.friction_zones;
-	str["decor_sprites"] = level.decor_sprites;
-	str["markers"] = level.markers;
-	str["rocks"] = level.rocks;
-	str["doors"] = level.doors;
+	str["blocks"]             = level.blocks;
+	str["kill_zones"]         = level.kill_zones;
+	str["key_items"]          = level.key_items;
+	str["next_zones"]         = level.next_zones;
+	str["dry_zones"]          = level.dry_zones;
+	str["prest_sources"]      = level.prest_sources;
+	str["dispensers"]         = level.dispensers;
+	str["friction_zones"]     = level.friction_zones;
+	str["decor_sprites"]      = level.decor_sprites;
+	str["markers"]            = level.markers;
+	str["rocks"]              = level.rocks;
+	str["doors"]              = level.doors;
 	str["auto_binding_zones"] = level.auto_binding_zones;
-	str["trigger_zones"] = level.trigger_zones;
-	str["camera_bound"] = level.camera_bound;
-	str["point_lights"] = level.point_lights;
+	str["trigger_zones"]      = level.trigger_zones;
+	str["camera_bound"]       = level.camera_bound;
+	str["torches"]            = level.torches;
+	str["moving_blocks"]      = level.moving_blocks;
     
 	auto& player = str["player"] = dyn_struct::structure_t{};
     
@@ -750,7 +875,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
     
 	str["ambient"] = {
 		{"color", level.ambient_color},
-		{"intesity", level.ambient_intensity}
+		{"intensity", level.ambient_intensity}
 	};
 
 	str["camera"] = game->camera;

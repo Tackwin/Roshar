@@ -207,6 +207,8 @@ int WINAPI WinMain(
 	game = new Game;
 	defer{ delete game; };
 
+	auto cpu_render_time = .0;
+
 	auto last_time_frame = microseconds();
 	while (msg.message != WM_QUIT) {
 		std::uint64_t dt = microseconds() - last_time_frame;
@@ -250,6 +252,18 @@ int WINAPI WinMain(
 
 		ImGui::End();
 
+		update_game(dt);
+		
+		auto t_start = seconds();
+		render_game(orders);
+		cpu_render_time = seconds() - t_start;
+
+
+		render_orders(orders);
+		
+		
+		orders.clear();
+
 		ImGui::Begin("Perf");
 
 		float avg = 0;
@@ -264,13 +278,10 @@ int WINAPI WinMain(
 			max_dt / 1000
 		);
 		ImGui::Text("Fps: %d", (size_t)(1'000'000.0 / dt));
+		ImGui::Text("Cpu render time: %.3f ms.", cpu_render_time * 1'000);
 
 		ImGui::End();
 
-		update_game(dt);
-		render_game(orders);
-		render_orders(orders);
-		orders.clear();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -294,7 +305,7 @@ void render_orders(render::Orders& orders) noexcept {
 	glViewport(0, 0, Gl_Buffer_Size.x, Gl_Buffer_Size.y);
 
 	g_buffer.set_active();
-	glClearColor(0, 0, 0, 1.f);
+	g_buffer.clear({ 0.6, 0.3, 0.4, 1. });
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	for (size_t i = 0; i < orders.objects.size(); ++i) {

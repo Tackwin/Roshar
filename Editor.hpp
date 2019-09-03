@@ -21,6 +21,7 @@ class Editor {
 		Auto_Binding_Zone,
 		Friction_Zone,
 		Key_Item,
+		Moving_Block,
 		Torch,
 		Size
 	};

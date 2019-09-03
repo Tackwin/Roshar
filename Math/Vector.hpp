@@ -249,6 +249,13 @@ struct Vector : public __vec_member<D, T> {
 		return result;
 	}
 
+	T dist_to2(const Vector<D, T>& x) const noexcept {
+		return (*this - x).length2();
+	}
+	T dist_to(const Vector<D, T>& x) const noexcept {
+		return (*this - x).length();
+	}
+
 	template<size_t Dp = D>
 		std::enable_if_t<Dp == 2, double> angleX() const noexcept {
 		return std::atan2(this->y, this->x);

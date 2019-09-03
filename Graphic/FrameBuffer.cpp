@@ -88,6 +88,13 @@ G_Buffer::~G_Buffer() noexcept {
 	glDeleteBuffers(1, &quad_VBO);
 }
 
+void G_Buffer::clear(Vector4d color) noexcept {
+	Vector4f f = (Vector4f)color;
+	glClearTexImage(albedo_buffer, 0, GL_RGBA, GL_UNSIGNED_BYTE, &f.x);
+	glClearTexImage(normal_buffer, 0, GL_RGBA, GL_FLOAT, nullptr);
+	glClearTexImage(pos_buffer, 0, GL_RGBA, GL_FLOAT, nullptr);
+}
+
 void G_Buffer::set_active() noexcept {
 	glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
