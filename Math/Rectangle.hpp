@@ -3,6 +3,8 @@
 
 template<typename T>
 struct Rectangle_t {
+	template<typename U = T>
+	static constexpr auto Unit = Rectangle_t<U>(Vector2<T>{(U)0, (U)0}, Vector2<U>{(U)1, (U)1});
 
 	enum class Side {
 		Left = 0,
@@ -46,9 +48,9 @@ struct Rectangle_t {
 		};
 	};
 
-	Rectangle_t() {}
+	constexpr Rectangle_t() {}
 
-	Rectangle_t(const Vector<2, T>& pos, const Vector<2, T>& size) :
+	constexpr Rectangle_t(const Vector<2, T>& pos, const Vector<2, T>& size) :
 		pos(pos),
 		size(size)
 	{
@@ -68,6 +70,13 @@ struct Rectangle_t {
 	Rectangle_t& operator=(const Rectangle_t&) = default;
 	Rectangle_t(Rectangle_t&&) = default;
 	Rectangle_t& operator=(Rectangle_t&&) = default;
+
+	template<typename U> explicit operator Rectangle_t<U>() const noexcept {
+		return {
+			Vector2<U>{(U)x, (U)y},
+			Vector2<U>{(U)w, (U)h}
+		};
+	}
 
 	bool intersect(const Rectangle_t<T>& other) const {
 		return !(
@@ -232,6 +241,7 @@ struct Rectangle_t {
 };
 
 using Rectanglef = Rectangle_t<float>;
+using Rectanglei = Rectangle_t<int>;
 using Rectangleu = Rectangle_t<size_t>;
 
 struct dyn_struct;

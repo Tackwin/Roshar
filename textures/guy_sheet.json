@@ -1,0 +1,86 @@
+{ "frames": {
+   "guy 0.ase": {
+    "frame": { "x": 0, "y": 0, "w": 92, "h": 138 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 189, "y": 329, "w": 92, "h": 138 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 1.ase": {
+    "frame": { "x": 92, "y": 0, "w": 85, "h": 134 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 193, "y": 340, "w": 85, "h": 134 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 2.ase": {
+    "frame": { "x": 177, "y": 0, "w": 64, "h": 129 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 206, "y": 344, "w": 64, "h": 129 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 3.ase": {
+    "frame": { "x": 241, "y": 0, "w": 86, "h": 133 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 204, "y": 335, "w": 86, "h": 133 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 4.ase": {
+    "frame": { "x": 327, "y": 0, "w": 102, "h": 138 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 180, "y": 335, "w": 102, "h": 138 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 5.ase": {
+    "frame": { "x": 429, "y": 0, "w": 88, "h": 131 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 191, "y": 342, "w": 88, "h": 131 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 6.ase": {
+    "frame": { "x": 517, "y": 0, "w": 54, "h": 129 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 216, "y": 343, "w": 54, "h": 129 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   },
+   "guy 7.ase": {
+    "frame": { "x": 571, "y": 0, "w": 86, "h": 140 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 206, "y": 334, "w": 86, "h": 140 },
+    "sourceSize": { "w": 512, "h": 512 },
+    "duration": 100
+   }
+ },
+ "meta": {
+  "app": "http://www.aseprite.org/",
+  "version": "1.2.9-x64",
+  "image": "C:\\Users\\tackw\\Code\\Roshar\\textures\\guy_sheet.png",
+  "format": "RGBA8888",
+  "size": { "w": 4096, "h": 512 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Left arm", "opacity": 192, "blendMode": "normal" },
+   { "name": "Left Leg", "opacity": 192, "blendMode": "normal" },
+   { "name": "Body", "opacity": 192, "blendMode": "normal" },
+   { "name": "Head", "opacity": 192, "blendMode": "normal" },
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

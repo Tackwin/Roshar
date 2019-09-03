@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <chrono>
 #include <thread>
+#include <functional>
 
 #include "Math/Circle.hpp"
 #include "Collision.hpp"
@@ -91,7 +92,13 @@ void Dry_Zone::render(render::Orders& target) const noexcept {
 
 void Rock::render(render::Orders& target) const noexcept {
 	target.push_sprite(
-		pos, { 2 * r, 2 * r }, asset::Known_Textures::Rock, { .5, .5 }, 0.f, {1, 1, 1, 1}
+		pos,
+		{ 2 * r, 2 * r },
+		asset::Known_Textures::Rock,
+		Rectanglef::Unit<>,
+		{ .5, .5 },
+		0.f,
+		{1, 1, 1, 1}
 	);
 
 	for (auto& binding : bindings) target.push_arrow(pos, pos + binding, { 1, 0, 1, 1 });
@@ -208,7 +215,9 @@ void Projectile::render(render::Orders& target) const noexcept {
 }
 
 void Decor_Sprite::render(render::Orders& target) const noexcept {
-	target.push_sprite(rec, texture_key, {0, 0}, 0.f, { 1, 1, 1, opacity * 1. });
+	target.push_sprite(
+		rec, texture_key, Rectanglef::Unit<>, {0, 0}, 0.f, { 1, 1, 1, opacity * 1. }
+	);
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -232,7 +241,15 @@ void Key_Item::render(render::Orders& target) const noexcept {
 		color = { alpha, alpha, alpha, alpha };
 	}
 
-	target.push_sprite(pos, Key_World_Size, asset::Known_Textures::Key_Item, { 0, 0 }, 0, color);
+	target.push_sprite(
+		pos,
+		Key_World_Size,
+		asset::Known_Textures::Key_Item,
+		Rectanglef::Unit<>,
+		{ 0, 0 },
+		0,
+		color
+	);
 }
 
 void Torch::render(render::Orders& target) const noexcept {
@@ -447,23 +464,96 @@ void Level::update(float dt) noexcept {
 		}
 	}
 
-	auto previous_player_pos = player.pos;
-	player.update(dt);
+	update_player(dt);
+	test_collisions(dt);
 
 	for (auto& d : doors) if (dist_to2(player.pos, d.rec) < 1) match_and_destroy_keys(player, d);
-
-	test_collisions(dt, previous_player_pos);
 }
 
-void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
-	const auto dead_velocity_2 = Environment.dead_velocity * Environment.dead_velocity;
+void Level::test_collisions(float dt) noexcept {
+	for (auto& rock : rocks) {
+		const auto G = Environment.gravity;
+		float length_sum = 0;
+		for (const auto& x : rock.bindings) {
+			rock.velocity += G * x * dt / rock.mass;
+			length_sum += x.length();
+		}
+		rock.velocity.y -= (std::max(0.f, 1.f - length_sum) * Environment.gravity) * dt;
+
+		Circlef circle;
+		Rectanglef rec;
+
+		circle.r = rock.r;
+		circle.c = rock.pos + rock.velocity * dt;
+
+		for (const auto& block : blocks) {
+			rec.pos = block.pos;
+			rec.size = block.size;
+
+			if (auto opt = get_next_velocity(circle, rock.velocity, rec, dt); opt) {
+				rock.velocity = *opt;
+				circle.c = rock.pos + rock.velocity * dt;
+			}
+		}
+		for (const auto& door : doors) {
+			if (!door.closed) continue;
+			if (auto opt = get_next_velocity(circle, rock.velocity, door.rec, dt); opt) {
+				rock.velocity = *opt;
+				circle.c = rock.pos + rock.velocity * dt;
+			}
+		}
+
+		rock.pos = circle.c;
+	}
+
+	for (const auto& d : dry_zones) {
+		if (test(d, player)) player.clear_all_basic_bindings();
+		for (auto& r : rocks) if (test(d, r)) r.bindings.clear();
+	}
+
+	for (auto& x : next_zones) {
+		if (!test(x, player)) continue;
+
+		game->next_level_path = Exe_Path / LEVEL_PATH / x.next_level;
+		game->succeed = true;
+	}
+
+	for (auto& x : auto_binding_zones) {
+		if (player.auto_binded_from_zones.count(x.uuid)) continue;
+
+		if (
+			x.rec.intersect({ player.pos, player.size }) &&
+			!player.auto_binded_from_zones.contains(x.uuid)
+		) {
+			player.add_forced_binding(x.binding, x.uuid);
+		}
+	}
+
+	for (size_t i = prest_sources.size() - 1; i + 1 > 0; --i) {
+		if (test(prest_sources[i], player)) {
+			player.prest += prest_sources[i].prest;
+			prest_sources.erase(BEG(prest_sources) + i);
+		}
+	}
+
+	for (size_t i = key_items.size() - 1; i + 1 > 0; --i) {
+		if (test(key_items[i], { player.pos, player.size })) {
+			player.own_keys.push_back(key_items[i].id);
+			key_items.erase(BEG(key_items) + i);
+		}
+	}
+}
+
+void Level::update_player(float dt) noexcept {
+	auto previous_player_pos = player.pos;
+	player.update(dt);
 
 	auto test_solids = [&](bool auto_climb) {
 		auto_climb &= player.velocity.y < 0.1f;
 
 		size_t correcting_count = 1;
-		Vector2f current_old_player_pos = previous_player_pos;
 	corrected_position:
+
 		bool flag = false;
 		for (size_t i = 0; i < doors.size(); ++i) {
 			if (test(doors[i], player)) {
@@ -471,7 +561,7 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
 					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
 						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
-						current_old_player_pos.y = player.pos.y;
+						previous_player_pos.y = player.pos.y;
 						if (correcting_count-- > 0) goto corrected_position;
 					}
 				}
@@ -486,7 +576,7 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
 					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
 						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
-						current_old_player_pos.y = player.pos.y;
+						previous_player_pos.y = player.pos.y;
 						if (correcting_count-- > 0) goto corrected_position;
 					}
 				}
@@ -501,15 +591,6 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 		for (size_t i = 0; i < moving_blocks.size(); ++i) {
 			moving_blocks[i].colliding_player = false;
 			if (test(player, moving_blocks[i].rec)) {
-				if (auto_climb) {
-					auto dt_y = player.pos.y - (moving_blocks[i].rec.y + moving_blocks[i].rec.h);
-					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
-						player.pos.y = moving_blocks[i].rec.y + moving_blocks[i].rec.h;
-						current_old_player_pos.y = player.pos.y;
-						if (correcting_count-- > 0) goto corrected_position;
-					}
-				}
-
 				moving_blocks[i].colliding_player |=
 					player.pos.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
 				flag = true;
@@ -518,14 +599,8 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 
 
 
-		previous_player_pos = current_old_player_pos;
 		return flag;
 	};
-
-	auto test_any = [](const auto& cont, const auto& to_test) {
-		return std::any_of(BEG_END(cont), [&](auto x) {return test(x, to_test); });
-	};
-	auto test_any_p = [&p = player, test_any](const auto& cont) { return test_any(cont, p); };
 
 	Vector2f flat_velocities = { 0, 0 };
 	for (const auto& x : player.flat_velocities) flat_velocities += x;
@@ -568,83 +643,16 @@ void Level::test_collisions(float dt, Vector2f previous_player_pos) noexcept {
 		player.floored = new_floored;
 	}
 
-	for (auto& rock : rocks) {
-		const auto G = Environment.gravity;
-		float length_sum = 0;
-		for (const auto& x : rock.bindings) {
-			rock.velocity += G * x * dt / rock.mass;
-			length_sum += x.length();
+	if (!game->died) {
+		for (auto& x : kill_zones) if (test(x, player)) {
+			game->died |= true;
+			break;
 		}
-		rock.velocity.y -= (std::max(0.f, 1.f - length_sum) * Environment.gravity) * dt;
-
-		Circlef circle;
-		Rectanglef rec;
-
-		circle.r = rock.r;
-		circle.c = rock.pos + rock.velocity * dt;
-
-		for (const auto& block : blocks) {
-			rec.pos = block.pos;
-			rec.size = block.size;
-
-			if (auto opt = get_next_velocity(circle, rock.velocity, rec, dt); opt) {
-				rock.velocity = *opt;
-				circle.c = rock.pos + rock.velocity * dt;
-			}
+		for (auto& x : projectiles) if (test(x, player)) {
+			game->died |= true;
+			break;
 		}
-		for (const auto& door : doors) {
-			if (!door.closed) continue;
-			if (auto opt = get_next_velocity(circle, rock.velocity, door.rec, dt); opt) {
-				rock.velocity = *opt;
-				circle.c = rock.pos + rock.velocity * dt;
-			}
-		}
-
-		rock.pos = circle.c;
-	}
-
-	if (
-		std::sqrtf(impact) > Environment.dead_velocity ||
-		test_any_p(kill_zones) || test_any_p(projectiles)
-	) {
-		game->died = true;
-	}
-
-	for (const auto& d : dry_zones) {
-		if (test(d, player)) player.clear_all_basic_bindings();
-		for (auto& r : rocks) if (test(d, r)) r.bindings.clear();
-	}
-
-	for (auto& x : next_zones) {
-		if (!test(x, player)) continue;
-
-		game->next_level_path = Exe_Path / LEVEL_PATH / x.next_level;
-		game->succeed = true;
-	}
-
-	for (auto& x : auto_binding_zones) {
-		if (player.auto_binded_from_zones.count(x.uuid)) continue;
-
-		if (
-			x.rec.intersect({ player.pos, player.size }) &&
-			!player.auto_binded_from_zones.contains(x.uuid)
-		) {
-			player.add_forced_binding(x.binding, x.uuid);
-		}
-	}
-
-	for (size_t i = prest_sources.size() - 1; i + 1 > 0; --i) {
-		if (test(prest_sources[i], player)) {
-			player.prest += prest_sources[i].prest;
-			prest_sources.erase(BEG(prest_sources) + i);
-		}
-	}
-
-	for (size_t i = key_items.size() - 1; i + 1 > 0; --i) {
-		if (test(key_items[i], { player.pos, player.size })) {
-			player.own_keys.push_back(key_items[i].id);
-			key_items.erase(BEG(key_items) + i);
-		}
+		game->died |= std::sqrtf(impact) > Environment.dead_velocity;
 	}
 }
 

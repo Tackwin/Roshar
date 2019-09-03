@@ -30,6 +30,7 @@ namespace render {
 		Vector2f origin;
 		float rotation;
 		Vector4d color;
+		Rectanglef texture_rect;
 		asset::Key texture;
 		asset::Key shader;
 	};
@@ -117,6 +118,7 @@ namespace render {
 		Vector2f pos,
 		Vector2f size,
 		asset::Key texture,
+		Rectanglef texture_rect = { {0, 0}, {1, 1} },
 		Vector2f origin = { 0, 0 },
 		float rotation = 0.f,
 		Vector4d color = { 1, 1, 1, 1 },
@@ -233,6 +235,7 @@ namespace render {
 			Vector2f pos,
 			Vector2f size,
 			asset::Key texture,
+			Rectanglef texture_rect = { {0, 0}, {1, 1} },
 			Vector2f origin = { 0, 0 },
 			float rotation = 0.f,
 			Vector4d color = { 1, 1, 1, 1 },
@@ -242,6 +245,7 @@ namespace render {
 		void push_sprite(
 			Rectanglef rec,
 			asset::Key texture,
+			Rectanglef texture_rect = { {0, 0}, {1, 1} },
 			Vector2f origin = { 0, 0 },
 			float rotation = 0.f,
 			Vector4d color = { 1, 1, 1, 1 },

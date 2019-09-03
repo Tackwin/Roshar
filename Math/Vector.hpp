@@ -92,13 +92,14 @@ struct Vector;
 template<typename T> using Vector2 = Vector<2U, T>;
 template<typename T> using Vector3 = Vector<3U, T>;
 template<typename T> using Vector4 = Vector<4U, T>;
-using Vector2u = Vector2<std::uint32_t>;
+using Vector2u = Vector2<std::size_t>;
 using Vector2i = Vector2<std::int32_t>;
 using Vector2f = Vector2<float>;
 using Vector2d = Vector2<double>;
 using Vector3f = Vector3<float>;
 using Vector3d = Vector3<double>;
-using Vector4u = Vector4<std::uint32_t>;
+using Vector4i = Vector4<std::int32_t>;
+using Vector4u = Vector4<std::size_t>;
 using Vector4f = Vector4<float>;
 using Vector4d = Vector4<double>;
 

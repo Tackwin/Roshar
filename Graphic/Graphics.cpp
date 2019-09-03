@@ -28,23 +28,29 @@ void render::Orders::push_sprite(
 	Vector2f pos,
 	Vector2f size,
 	asset::Key texture,
+	Rectanglef texture_rect,
 	Vector2f origin,
 	float rotation,
 	Vector4d color,
 	asset::Key shader
 ) noexcept {
-	objects.push_back(sprite(pos, size, texture, origin, rotation, color, shader));
+	objects.push_back(
+		sprite(pos, size, texture, texture_rect, origin, rotation, color, shader)
+	);
 }
 
 void render::Orders::push_sprite(
 	Rectanglef rec,
 	asset::Key texture,
+	Rectanglef texture_rect,
 	Vector2f origin,
 	float rotation,
 	Vector4d color,
 	asset::Key shader
 ) noexcept {
-	objects.push_back(sprite(rec.pos, rec.size, texture, origin, rotation, color, shader));
+	objects.push_back(
+		sprite(rec.pos, rec.size, texture, texture_rect, origin, rotation, color, shader)
+	);
 }
 
 render::Order render::push_view(Rectanglef bounds) noexcept {
@@ -115,6 +121,7 @@ render::Order render::sprite(
 	Vector2f pos,
 	Vector2f size,
 	asset::Key texture,
+	Rectanglef texture_rect,
 	Vector2f origin,
 	float rotation,
 	Vector4d color,
@@ -128,6 +135,7 @@ render::Order render::sprite(
 	info.color = color;
 	info.texture = texture;
 	info.shader = shader ? 0 : asset::Known_Shaders::Default;
+	info.texture_rect = texture_rect;
 
 	Order order;
 	order.sprite = info;
@@ -225,6 +233,7 @@ void render::immediate(Sprite_Info info) noexcept {
 	shader.set_size(info.size);
 	shader.set_use_texture((bool)info.texture);
 	shader.set_uniform("use_normal_texture", asset::Store.get_normal(info.texture) ? 1 : 0);
+	shader.set_uniform("texture_rect", info.texture_rect);
 	shader.set_uniform("normal_texture", 5);
 	shader.set_texture(4);
 

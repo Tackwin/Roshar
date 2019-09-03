@@ -214,5 +214,21 @@ void Shader::set_uniform(const std::string& name, int x) noexcept {
 
 	glUniform1i(cache_loc[name], x);
 }
+void Shader::set_uniform(const std::string& name, Vector4u x) noexcept {
+	if (!cache_loc.contains(name)) {
+		cache_loc[name] = glGetUniformLocation(info.programId, name.c_str());
+	}
+
+	Vector4i y = (Vector4i)x;
+
+	glUniform4iv(cache_loc[name], 4, &y.x);
+}
+void Shader::set_uniform(const std::string& name, Rectanglef x) noexcept {
+	if (!cache_loc.contains(name)) {
+		cache_loc[name] = glGetUniformLocation(info.programId, name.c_str());
+	}
+
+	glUniform4fv(cache_loc[name], 4, &x.x);
+}
 
 #undef loc

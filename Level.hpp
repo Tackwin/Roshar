@@ -272,7 +272,9 @@ private:
 	Vector2f mouse_world_pos;
 	Vector2u window_size;
 
-	void test_collisions(float dt, Vector2f previous_player_pos) noexcept;
+	void test_collisions(float dt) noexcept;
+
+	void update_player(float dt) noexcept;
 };
 
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
