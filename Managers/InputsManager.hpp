@@ -124,20 +124,28 @@ struct Mouse {
 	};
 };
 
-struct Joystick_Button {
-	enum X360 {
+struct Joystick {
+	enum Button {
 		A = 0,
-		B = 1,
-		X = 2,
-		Y = 3,
-		RB = 6,
-		Count
+		B,
+		X,
+		Y,
+		DPAD_UP,
+		DPAD_DOWN,
+		DPAD_LEFT,
+		DPAD_RIGHT,
+		START,
+		BACK,
+		LB,
+		RB,
+		LT,
+		RT,
+		Count = 32
 	};
 };
 
 struct Inputs_Info {
-	constexpr static float Joystick_Dead_Zone{ 10 };
-	constexpr static std::uint8_t Version{ 1 };
+	constexpr static std::uint8_t Version{ 2 };
 
 	struct Action_Info {
 		bool pressed : 1;
@@ -145,11 +153,14 @@ struct Inputs_Info {
 		bool just_released : 1;
 	};
 
-	std::array<Action_Info, Keyboard::Count>    key_infos;
-	std::array<Action_Info, Mouse::Count>       mouse_infos;
-	std::array<Action_Info, 32>                 joystick_buttons_infos;
+	std::array<Action_Info, Keyboard::Count>        key_infos;
+	std::array<Action_Info, Mouse::Count>           mouse_infos;
+	std::array<Action_Info, Joystick::Count>        joystick_buttons_infos;
 
-	Vector2f joystick_axis;
+	Vector2f left_joystick;
+	Vector2f right_joystick;
+	float left_trigger;
+	float right_trigger;
 
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_screen_delta;
@@ -166,15 +177,15 @@ struct Inputs_Info {
 
 	[[nodiscard]] Vector2f mouse_world_pos(render::View_Info& v) const noexcept;
 	[[nodiscard]] Vector2f mouse_world_pos(Rectanglef& v       ) const noexcept;
-	[[nodiscard]] bool is_just_released(Keyboard::Key k) const noexcept;
-	[[nodiscard]] bool is_just_released(Mouse::Button b) const noexcept;
-	[[nodiscard]] bool is_just_released(int b          ) const noexcept;
-	[[nodiscard]] bool is_just_pressed(Keyboard::Key k) const noexcept;
-	[[nodiscard]] bool is_just_pressed(Mouse::Button b) const noexcept;
-	[[nodiscard]] bool is_just_pressed(int b          ) const noexcept;
-	[[nodiscard]] bool is_pressed(Keyboard::Key k) const noexcept;
-	[[nodiscard]] bool is_pressed(Mouse::Button b) const noexcept;
-	[[nodiscard]] bool is_pressed(int x          ) const noexcept;
+	[[nodiscard]] bool is_just_released(Keyboard::Key    k) const noexcept;
+	[[nodiscard]] bool is_just_released(Mouse::Button    b) const noexcept;
+	[[nodiscard]] bool is_just_released(Joystick::Button b) const noexcept;
+	[[nodiscard]] bool is_just_pressed(Keyboard::Key    k) const noexcept;
+	[[nodiscard]] bool is_just_pressed(Mouse::Button    b) const noexcept;
+	[[nodiscard]] bool is_just_pressed(Joystick::Button b) const noexcept;
+	[[nodiscard]] bool is_pressed(Keyboard::Key    k) const noexcept;
+	[[nodiscard]] bool is_pressed(Mouse::Button    b) const noexcept;
+	[[nodiscard]] bool is_pressed(Joystick::Button x) const noexcept;
 };
 
 class InputsManager {
@@ -261,6 +272,7 @@ public:
 private:
 	static int get_vkey(Keyboard::Key k) noexcept;
 	static int get_vkey(Mouse::Button k) noexcept;
+	static int get_vkey(Joystick::Button k) noexcept;
 };
 
 using IM = InputsManager;

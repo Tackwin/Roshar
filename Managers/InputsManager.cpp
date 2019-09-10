@@ -4,6 +4,7 @@
 #define NOGDI
 #include <cassert>
 #include <Windows.h>
+#include <Xinput.h>
 
 #include <SFML/Graphics.hpp>
 
@@ -45,8 +46,8 @@
 [[nodiscard]] bool Inputs_Info::is_just_released(Mouse::Button b) const noexcept {
 	return mouse_infos[b].just_released;
 }
-[[nodiscard]] bool Inputs_Info::is_just_released(int x              ) const noexcept {
-	return joystick_buttons_infos[x].just_released;
+[[nodiscard]] bool Inputs_Info::is_just_released(Joystick::Button b) const noexcept {
+	return joystick_buttons_infos[b].just_released;
 }
 [[nodiscard]] bool Inputs_Info::is_just_pressed(Keyboard::Key k) const noexcept {
 	return key_infos[k].just_pressed;
@@ -54,8 +55,8 @@
 [[nodiscard]] bool Inputs_Info::is_just_pressed(Mouse::Button b) const noexcept {
 	return mouse_infos[b].just_pressed;
 }
-[[nodiscard]] bool Inputs_Info::is_just_pressed(int x              ) const noexcept {
-	return joystick_buttons_infos[x].just_pressed;
+[[nodiscard]] bool Inputs_Info::is_just_pressed(Joystick::Button b) const noexcept {
+	return joystick_buttons_infos[b].just_pressed;
 }
 [[nodiscard]] bool Inputs_Info::is_pressed(Keyboard::Key k) const noexcept {
 	return key_infos[k].pressed;
@@ -63,8 +64,8 @@
 [[nodiscard]] bool Inputs_Info::is_pressed(Mouse::Button b) const noexcept {
 	return mouse_infos[b].pressed;
 }
-[[nodiscard]] bool Inputs_Info::is_pressed(int x              ) const noexcept {
-	return joystick_buttons_infos[x].pressed;
+[[nodiscard]] bool Inputs_Info::is_pressed(Joystick::Button b) const noexcept {
+	return joystick_buttons_infos[b].pressed;
 }
 
 Keyboard::Key InputsManager::getLastKeyPressed() noexcept {
@@ -271,22 +272,44 @@ void InputsManager::update(float dt) {
 		new_record.mouse_infos[i].just_released = last_pressed && !pressed;
 		new_record.mouse_infos[i].pressed = pressed;
 	}
-	/*
-	for (size_t i = 0; i < sf::Joystick::ButtonCount; ++i) {
-		auto pressed = sf::Joystick::isButtonPressed(0, i);
-        
+
+	XINPUT_STATE state = {};
+	XInputGetState(0, &state);
+	auto Max_Range = .5f + (1 << (8 * sizeof(state.Gamepad.sThumbLX) - 1));
+
+	new_record.left_trigger = state.Gamepad.bLeftTrigger / 255.f;
+	new_record.right_trigger = state.Gamepad.bRightTrigger / 255.f;
+	new_record.left_joystick = {
+		(state.Gamepad.sThumbLX + 0.5f) / Max_Range,
+		(state.Gamepad.sThumbLY + 0.5f) / Max_Range
+	};
+	new_record.right_joystick = {
+		(state.Gamepad.sThumbRX + 0.5f) / Max_Range,
+		(state.Gamepad.sThumbRY + 0.5f) / Max_Range
+	};
+
+	auto dead_range = (XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE + .5) / (double)Max_Range;
+	auto length = new_record.left_joystick.length();
+	if (length < dead_range) {
+		new_record.left_joystick = {};
+	}
+	new_record.left_joystick.applyCW([](auto x) { return std::powf(x, 3); });
+
+
+	length = new_record.right_joystick.length();
+	if (length < dead_range) {
+		new_record.right_joystick = {};
+	}
+	new_record.right_joystick.applyCW([](auto x) { return std::powf(x, 3); });
+
+	for (size_t i = 0; i < Joystick::Count; ++i) {
+		auto pressed = (bool)(state.Gamepad.wButtons & get_vkey((Joystick::Button)i));
 		auto last_pressed =
 			records.empty() ? false : records.back().joystick_buttons_infos[i].pressed;
-        
 		new_record.joystick_buttons_infos[i].just_pressed = !last_pressed && pressed;
 		new_record.joystick_buttons_infos[i].just_released = last_pressed && !pressed;
 		new_record.joystick_buttons_infos[i].pressed = pressed;
 	}
-    
-	new_record.joystick_axis = {
-		sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X),
-		-sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Y)
-	};*/
 
 	new_record.scroll = wheel_scroll;
 	new_record.focused = GetForegroundWindow() == (HWND)platform::handle_window;
@@ -367,7 +390,7 @@ bool IM::save_range(
 std::filesystem::path path, Input_Iterator begin, Input_Iterator end
 ) noexcept {
 	std::vector<std::uint8_t> bytes;
-	bytes.push_back(Inputs_Info::Version); // Version
+	bytes.push_back(Inputs_Info::Version);
 
 	for (auto it = begin; it != end; ++it) {
 		auto buffer = reinterpret_cast<const std::uint8_t*>(&(*it));
@@ -385,6 +408,76 @@ std::uint64_t IM::load_record(std::filesystem::path path) noexcept {
 	return load_record_at(path, id) ? id : 0;
 }
 
+
+struct Inputs_Info_1 {
+	constexpr static float Joystick_Dead_Zone{ 10 };
+	constexpr static std::uint8_t Version{ 1 };
+
+	struct Action_Info {
+		bool pressed : 1;
+		bool just_pressed : 1;
+		bool just_released : 1;
+	};
+
+	std::array<Action_Info, Keyboard::Count>        key_infos;
+	std::array<Action_Info, Mouse::Count>           mouse_infos;
+	std::array<Action_Info, 32> joystick_buttons_infos;
+
+	Vector2f joystick_axis;
+
+	Vector2f mouse_screen_pos;
+	Vector2f mouse_screen_delta;
+	Vector2u window_size;
+
+	float scroll;
+	float dt;
+
+	struct {
+		bool mouse_captured : 1;
+		bool key_captured : 1;
+		bool focused : 1;
+	};
+};
+
+Inputs_Info update(Inputs_Info_1 old) noexcept {
+	Inputs_Info new_info = {};
+	new_info.dt = old.dt;
+	new_info.focused = old.focused;
+	for (size_t i = 0; i < old.joystick_buttons_infos.size(); ++i) {
+		auto& n = new_info.joystick_buttons_infos[i];
+		const auto& o = old.joystick_buttons_infos[i];
+
+		n.just_pressed = o.just_pressed;
+		n.just_released = o.just_released;
+		n.pressed = o.pressed;
+	}
+	new_info.key_captured = old.key_captured;
+	new_info.mouse_captured = old.mouse_captured;
+	for (size_t i = 0; i < old.key_infos.size(); ++i) {
+		auto& n = new_info.key_infos[i];
+		const auto& o = old.key_infos[i];
+
+		n.just_pressed = o.just_pressed;
+		n.just_released = o.just_released;
+		n.pressed = o.pressed;
+	}
+
+	for (size_t i = 0; i < old.mouse_infos.size(); ++i) {
+		auto& n = new_info.mouse_infos[i];
+		const auto& o = old.mouse_infos[i];
+
+		n.just_pressed = o.just_pressed;
+		n.just_released = o.just_released;
+		n.pressed = o.pressed;
+	}
+
+	new_info.mouse_screen_delta = old.mouse_screen_delta;
+	new_info.mouse_screen_pos = old.mouse_screen_pos;
+	new_info.scroll = old.scroll;
+	new_info.window_size = old.window_size;
+	return new_info;
+}
+
 bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 	auto expected = file::read_whole_file(path);
 	if (!expected) return 0;
@@ -393,17 +486,27 @@ bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 
 	std::uint8_t version = bytes[0];
 	switch (version) {
-		case Inputs_Info::Version: {
-			for (size_t i = 1; i < bytes.size();) {
-				Inputs_Info info;
-				for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
-					reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
-				}
-				loaded_record[id].push_back(info);
+	case Inputs_Info_1::Version: {
+		for (size_t i = 1; i < bytes.size();) {
+			Inputs_Info_1 info;
+			for (size_t j = 0; j < sizeof(info); ++j, ++i) {
+				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
 			}
-			return true;
+			loaded_record[id].push_back(::update(info));
 		}
-		default: assert("Logic error");
+		return true;
+	}
+	case Inputs_Info::Version: {
+		for (size_t i = 1; i < bytes.size();) {
+			Inputs_Info info;
+			for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
+				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
+			}
+			loaded_record[id].push_back(info);
+		}
+		return true;
+	}
+	default: assert("Logic error");
 	}
 	return false;
 }
@@ -538,6 +641,26 @@ int IM::get_vkey(Mouse::Button key) noexcept {
 	case Mouse::Button::Left:   return VK_LBUTTON;
 	case Mouse::Button::Right:  return VK_RBUTTON;
 	case Mouse::Button::Middle: return VK_MBUTTON;
+	}
+	assert("Logic error.");
+	return 0;
+}
+
+int IM::get_vkey(Joystick::Button key) noexcept {
+	switch (key) {
+	case Joystick::Button::A:          return XINPUT_GAMEPAD_A;
+	case Joystick::Button::B:          return XINPUT_GAMEPAD_B;
+	case Joystick::Button::X:          return XINPUT_GAMEPAD_X;
+	case Joystick::Button::Y:          return XINPUT_GAMEPAD_Y;
+	case Joystick::Button::BACK:       return XINPUT_GAMEPAD_BACK;
+	case Joystick::Button::DPAD_DOWN:  return XINPUT_GAMEPAD_DPAD_DOWN;
+	case Joystick::Button::DPAD_LEFT:  return XINPUT_GAMEPAD_DPAD_LEFT;
+	case Joystick::Button::DPAD_RIGHT: return XINPUT_GAMEPAD_DPAD_RIGHT;
+	case Joystick::Button::DPAD_UP:    return XINPUT_GAMEPAD_DPAD_UP;
+	case Joystick::Button::LT:         return XINPUT_GAMEPAD_LEFT_THUMB;
+	case Joystick::Button::RT:         return XINPUT_GAMEPAD_RIGHT_THUMB;
+	case Joystick::Button::LB:         return XINPUT_GAMEPAD_LEFT_SHOULDER;
+	case Joystick::Button::RB:         return XINPUT_GAMEPAD_RIGHT_SHOULDER;
 	}
 	assert("Logic error.");
 	return 0;

@@ -84,16 +84,20 @@ struct Player {
 	void clear_all_basic_bindings() noexcept;
 
 private:
+	static constexpr float Slow_Factor{ 0.5f };
 	static constexpr float Drag_Dead_Zone{ 50.f };
 	std::uint64_t dragged_rock{ 0 };
 
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;
 
+	float move_factor{ 1.f };
 	bool dragging{ false };
+	bool moving{ false };
 	Vector2f start_drag_pos;
 	Vector2f start_drag_world_pos;
 	double start_drag_time;
+
 
 
 	void start_drag() noexcept;

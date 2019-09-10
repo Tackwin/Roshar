@@ -596,8 +596,9 @@ is there.",
 		}
 	}
 
+	auto& cam = game->camera;
 	for (const auto& x : game->current_level.moving_blocks) {
-		float pixel = game->camera.area() / (Environment.window_height * Environment.window_width);
+		float pixel = cam.w / Environment.window_width;
 		for (size_t i = 1; i < x.waypoints.size(); ++i)
 			target.push_line(x.waypoints[i - 1], x.waypoints[i], { 1, 1, 1, 0.8 }, pixel);
 
@@ -605,7 +606,6 @@ is there.",
 	}
 
 	if (snap_grid) {
-		auto& cam = game->camera;
 
 		target.late_push_view(cam);
 		defer{ target.late_pop_view(); };
