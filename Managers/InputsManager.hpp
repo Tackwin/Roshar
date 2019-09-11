@@ -211,36 +211,15 @@ public:
 	) noexcept;
 
 	static bool isKeyPressed() noexcept;
-	static bool isKeyPressed(const int &key) {
-		return isKeyPressed(static_cast<Keyboard::Key>(key));
-	};
-	static bool isKeyJustPressed() noexcept;
 	static bool isKeyPressed(const Keyboard::Key &key);
-
-	static bool isKeyJustPressed(const int &key) {
-		return isKeyJustPressed(static_cast<Keyboard::Key>(key));
-	};
-	static bool isKeyJustPressed(const Keyboard::Key &key);
-	
+	static bool isKeyJustPressed() noexcept;
+	static bool isKeyJustPressed(const Keyboard::Key& key);
+	static bool isKeyJustPressed(Joystick::Button key);
 	static bool isKeyJustReleased() noexcept;
-	static bool isKeyJustReleased(const int &key) {
-		return isKeyJustReleased(static_cast<Keyboard::Key>(key));
-	};
 	static bool isKeyJustReleased(const Keyboard::Key &key);
 
-	static bool isMousePressed(const int &button) {
-		return isMousePressed(static_cast<Mouse::Button>(button));
-	};
 	static bool isMousePressed(const Mouse::Button &button);
-
-	static bool isMouseJustPressed(const int &button) {
-		return isMouseJustPressed(static_cast<Mouse::Button>(button));
-	};
 	static bool isMouseJustPressed(const Mouse::Button &button);
-	
-	static bool isMouseJustReleased(const int &button) {
-		return isMouseJustReleased(static_cast<Mouse::Button>(button));
-	};
 	static bool isMouseJustReleased(const Mouse::Button &button);
 
 	static bool isWindowFocused() noexcept;

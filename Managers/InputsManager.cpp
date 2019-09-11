@@ -160,6 +160,14 @@ bool InputsManager::isKeyJustPressed(const Keyboard::Key &key) {
 
 	return !last_record.key_captured && last_record.key_infos[key].just_pressed;
 }
+bool IM::isKeyJustPressed(Joystick::Button key) {
+	if (records.empty()) return false;
+
+	const auto& last_record = records.back();
+
+	return last_record.joystick_buttons_infos[key].just_pressed;
+}
+
 bool InputsManager::isKeyJustReleased(const Keyboard::Key &key) {
 	if (records.empty()) return false;
 
@@ -279,6 +287,9 @@ void InputsManager::update(float dt) {
 
 	new_record.left_trigger = state.Gamepad.bLeftTrigger / 255.f;
 	new_record.right_trigger = state.Gamepad.bRightTrigger / 255.f;
+	new_record.left_trigger *= new_record.left_trigger;
+	new_record.right_trigger *= new_record.right_trigger;
+
 	new_record.left_joystick = {
 		(state.Gamepad.sThumbLX + 0.5f) / Max_Range,
 		(state.Gamepad.sThumbLY + 0.5f) / Max_Range

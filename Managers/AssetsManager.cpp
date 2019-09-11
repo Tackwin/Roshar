@@ -171,8 +171,11 @@ void Store_t::load_known_textures() noexcept {
 		printf("failed :( !\n");\
 	}
 
-	X("textures/rock.png",         Rock           );
-	X("textures/key.png",          Key_Item       );
+	X("textures/basic_binding_indicator_head.png", Basic_Binding_Indicator_Head);
+	X("textures/basic_binding_indicator_body.png", Basic_Binding_Indicator_Body);
+	X("textures/indicator.png",                    Indicator                   );
+	X("textures/rock.png",                         Rock                        );
+	X("textures/key.png",                          Key_Item                    );
 
 #undef X
 }

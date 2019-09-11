@@ -3,9 +3,6 @@
 
 template<typename T>
 struct Rectangle_t {
-	template<typename U = T>
-	static constexpr auto Unit = Rectangle_t<U>(Vector2<T>{(U)0, (U)0}, Vector2<U>{(U)1, (U)1});
-
 	enum class Side {
 		Left = 0,
 		Right,
@@ -49,7 +46,18 @@ struct Rectangle_t {
 	};
 
 	constexpr Rectangle_t() {}
-
+	constexpr Rectangle_t(T x, T y, T w, T h) noexcept : x(x), y(y), w(w), h(h) {
+		if constexpr (!std::is_unsigned_v<T>) {
+			if (this->size.x < 0) {
+				this->pos.x += this->size.x;
+				this->size.x = -this->size.x;
+			}
+			if (this->size.y < 0) {
+				this->pos.y += this->size.y;
+				this->size.y = -this->size.y;
+			}
+		}
+	}
 	constexpr Rectangle_t(const Vector<2, T>& pos, const Vector<2, T>& size) :
 		pos(pos),
 		size(size)

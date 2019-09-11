@@ -35,6 +35,9 @@ namespace asset {
 	struct Known_Textures {
 		inline static Key Key_Item{ 1 };
 		inline static Key Rock{ 2 };
+		inline static Key Basic_Binding_Indicator_Body{ 3 };
+		inline static Key Basic_Binding_Indicator_Head{ 4 };
+		inline static Key Indicator{ 5 };
 	};
 	struct Known_Shaders {
 		inline static Key Default{ 1 };

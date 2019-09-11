@@ -28,7 +28,10 @@ void Game::input() noexcept {
 		}
 	}
 
-	if (in_replay && IM::isKeyJustPressed(Keyboard::Return)) {
+	if (
+		in_replay &&
+		(IM::isKeyJustPressed(Keyboard::Return) || IM::isKeyJustPressed(Joystick::A))
+	) {
 		to_swap_level = load_level(next_level_path);
 		in_replay = false;
 	}
@@ -58,7 +61,7 @@ void Game::input() noexcept {
 		to_swap_level = copy_level;
 		return go_in_test();
 	}
-	if (IM::isKeyJustPressed(Keyboard::Quote)) {
+	if (IM::isKeyJustPressed(Keyboard::Quote) || IM::isKeyJustPressed(Joystick::Y)) {
 		died = true;
 	}
 

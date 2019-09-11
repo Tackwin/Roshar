@@ -9,6 +9,8 @@ in vec3 pos;
 
 uniform vec4 color;
 
+uniform vec4 texture_rect;
+
 uniform sampler2D color_texture;
 uniform bool use_color_texture;
 uniform sampler2D normal_texture;
@@ -16,7 +18,7 @@ uniform bool use_normal_texture;
 
 void main() {
 	vec4 texel = vec4(1);
-	if (use_color_texture) texel = texture(color_texture, texture_coord);
+	if (use_color_texture) texel = texture(color_texture, texture_coord * texture_rect.zw + texture_rect.xy);
 
     g_albedo = vec4(
     	texel.x * color.x,

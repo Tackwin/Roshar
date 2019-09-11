@@ -203,6 +203,9 @@ struct Moving_Block {
 	Rectanglef rec;
 
 	void render(render::Orders& target) const noexcept;
+	void update(float dt) noexcept;
+
+	Vector2f to_move{};
 
 	float t{ 0 };
 	float max_t{ 0 };
@@ -271,6 +274,8 @@ private:
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;
 	Vector2u window_size;
+
+	std::optional<size_t> focused_rock;
 
 	void test_collisions(float dt) noexcept;
 

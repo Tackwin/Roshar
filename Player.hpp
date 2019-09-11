@@ -16,6 +16,7 @@ struct Player {
 	Vector2f forces;
 
 	Vector2f wanted_motion{0, 0};
+	Vector2f wanted_drag{ 0, 0 };
 
 	enum Dir {
 		Right,
@@ -92,14 +93,23 @@ private:
 	Vector2f mouse_world_pos;
 
 	float move_factor{ 1.f };
+	bool want_slow{ false };
 	bool dragging{ false };
 	bool moving{ false };
 	Vector2f start_drag_pos;
 	Vector2f start_drag_world_pos;
 	double start_drag_time;
 
+	double right_joystick_drag;
+	static constexpr float Right_Joystick_Time_To_Zero = { 0.1f };
+	float right_joystick_timer_to_zero{ 0.f };
+	bool started_joystick_drag{ false };
 
+	float drag_indicator_t{ 0.f };
+
+	void render_bindings(render::Orders& orders) const noexcept;
 
 	void start_drag() noexcept;
 	void on_drag() noexcept;
+	void end_drag(double angle) noexcept;
 };

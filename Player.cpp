@@ -8,11 +8,29 @@
 
 void Player::input(Input_Iterator this_record) noexcept {
 	auto prev_motion = wanted_motion;
+	auto prev_drag = wanted_drag;
+	wanted_drag = this_record->right_joystick;
 	wanted_motion = this_record->left_joystick;
 	mouse_screen_pos = this_record->mouse_screen_pos;
 	mouse_world_pos = this_record->mouse_world_pos(game->camera);
 
 	auto angle = wanted_motion.angleX();
+
+	want_slow = this_record->is_pressed(Keyboard::LSHIFT);
+	want_slow |= this_record->left_trigger == 1;
+
+	if (wanted_drag.length() >= 1) {
+		if (!started_joystick_drag) start_drag_time = game->timeshots;
+
+		started_joystick_drag = true;
+		right_joystick_drag = wanted_drag.angleX();
+		right_joystick_timer_to_zero = Right_Joystick_Time_To_Zero;
+	}
+	if (started_joystick_drag && wanted_drag.length() < .1 && right_joystick_timer_to_zero > 0) {
+		started_joystick_drag = false;
+		end_drag(right_joystick_drag);
+		right_joystick_drag = 0;
+	}
 
 	if (prev_motion.length2() > wanted_motion.length2()) {
 		stop_move_sideway();
@@ -26,7 +44,6 @@ void Player::input(Input_Iterator this_record) noexcept {
 		move_sideway(wanted_motion.x > 0 ? Player::Right : Player::Left);
 	}
 	else {
-		move_factor *= this_record->is_pressed(Keyboard::LSHIFT) ? Slow_Factor : 1.f;
 
 		if (this_record->is_pressed(Keyboard::Q)) {
 			if (this_record->is_just_pressed(Keyboard::Q)) start_move_sideway();
@@ -60,7 +77,8 @@ void Player::input(Input_Iterator this_record) noexcept {
 
 	if (
 		this_record->is_just_pressed(Keyboard::Space) ||
-		this_record->is_just_pressed(Joystick::A)
+		this_record->is_just_pressed(Joystick::A) ||
+		this_record->is_just_pressed(Joystick::RB)
 	) {
 		if (floored || coyotee_timer > 0) {
 			jump();
@@ -70,8 +88,12 @@ void Player::input(Input_Iterator this_record) noexcept {
 		}
 	}
 	if (jump_strength_modifier_timer > 0) {
-		if (this_record->is_pressed(Keyboard::Space) ||this_record->is_pressed(Joystick::A))
-			maintain_jump();
+		if (
+			this_record->is_pressed(Keyboard::Space) ||
+			this_record->is_pressed(Joystick::A) ||
+			this_record->is_just_pressed(Joystick::RB)
+		) maintain_jump();
+
 		if (this_record->is_pressed(Keyboard::Z) || std::abs(angle - PI / 2) < PI / 6)
 			directional_up();
 	}
@@ -92,7 +114,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 					this_record->is_pressed(Keyboard::LCTRL) &&
 					this_record->is_just_pressed(Keyboard::Z)
 				) ||
-				this_record->is_just_pressed(Joystick::RB)
+				this_record->is_just_pressed(Joystick::LB)
 			) &&
 			!binding_origin_history.empty() &&
 			!binding_origin_history.back()->empty()
@@ -117,12 +139,16 @@ void Player::update(float dt) noexcept {
 	speed_down_timer -= dt;
 	saturated_touch_last_time -= dt;
 	jump_strength_modifier_timer -= dt;
+	right_joystick_timer_to_zero -= dt;
+	drag_indicator_t += dt * 5;
+	drag_indicator_t = std::fmodf(drag_indicator_t, 1.f);
 
 	if (!moving && last_dir != None && speed_down_timer > 0) {
 		auto slow_down = std::clamp(speed_down_timer / Speed_Down_Time, 0.f, 1.f);
 		if (last_dir == Left) slow_down *= -5;
 		else slow_down *= 5;
 		slow_down *= move_factor;
+		slow_down *= want_slow ? Slow_Factor : 1;
 
 		flat_velocities.push_back({ slow_down, 0 });
 	}
@@ -141,12 +167,41 @@ void Player::update(float dt) noexcept {
 }
 
 void Player::render(render::Orders& target) const noexcept {
+	auto center = pos + size / 2;
+
 	target.push_rectangle(pos, size, { 0, 1, 1, 1 });
 
-	for (auto& binding : own.basic_bindings)
-		target.push_arrow(pos + size / 2, pos + size / 2 + binding, { 1, 0, 1, 1 });
-	for (auto& binding : forced.basic_bindings)
-		target.push_arrow(pos + size / 2, pos + size / 2 + binding, { 1, 0, 1, 1 });
+	render_bindings(target);
+}
+
+void Player::render_bindings(render::Orders& orders) const noexcept {
+	auto center = pos + size / 2;
+	auto body_texture = asset::Known_Textures::Basic_Binding_Indicator_Body;
+	auto head_texture = asset::Known_Textures::Basic_Binding_Indicator_Head;
+
+	Rectanglef sprite_sheet_rect = { .0f, 0.2f * std::roundf(drag_indicator_t / 0.2f), 1.f, .2f };
+
+	auto f = [&](auto a, auto x) {
+		orders.push_sprite(
+			a,
+			{ x.length() * .9f, x.length() * .1f },
+			body_texture,
+			sprite_sheet_rect,
+			{ .0f, .5f },
+			(float)x.angleX()
+		);
+		orders.push_sprite(
+			a + x,
+			{ x.length() * .1f, 0.15f * x.length() },
+			head_texture,
+			sprite_sheet_rect,
+			{ 1.f, .5f },
+			(float)x.angleX()
+		);
+	};
+
+	for (auto& x : own.basic_bindings) f(center, x);
+	for (auto& x : forced.basic_bindings) f(center, x);
 
 	if (dragging) {
 		auto prest_gathered =
@@ -159,12 +214,14 @@ void Player::render(render::Orders& target) const noexcept {
 
 		prest_gathered *= .1f;
 
-		target.push_circle(prest_gathered, mouse_world_pos, { 0, 1, 0, 1 });
-		target.push_arrow(
-			IM::applyInverseView(game->camera, start_drag_pos), mouse_world_pos, { 0, 1, 0, 1 }
+		orders.push_circle(prest_gathered, mouse_world_pos, { 0, 1, 0, 1 });
+		f(
+			IM::applyInverseView(game->camera, start_drag_pos),
+			mouse_world_pos - IM::applyInverseView(game->camera, start_drag_pos)
 		);
 	}
 }
+
 
 void Player::clear_all_basic_bindings() noexcept {
 	own.basic_bindings.clear();
@@ -188,7 +245,7 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 	else if (dir == Left) top_speed *= -5;
 	else assert(false); // Logic error.
 
-	top_speed *= move_factor;
+	top_speed *= move_factor * (want_slow ? Slow_Factor : 1);
 	flat_velocities.push_back({ top_speed, 0 });
 	last_dir = dir;
 	moving = true;
@@ -253,7 +310,11 @@ void Player::on_drag() noexcept {
 		dragging = false;
 	};
 
-	auto discrete_angle = dt.angleX();
+	end_drag(dt.angleX());
+}
+
+void Player::end_drag(double angle) noexcept{
+	auto discrete_angle = angle;
 	auto angle_step = 2 * PI / Environment.drag_angle_step;
 	discrete_angle = angle_step * std::round(discrete_angle / angle_step);
 
@@ -273,3 +334,4 @@ void Player::on_drag() noexcept {
 	if (dragged_rock) return game->current_level.bind_rock(dragged_rock, unit * prest_gathered);
 	add_own_binding(unit * prest_gathered);
 }
+

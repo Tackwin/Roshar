@@ -95,7 +95,7 @@ void Rock::render(render::Orders& target) const noexcept {
 		pos,
 		{ 2 * r, 2 * r },
 		asset::Known_Textures::Rock,
-		Rectanglef::Unit<>,
+		{ 0, 0, 1, 1 },
 		{ .5, .5 },
 		0.f,
 		{1, 1, 1, 1}
@@ -216,7 +216,7 @@ void Projectile::render(render::Orders& target) const noexcept {
 
 void Decor_Sprite::render(render::Orders& target) const noexcept {
 	target.push_sprite(
-		rec, texture_key, Rectanglef::Unit<>, {0, 0}, 0.f, { 1, 1, 1, opacity * 1. }
+		rec, texture_key, { 0, 0, 1, 1 }, { 0, 0 }, 0.f, { 1, 1, 1, opacity * 1. }
 	);
 
 	if (editor_selected) {
@@ -245,7 +245,7 @@ void Key_Item::render(render::Orders& target) const noexcept {
 		pos,
 		Key_World_Size,
 		asset::Known_Textures::Key_Item,
-		Rectanglef::Unit<>,
+		{ 0, 0, 1, 1 },
 		{ 0, 0 },
 		0,
 		color
@@ -287,6 +287,57 @@ void Moving_Block::render(render::Orders& target) const noexcept {
 	target.push_rectangle(rec, color);
 }
 
+void Moving_Block::update(float dt) noexcept {
+	auto compute_point_at_traj = [&] {
+		if (waypoints.size() <= 1) return waypoints[0];
+		if (t == max_t) return waypoints.back();
+
+		float segment{ 0 };
+		float local_t{ t };
+		size_t i = 0;
+		do {
+			local_t -= segment;
+			++i;
+
+			segment = waypoints[i - 1].dist_to(waypoints[i]);
+		} while (local_t > segment);
+
+		return waypoints[i - 1] + local_t * (waypoints[i] - waypoints[i - 1]).normalize();
+	};
+	to_move = {};
+
+	if (waypoints.empty()) return;
+
+	if (reverse) {
+		t -= speed * dt;
+		if (t < 0) {
+			colliding_player = false;
+			if (looping) {
+				t = -t;
+				reverse = false;
+			}
+			else {
+				t += max_t;
+			}
+		}
+	}
+	else {
+		t += speed * dt;
+		if (t > max_t) {
+			colliding_player = false;
+			if (looping) {
+				t = 2 * max_t - t;
+				reverse = true;
+			}
+			else {
+				t -= max_t;
+			}
+		}
+	}
+
+	to_move = compute_point_at_traj() - rec.center();
+}
+
 void Level::render(render::Orders& target) const noexcept {
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
@@ -317,6 +368,16 @@ void Level::render(render::Orders& target) const noexcept {
 	for (const auto& x : debug_vectors) target.push_arrow(x.a, x.a + x.b, { 1, 1, 0, 1 });
 
 	target.push_ambient_light(ambient_color, ambient_intensity);
+
+	if (focused_rock) {
+		target.push_sprite(
+			rocks[*focused_rock].pos,
+			V2F(1.5f),
+			asset::Known_Textures::Indicator,
+			{ 0, 0, 1, 1 },
+			{.5f , .5f}
+		);
+	}
 }
 
 void Level::input(IM::Input_Iterator record) noexcept {
@@ -329,6 +390,43 @@ void Level::input(IM::Input_Iterator record) noexcept {
 		markers.push_back(player.pos);
 
 		if (record->is_pressed(Keyboard::LSHIFT)) markers.clear();
+	}
+
+	auto range = Environment.binding_range * Environment.binding_range;
+	if (record->is_just_pressed(Joystick::DPAD_LEFT) && !rocks.empty()) {
+		if (!focused_rock) focused_rock = 0;
+
+		size_t candidate = 0;
+		for (size_t i = 0; i < rocks.size(); ++i) {
+			if (i == *focused_rock || rocks[i].pos.dist_to2(player.pos) > range) continue;
+
+			auto current_dt = rocks[*focused_rock].pos.y - rocks[i].pos.y;
+			auto candidate_dt = rocks[*focused_rock].pos.y - rocks[candidate].pos.y;
+
+			if (current_dt > candidate_dt) {
+				candidate = i;
+			}
+		}
+
+		focused_rock = candidate;
+	}
+	if (record->is_just_pressed(Joystick::DPAD_RIGHT) && !rocks.empty()) {
+		if (!focused_rock) focused_rock = 0;
+
+		size_t candidate = 0;
+		for (size_t i = 0; i < rocks.size(); ++i) {
+			if (i == *focused_rock || rocks[i].pos.dist_to2(player.pos) > range) continue;
+
+
+			auto current_dt = rocks[*focused_rock].pos.y - rocks[i].pos.y;
+			auto candidate_dt = rocks[*focused_rock].pos.y - rocks[candidate].pos.y;
+
+			if (current_dt < candidate_dt) {
+				candidate = i;
+			}
+		}
+
+		focused_rock = candidate;
 	}
 }
 
@@ -405,63 +503,18 @@ void Level::update(float dt) noexcept {
 	};
 
 
-	constexpr auto compute_point_at_traj = [](const Moving_Block& x) noexcept {
-		if (x.waypoints.size() <= 1) return x.waypoints[0];
-		if (x.t == x.max_t) return x.waypoints.back();
-
-		float segment{ 0 };
-		float t{ x.t };
-		size_t i = 0;
-		do {
-			t -= segment;
-			++i;
-
-			segment = x.waypoints[i - 1].dist_to(x.waypoints[i]);
-		} while (t > segment);
-
-		return x.waypoints[i - 1] + t * (x.waypoints[i] - x.waypoints[i - 1]).normalize();
-	};
-
 	for (auto& x : moving_blocks) {
-		if (x.waypoints.empty()) return;
+		x.update(dt);
+		x.rec.pos += x.to_move;
 
-		if (x.reverse) {
-			x.t -= x.speed * dt;
-			if (x.t < 0) {
-				x.colliding_player = false;
-				if (x.looping) {
-					x.t = -x.t;
-					x.reverse = false;
-				}
-				else {
-					x.t += x.max_t;
-				}
-			}
-		}
-		else {
-			x.t += x.speed * dt;
-			if (x.t > x.max_t) {
-				x.colliding_player = false;
-				if (x.looping) {
-					x.t = 2 * x.max_t - x.t;
-					x.reverse = true;
-				}
-				else {
-					x.t -= x.max_t;
-				}
-			}
-		}
-		auto previous = x.rec.center();
-		x.rec.setCenter(compute_point_at_traj(x));
+		if (test(player, x.rec)) x.colliding_player = true;
+		if (x.colliding_player) player.pos += x.to_move;
+	}
 
-		if (test(player, x.rec)) {
-			x.colliding_player = true;
-		}
+	if (focused_rock) {
+		auto range = Environment.binding_range * Environment.binding_range;
 
-		if (x.colliding_player) {
-			auto dt_vec = x.rec.center() - previous;
-			player.pos += dt_vec;
-		}
+		if (player.pos.dist_to2(rocks[*focused_rock].pos) > range) focused_rock.reset();
 	}
 
 	update_player(dt);
