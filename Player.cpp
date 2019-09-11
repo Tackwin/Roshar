@@ -91,7 +91,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 		if (
 			this_record->is_pressed(Keyboard::Space) ||
 			this_record->is_pressed(Joystick::A) ||
-			this_record->is_just_pressed(Joystick::RB)
+			this_record->is_pressed(Joystick::RB)
 		) maintain_jump();
 
 		if (this_record->is_pressed(Keyboard::Z) || std::abs(angle - PI / 2) < PI / 6)

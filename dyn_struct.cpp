@@ -183,7 +183,10 @@ std::string format(const dyn_struct& s, std::string_view indent) noexcept {
 			}
 			else if constexpr (std::is_same_v<type, dyn_struct::string_t>) {
 				result = '"';
-				result += v;
+				for (const auto& c : v) {
+					if (c == '\\') result += c;
+					result += c;
+				}
 				result += '"';
 			}
 			else if constexpr (std::is_same_v<type, dyn_struct::array_t>) {
@@ -212,7 +215,7 @@ std::string format(const dyn_struct& s, std::string_view indent) noexcept {
 					result += indent;
 					result += key;
 					result += ": ";
-               
+
 					std::string to_indent = format(*value, indent);
 					for (size_t i = 0; i < to_indent.size(); ++i) {
 						if (to_indent[i] != '\n') continue;
@@ -220,9 +223,9 @@ std::string format(const dyn_struct& s, std::string_view indent) noexcept {
 							std::begin(to_indent) + i + 1, std::begin(indent), std::end(indent)
 						);
 					}
-               
+
 					result += std::move(to_indent);
-               
+
 					result += "\n";
 				}
 
@@ -243,82 +246,82 @@ constexpr auto __value__ = "__value__";
 
 std::string format_to_json(const dyn_struct& s, std::string_view indent) noexcept {
 	std::string result;
-    
+
 	std::visit([&](auto& v) noexcept {
-               using type = std::decay_t<decltype(v)>;
-               
-               if constexpr (std::is_same_v<type, dyn_struct::integer_t>) {
-               result = std::to_string(v);
-               }
-               else if constexpr (std::is_same_v<type, dyn_struct::real_t>) {
-               result = std::to_string(v);
-               }
-               else if constexpr (std::is_same_v<type, dyn_struct::boolean_t>) {
-               result = v ? "true" : "false";
-               }
-               else if constexpr (std::is_same_v<type, dyn_struct::string_t>) {
-               result = '"';
-               result += v;
-               result += '"';
-               }
-               else if constexpr (std::is_same_v<type, dyn_struct::array_t>) {
-               result += '[';
-               for (size_t i = 0; i < v.size(); ++i) {
-               result += ' ';
-               result += format_to_json(*v[i], indent);
-               result += ',';
-               }
-               
-               // We replace the trailling comma by a space
-               // [ 0, 1, ..., x,] => [ 0, 1, ..., x ].
-               if (!v.empty()) {
-               result.back() = ' ';
-               }
-               result += ']';
-               }
-               else if constexpr (std::is_same_v<type, dyn_struct::structure_t>) {
-               if (v.empty()) {
-               result = "{}";
-               return;
-               }
-               
-               result += "{";
-               for (auto&[key, value] : v) {
-               result += "";
-               result += indent;
-               result += '"';
-               result += key;
-               result += '"';
-               result += ": ";
-               
-               std::string to_indent = format_to_json(*value, indent);
-               for (size_t i = 0; i < to_indent.size(); ++i) {
-               if (to_indent[i] != '\n') continue;
-               to_indent.insert(
+		using type = std::decay_t<decltype(v)>;
+
+		if constexpr (std::is_same_v<type, dyn_struct::integer_t>) {
+			result = std::to_string(v);
+		}
+		else if constexpr (std::is_same_v<type, dyn_struct::real_t>) {
+			result = std::to_string(v);
+		}
+		else if constexpr (std::is_same_v<type, dyn_struct::boolean_t>) {
+			result = v ? "true" : "false";
+		}
+		else if constexpr (std::is_same_v<type, dyn_struct::string_t>) {
+			result = '"';
+			for (const auto& c : v) {
+				if (c == '\\') result += c;
+				result += c;
+			}
+			result += '"';
+		}
+		else if constexpr (std::is_same_v<type, dyn_struct::array_t>) {
+			result += '[';
+			for (size_t i = 0; i < v.size(); ++i) {
+				result += ' ';
+				result += format_to_json(*v[i], indent);
+				result += ',';
+			}
+			// We replace the trailling comma by a space
+			// [ 0, 1, ..., x,] => [ 0, 1, ..., x ].
+			if (!v.empty()) {
+				result.back() = ' ';
+			}
+			result += ']';
+		}
+		else if constexpr (std::is_same_v<type, dyn_struct::structure_t>) {
+			if (v.empty()) {
+				result = "{}";
+				return;
+			}
+
+			result += "{";
+			for (auto&[key, value] : v) {
+				result += "";
+				result += indent;
+				result += '"';
+				result += key;
+				result += '"';
+				result += ": ";
+
+				std::string to_indent = format_to_json(*value, indent);
+				for (size_t i = 0; i < to_indent.size(); ++i) {
+					if (to_indent[i] != '\n') continue;
+					to_indent.insert(
 						std::begin(to_indent) + i + 1, std::begin(indent), std::end(indent)
-                        );
-               }
-               
-               result += std::move(to_indent);
-               result += ',';
-               }
-               result.pop_back();
-               result += "}";
-               
-               }
-               else {
-               std::abort();
-               }
-               
-               }, s.value);
-    
+					);
+				}
+			result += std::move(to_indent);
+			result += ',';
+			}
+			result.pop_back();
+			result += "}";
+
+		}
+		else {
+			std::abort();
+		}
+	}, s.value);
+
 	if (s.type_tag != "dyn_struct"_id) {
 		dyn_struct copy = s;
 		copy.type_tag = "dyn_struct"_id;
 		return format_to_json({
-                              {__type_tag__, s.type_tag},
-                              {__value__, copy}
-                              }, indent);
+			{__type_tag__, s.type_tag},
+			{__value__, copy}
+		}, indent);
 	}
 	return result;
 }
@@ -357,7 +360,7 @@ std::optional<dyn_struct> load_from_json_file(const std::filesystem::path& file)
 		size_t size{ 0 };
 		size_t idx{ 0 };
 	};
-    
+
 	auto is_whitespace = [](char c) {
 		return
 			c == '\x0009' ||
@@ -413,16 +416,16 @@ std::optional<dyn_struct> load_from_json_file(const std::filesystem::path& file)
 			}
 			new_token.size = idx - new_token.idx;
 			return { new_token, idx + 1 };
-            case '-': case '0': case '1': case '2': case '3': case '4': case '5': case '6':
-            case '7': case '8': case '9':
+			case '-': case '0': case '1': case '2': case '3': case '4': case '5': case '6':
+			case '7': case '8': case '9':
 			new_token.type = token_type::NUMBER;
 			new_token.idx = idx;
-            
+
 			while (idx + 1 < str.size() && is_part_of_number(str[idx])) idx++;
-            
+
 			new_token.size = idx - new_token.idx;
 			return { new_token, idx };
-            case 'f': case 't': case 'n':
+			case 'f': case 't': case 'n':
 			if (idx + 4 < str.size() && memcmp("true", &str[idx], 4) == 0)
 				return { {token_type::TRUE, 4, idx }, idx + 4 };
 			if (idx + 4 < str.size() && memcmp("null", &str[idx], 4) == 0)
@@ -430,7 +433,7 @@ std::optional<dyn_struct> load_from_json_file(const std::filesystem::path& file)
 			if (idx + 5 < str.size() && memcmp("false", &str[idx], 5) == 0)
 				return { {token_type::FALSE, 5, idx }, idx + 5 };
 			return { { token_type::UNKNOWN }, idx + 1 };
-            default:
+			default:
 			return { { token_type::UNKNOWN }, idx + 1 };
 		}
 	};
