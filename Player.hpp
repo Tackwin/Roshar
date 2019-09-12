@@ -63,6 +63,9 @@ struct Player {
 	static constexpr float Speed_Down_Time = 0.1f;
 	float speed_down_timer = 0;
 
+	static constexpr float Controller_Binding_Candidate_Timer = 0.05f;
+	float controller_binding_candidate_time = 0.f;
+
 	Dir last_dir{ None };
 
 
@@ -101,9 +104,14 @@ private:
 	double start_drag_time;
 
 	double right_joystick_drag;
-	static constexpr float Right_Joystick_Time_To_Zero = { 0.1f };
-	float right_joystick_timer_to_zero{ 0.f };
+	double controller_drag_candidate;
 	bool started_joystick_drag{ false };
+
+	static constexpr float Right_Joystick_Time_To_Zero = { 0.05f };
+	float right_joystick_timer_to_zero{ 0.f };
+
+	static constexpr float Controller_Clear_Time = { 0.2f };
+	float controller_clear_timer{ 0.f };
 
 	float drag_indicator_t{ 0.f };
 

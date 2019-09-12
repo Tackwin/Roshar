@@ -119,7 +119,7 @@ void Editor::render(render::Orders& target) noexcept {
 		decor.texture_key = *key;
 		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
-		decor.rec.pos = game->camera.center();
+		decor.rec.pos = game->current_level.camera.center();
 		decor.rec.size = {
 			(float)texture.albedo.get_size().x, (float)texture.albedo.get_size().y
 		};
@@ -596,7 +596,7 @@ is there.",
 		}
 	}
 
-	auto& cam = game->camera;
+	auto& cam = game->current_level.camera;
 	for (const auto& x : game->current_level.moving_blocks) {
 		float pixel = cam.w / Environment.window_width;
 		for (size_t i = 1; i < x.waypoints.size(); ++i)
@@ -651,7 +651,8 @@ void Editor::update(float dt) noexcept {
 
 	if (shift) scale /= 10;
 
-	if (!edit_texture) game->camera = game->camera.zoom(math::scale_zoom(-scale + 1));
+	if (!edit_texture)
+		game->current_level.camera = game->current_level.camera.zoom(math::scale_zoom(-scale + 1));
 	else for (auto& b : game->current_level.decor_sprites) {
 		if (b.editor_selected) {
 			auto center = b.rec.pos + b.rec.size / 2;
@@ -734,7 +735,7 @@ void Editor::update(float dt) noexcept {
 	}
 
 	if (IM::isMousePressed(Mouse::Middle) && !IM::isMouseJustPressed(Mouse::Middle)) {
-		game->camera.pos += -1 * IM::getMouseDeltaInView(game->camera);
+		game->current_level.camera.pos += -1 * IM::getMouseDeltaInView(game->current_level.camera);
 	}
 	if (IM::isMouseJustPressed(Mouse::Left)) {
 		if (placing_player) {
@@ -794,7 +795,7 @@ void Editor::update(float dt) noexcept {
 }
 
 Vector2f Editor::get_mouse_pos() const noexcept {
-	auto pos = IM::getMousePosInView(game->camera);
+	auto pos = IM::getMousePosInView(game->current_level.camera);
 	if (snap_grid == 0) return pos;
 
 	return snap_grid * (Vector2i)(pos / snap_grid);
@@ -916,7 +917,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 }
 
 void Editor::set_camera_bound() noexcept {
-	game->current_level.camera_bound = game->camera;
+	game->current_level.camera_bound = game->current_level.camera;
 }
 
 void Editor::delete_all_selected() noexcept {

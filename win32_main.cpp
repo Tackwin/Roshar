@@ -236,6 +236,7 @@ int WINAPI WinMain(
 		ImGui::InputFloat("Gravity", &Environment.gravity);
 		ImGui::InputFloat("Dead velocity", &Environment.dead_velocity);
 		ImGui::InputFloat("Speed up", &Environment.speed_up_step);
+		ImGui::Checkbox("Debug Input", &Environment.debug_input);
 		int x = (int)Environment.debug_framebuffer;
 		ImGui::ListBox(
 			"Debug Framebuffer",

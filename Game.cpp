@@ -17,7 +17,7 @@ void Game::input() noexcept {
 
 	this_record = IM::get_iterator();
 	if (!IM::isWindowFocused()) return;
-	
+
 	if (IM::isKeyJustPressed(Keyboard::E)) {
 		in_editor = !in_editor;
 		if (!in_editor) {
@@ -110,15 +110,12 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 		start_record = IM::get_iterator();
 		timeshots = 0;
 
-		camera = current_level.camera_start;
 		editor.save_path = current_level.save_path.string();
 
 		if (in_full_test) return go_in_test();
 	}
 
 	if (!in_editor) {
-		update_camera(dt);
-
 		if (camera_fade_out_timer > 0.f) {
 			camera_fade_out_timer -= dt;
 			if (camera_fade_out_timer > 0.f) return;
@@ -169,26 +166,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 }
 
-void Game::update_camera(float dt) noexcept {
-	auto camera_target = current_level.player.pos;
-	auto camera_center = camera.center();
-	auto dist = (camera_target - camera_center).length();
-
-	if (dist > camera_idle_radius) {
-		Vector2f dt_pos = camera_target - camera_center;
-		Vector2f to_move =
-			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
-		camera.pos += to_move;
-	}
-
-	if (current_level.camera_bound.area() > 0)
-		camera = camera.restrict_in(current_level.camera_bound);
-
-}
-
 void Game::render(render::Orders& target) noexcept {
-	target.push_view(camera);
-
 	current_level.render(target);
 	if (in_editor) editor.render(target);
 
@@ -199,6 +177,9 @@ void Game::render(render::Orders& target) noexcept {
 
 	target.late_push_view(ui_view);
 	defer{ target.late_pop_view(); };
+
+
+	if (Environment.debug_input) render_debug_controller(target, this_record);
 
 	Vector4d color = { 0, 0, 0, 0 };
 	if (camera_fade_out_timer > 0) {
@@ -218,6 +199,67 @@ void Game::render(render::Orders& target) noexcept {
 		{ (float)Environment.window_width, (float)Environment.window_height },
 		color
 	);
+}
+
+void Game::render_debug_controller(render::Orders& orders, IM::Input_Iterator it) noexcept {
+	Vector4d white = { 1, 1, 1, 1 };
+	Vector4d black = { 0, 0, 0, 1 };
+	Vector4d blue = { 0, 0, 1, 1 };
+	Vector4d red = { 1, 0, 0, 1 };
+	Vector4d green = { 0, 1, 0, 1 };
+	Vector4d yellow = { 1, 1, 0, 1 };
+	Vector4d pink = { 1, 0, 1, 1 };
+
+	orders.late_push_rectangle({ 100, 200 }, { 100, 100 }, { 1, 1, 1, 1 });
+	orders.late_push_rectangle({ 102.5f, 202.5f }, { 95, 95 }, { 0, 0, 0, 1 });
+	orders.late_push_circle(
+		5,
+		Vector2f{ 150, 250 } + it->left_joystick * 50,
+		it->is_pressed(Joystick::LT) ? white : pink
+	);
+	orders.late_push_rectangle({ 300, 100 }, { 100, 100 }, { 1, 1, 1, 1 });
+	orders.late_push_rectangle({ 302.5f, 102.5f }, { 95, 95 }, { 0, 0, 0, 1 });
+	orders.late_push_circle(
+		5,
+		Vector2f{ 350, 150 } + it->right_joystick * 50,
+		it->is_pressed(Joystick::RT) ? white : pink
+	);
+
+	orders.late_push_circle(5, { 240, 250 }, it->is_pressed(Joystick::BACK) ? white : black);
+	orders.late_push_circle(5, { 260, 250 }, it->is_pressed(Joystick::START) ? white : black);
+
+	orders.late_push_circle(10, { 350, 275 }, it->is_pressed(Joystick::Y) ? yellow : black);
+	orders.late_push_circle(10, { 325, 250 }, it->is_pressed(Joystick::X) ? blue : black);
+	orders.late_push_circle(10, { 350, 225 }, it->is_pressed(Joystick::A) ? green : black);
+	orders.late_push_circle(10, { 375, 250 }, it->is_pressed(Joystick::B) ? red : black);
+
+	orders.late_push_rectangle(
+		{ 145, 160 }, { 10, 30 }, it->is_pressed(Joystick::DPAD_UP) ? white : black
+	);
+	orders.late_push_rectangle(
+		{ 110, 145 }, { 30, 10 }, it->is_pressed(Joystick::DPAD_LEFT) ? white : black
+	);
+	orders.late_push_rectangle(
+		{ 145, 110 }, { 10, 30 }, it->is_pressed(Joystick::DPAD_DOWN) ? white : black
+	);
+	orders.late_push_rectangle(
+		{ 160, 145 }, { 30, 10 }, it->is_pressed(Joystick::DPAD_RIGHT) ? white : black
+	);
+
+	orders.late_push_rectangle(
+		{ 120, 310 }, { 60, 20 }, it->is_pressed(Joystick::LB) ? white : black
+	);
+	orders.late_push_rectangle(
+		{ 320, 310 }, { 60, 20 }, it->is_pressed(Joystick::RB) ? white : black
+	);
+
+	auto amount = (double)this_record->left_trigger;
+	Vector4d color = { amount, amount, amount, 1 };
+	orders.late_push_circle(10, { 150, 350 }, color);
+
+	amount = (double)this_record->right_trigger;
+	color = { amount, amount, amount, 1 };
+	orders.late_push_circle(10, { 350, 350 }, color);
 }
 
 void Game::go_in_replay() noexcept {

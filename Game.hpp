@@ -38,9 +38,6 @@ struct Game {
 	float camera_fade_in_timer = 0;
 
 
-	float camera_speed{ 10 };
-	float camera_idle_radius{ 0.3f };
-	Rectanglef camera{ {0, 0}, {128, 72} };
 	Rectanglef ui_view{ {0, 0}, {1280, 720 } };
 
 	double timeshots{ 0 };
@@ -53,9 +50,9 @@ private:
 	std::uint64_t fixed_point_timeshot{ 0 };
 	std::uint64_t to_carry_over{ 0 };
 
-	void update_step(std::uint64_t dt) noexcept;
+	void render_debug_controller(render::Orders& orders, IM::Input_Iterator it) noexcept;
 
-	void update_camera(float dt) noexcept;
+	void update_step(std::uint64_t dt) noexcept;
 
 	void go_in_test() noexcept;
 	void go_in_replay() noexcept;

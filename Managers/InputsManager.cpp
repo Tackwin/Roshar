@@ -304,14 +304,13 @@ void InputsManager::update(float dt) {
 	if (length < dead_range) {
 		new_record.left_joystick = {};
 	}
-	new_record.left_joystick.applyCW([](auto x) { return std::powf(x, 3); });
-
+	new_record.left_joystick.applyCW([](auto x) { return std::powf(x, 1); });
 
 	length = new_record.right_joystick.length();
 	if (length < dead_range) {
 		new_record.right_joystick = {};
 	}
-	new_record.right_joystick.applyCW([](auto x) { return std::powf(x, 3); });
+	new_record.right_joystick.applyCW([](auto x) { return std::powf(x, 1); });
 
 	for (size_t i = 0; i < Joystick::Count; ++i) {
 		auto pressed = (bool)(state.Gamepad.wButtons & get_vkey((Joystick::Button)i));
@@ -664,6 +663,7 @@ int IM::get_vkey(Joystick::Button key) noexcept {
 	case Joystick::Button::X:          return XINPUT_GAMEPAD_X;
 	case Joystick::Button::Y:          return XINPUT_GAMEPAD_Y;
 	case Joystick::Button::BACK:       return XINPUT_GAMEPAD_BACK;
+	case Joystick::Button::START:      return XINPUT_GAMEPAD_START;
 	case Joystick::Button::DPAD_DOWN:  return XINPUT_GAMEPAD_DPAD_DOWN;
 	case Joystick::Button::DPAD_LEFT:  return XINPUT_GAMEPAD_DPAD_LEFT;
 	case Joystick::Button::DPAD_RIGHT: return XINPUT_GAMEPAD_DPAD_RIGHT;

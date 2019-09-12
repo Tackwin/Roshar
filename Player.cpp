@@ -12,7 +12,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 	wanted_drag = this_record->right_joystick;
 	wanted_motion = this_record->left_joystick;
 	mouse_screen_pos = this_record->mouse_screen_pos;
-	mouse_world_pos = this_record->mouse_world_pos(game->camera);
+	mouse_world_pos = this_record->mouse_world_pos(game->current_level.camera);
 
 	auto angle = wanted_motion.angleX();
 
@@ -20,13 +20,27 @@ void Player::input(Input_Iterator this_record) noexcept {
 	want_slow |= this_record->left_trigger == 1;
 
 	if (wanted_drag.length() >= 1) {
-		if (!started_joystick_drag) start_drag_time = game->timeshots;
+		auto candidate = wanted_drag.angleX();
 
-		started_joystick_drag = true;
-		right_joystick_drag = wanted_drag.angleX();
-		right_joystick_timer_to_zero = Right_Joystick_Time_To_Zero;
+		// The first time the player go a direction we register that correctly.
+		if (!started_joystick_drag) {
+			start_drag_time = game->timeshots;
+			started_joystick_drag = true;
+		}
+
+		// When the player didn't let go but changed orientation we wait a little time
+		// to be sure he actually wanted to change.
+		if (candidate != right_joystick_drag && candidate != controller_drag_candidate) {
+			controller_drag_candidate = candidate;
+			controller_binding_candidate_time = Controller_Binding_Candidate_Timer;
+		}
+		else if (controller_binding_candidate_time < 0.f) {
+			right_joystick_drag = controller_drag_candidate;
+			right_joystick_timer_to_zero = Right_Joystick_Time_To_Zero;
+		}
+
 	}
-	if (started_joystick_drag && wanted_drag.length() < .1 && right_joystick_timer_to_zero > 0) {
+	if (started_joystick_drag && wanted_drag.length() < 1 && right_joystick_timer_to_zero > 0) {
 		started_joystick_drag = false;
 		end_drag(right_joystick_drag);
 		right_joystick_drag = 0;
@@ -44,7 +58,6 @@ void Player::input(Input_Iterator this_record) noexcept {
 		move_sideway(wanted_motion.x > 0 ? Player::Right : Player::Left);
 	}
 	else {
-
 		if (this_record->is_pressed(Keyboard::Q)) {
 			if (this_record->is_just_pressed(Keyboard::Q)) start_move_sideway();
 			move_sideway(Player::Left);
@@ -62,7 +75,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 	}
 
 
-	if (this_record->is_pressed(Keyboard::S) || std::abs(angle + PI / 2) < PI / 6) {
+	if (this_record->is_pressed(Keyboard::S) || wanted_motion.y <= -.5) {
 		fall_back();
 	}
 	else {
@@ -94,12 +107,16 @@ void Player::input(Input_Iterator this_record) noexcept {
 			this_record->is_pressed(Joystick::RB)
 		) maintain_jump();
 
-		if (this_record->is_pressed(Keyboard::Z) || std::abs(angle - PI / 2) < PI / 6)
+		if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5)
 			directional_up();
+	}
+
+	if (this_record->is_just_pressed(Joystick::B)) {
+		controller_clear_timer = Controller_Clear_Time;
 	}
 	if (
 		this_record->is_just_pressed(Mouse::Right) ||
-		this_record->is_just_pressed(Joystick::B)
+		(this_record->is_pressed(Joystick::B) && controller_clear_timer < .0f)
 	) {
 		own.basic_bindings.clear();
 		for (size_t i = binding_origin_history.size() - 1; i + 1 > 0; --i) {
@@ -108,17 +125,13 @@ void Player::input(Input_Iterator this_record) noexcept {
 			}
 		}
 	}
-		if (
-			(
-				(
-					this_record->is_pressed(Keyboard::LCTRL) &&
-					this_record->is_just_pressed(Keyboard::Z)
-				) ||
-				this_record->is_just_pressed(Joystick::LB)
-			) &&
-			!binding_origin_history.empty() &&
-			!binding_origin_history.back()->empty()
-		) {
+	auto keyboard_cancel =
+		this_record->is_pressed(Keyboard::LCTRL) && this_record->is_just_pressed(Keyboard::Z);
+	auto controller_cancel = this_record->is_just_pressed(Joystick::B);
+	auto back_not_empty =
+		!binding_origin_history.empty() && !binding_origin_history.back()->empty();
+
+	if ((keyboard_cancel || controller_cancel) && back_not_empty) {
 		binding_origin_history.back()->pop_back();
 		binding_origin_history.pop_back();
 
@@ -137,9 +150,12 @@ void Player::update(float dt) noexcept {
 	preshot_timer -= dt;
 	speed_up_timer -= dt;
 	speed_down_timer -= dt;
+	controller_clear_timer -= dt;
 	saturated_touch_last_time -= dt;
 	jump_strength_modifier_timer -= dt;
 	right_joystick_timer_to_zero -= dt;
+	controller_binding_candidate_time -= dt;
+
 	drag_indicator_t += dt * 5;
 	drag_indicator_t = std::fmodf(drag_indicator_t, 1.f);
 
@@ -216,8 +232,8 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 
 		orders.push_circle(prest_gathered, mouse_world_pos, { 0, 1, 0, 1 });
 		f(
-			IM::applyInverseView(game->camera, start_drag_pos),
-			mouse_world_pos - IM::applyInverseView(game->camera, start_drag_pos)
+			IM::applyInverseView(game->current_level.camera, start_drag_pos),
+			mouse_world_pos - IM::applyInverseView(game->current_level.camera, start_drag_pos)
 		);
 	}
 }

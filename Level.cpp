@@ -339,6 +339,8 @@ void Moving_Block::update(float dt) noexcept {
 }
 
 void Level::render(render::Orders& target) const noexcept {
+	target.push_view(camera);
+
 	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
 
 	renders(friction_zones);
@@ -382,7 +384,7 @@ void Level::render(render::Orders& target) const noexcept {
 
 void Level::input(IM::Input_Iterator record) noexcept {
 	mouse_screen_pos = record->mouse_screen_pos;
-	mouse_world_pos = record->mouse_world_pos(game->camera);
+	mouse_world_pos = record->mouse_world_pos(camera);
 	window_size = record->window_size;
 
 	player.input(record);
@@ -431,6 +433,8 @@ void Level::input(IM::Input_Iterator record) noexcept {
 }
 
 void Level::update(float dt) noexcept {
+	update_camera(dt);
+
 	for (size_t i = 0; i < decor_sprites.size(); ++i) {
 		auto& x = decor_sprites[i];
 		if (!x.texture_loaded) {
@@ -709,6 +713,23 @@ void Level::update_player(float dt) noexcept {
 	}
 }
 
+
+void Level::update_camera(float dt) noexcept {
+	auto camera_target = player.pos;
+	auto camera_center = camera.center();
+	auto dist = (camera_target - camera_center).length();
+
+	if (dist > camera_idle_radius) {
+		Vector2f dt_pos = camera_target - camera_center;
+		Vector2f to_move =
+			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
+		camera.pos += to_move;
+	}
+
+	if (camera_bound.area() > 0) camera = camera.restrict_in(camera_bound);
+
+}
+
 void Level::pause() noexcept {}
 void Level::resume() noexcept {
 	auto iter = [](auto& x) noexcept { for (auto& y : x) y.editor_selected = false; };
@@ -908,6 +929,8 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	else {
 		level.camera_start = (Rectanglef)str["camera"];
 	}
+
+	level.camera = level.camera_start;
 }
 void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};
@@ -928,7 +951,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["camera_bound"]       = level.camera_bound;
 	str["torches"]            = level.torches;
 	str["moving_blocks"]      = level.moving_blocks;
-    
+
 	auto& player = str["player"] = dyn_struct::structure_t{};
     
 	player["prest"] = level.player.prest;
@@ -939,7 +962,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 		{"intensity", level.ambient_intensity}
 	};
 
-	str["camera"] = game->camera;
+	str["camera"] = level.camera;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {
 	x.pos = (Vector2f)str["pos"];

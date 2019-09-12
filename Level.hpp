@@ -245,6 +245,9 @@ struct Level {
 
 	Player player;
 
+	float camera_speed{ 10 };
+	float camera_idle_radius{ 0.3f };
+	Rectanglef camera{ {0, 0}, {128, 72} };
 	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
 	Rectanglef camera_start;
 
@@ -256,6 +259,8 @@ struct Level {
 	void input(IM::Input_Iterator record) noexcept;
 	void update(float dt) noexcept;
 	void render(render::Orders& target) const noexcept;
+
+	void update_camera(float dt) noexcept;
 
 	void pause() noexcept;
 	void resume() noexcept;

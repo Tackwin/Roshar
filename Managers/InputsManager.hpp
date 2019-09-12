@@ -46,14 +46,14 @@ struct Keyboard {
 		Num8,         ///< The 8 key
 		Num9,         ///< The 9 key
 		Escape,       ///< The Escape key
-		LCTRL,     ///< The left Control key
+		LCTRL,        ///< The left Control key
 		LSHIFT,       ///< The left Shift key
 		LALT,         ///< The left Alt key
-		LSYS,      ///< The left OS specific key: window (Windows), apple (MacOS X), ...
-		RCTRL,     ///< The right Control key
+		LSYS,         ///< The left OS specific key: window (Windows), apple (MacOS X), ...
+		RCTRL,        ///< The right Control key
 		RSHIFT,       ///< The right Shift key
 		RALT,         ///< The right Alt key
-		RSYS,      ///< The right OS specific key: window (Windows), apple (MacOS X), ...
+		RSYS,         ///< The right OS specific key: window (Windows), apple (MacOS X), ...
 		Menu,         ///< The Menu key
 		LBracket,     ///< The [ key
 		RBracket,     ///< The ] key
@@ -67,7 +67,7 @@ struct Keyboard {
 		Equal,        ///< The = key
 		Hyphen,       ///< The - key (hyphen)
 		Space,        ///< The Space key
-		Return,        ///< The Enter/Return keys
+		Return,       ///< The Enter/Return keys
 		Backspace,    ///< The Backspace key
 		Tab,          ///< The Tabulation key
 		PageUp,       ///< The Page up key
@@ -75,7 +75,7 @@ struct Keyboard {
 		End,          ///< The End key
 		Home,         ///< The Home key
 		Insert,       ///< The Insert key
-		DEL,       ///< The Delete key
+		DEL,          ///< The Delete key
 		Add,          ///< The + key
 		Subtract,     ///< The - key (minus, usually from numpad)
 		Multiply,     ///< The * key
