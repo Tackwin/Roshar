@@ -395,40 +395,28 @@ void Level::input(IM::Input_Iterator record) noexcept {
 	}
 
 	auto range = Environment.binding_range * Environment.binding_range;
-	if (record->is_just_pressed(Joystick::DPAD_LEFT) && !rocks.empty()) {
-		if (!focused_rock) focused_rock = 0;
+	if (record->is_just_pressed(Joystick::LB) && !rocks.empty()) {
+		auto sorted_rocks = rocks;
+		sorted_rocks.erase(std::remove_if(BEG_END(sorted_rocks), [&](Rock& x) {
+			return (x.pos - player.pos).length2() > range;
+		}), END(sorted_rocks));
+		std::sort(BEG_END(sorted_rocks), [&](const Rock& a, const Rock& b) {
+			return (a.pos - player.pos).length() < (b.pos - player.pos).length();
+		});
 
-		size_t candidate = 0;
-		for (size_t i = 0; i < rocks.size(); ++i) {
-			if (i == *focused_rock || rocks[i].pos.dist_to2(player.pos) > range) continue;
-
-			auto current_dt = rocks[*focused_rock].pos.y - rocks[i].pos.y;
-			auto candidate_dt = rocks[*focused_rock].pos.y - rocks[candidate].pos.y;
-
-			if (current_dt > candidate_dt) {
-				candidate = i;
+		if (!sorted_rocks.empty() && !focused_rock) {
+			focused_rock =
+				std::distance(BEG(rocks), std::find(BEG_END(rocks), *BEG(sorted_rocks)));
+		}
+		else if (!sorted_rocks.empty()) {
+			auto it = std::find(BEG_END(sorted_rocks), rocks[*focused_rock]);
+			if (it == sorted_rocks.end() - 1) {
+				focused_rock.reset();
+			}
+			else {
+				focused_rock = std::distance(BEG(rocks), std::find(BEG_END(rocks), *(it + 1)));
 			}
 		}
-
-		focused_rock = candidate;
-	}
-	if (record->is_just_pressed(Joystick::DPAD_RIGHT) && !rocks.empty()) {
-		if (!focused_rock) focused_rock = 0;
-
-		size_t candidate = 0;
-		for (size_t i = 0; i < rocks.size(); ++i) {
-			if (i == *focused_rock || rocks[i].pos.dist_to2(player.pos) > range) continue;
-
-
-			auto current_dt = rocks[*focused_rock].pos.y - rocks[i].pos.y;
-			auto candidate_dt = rocks[*focused_rock].pos.y - rocks[candidate].pos.y;
-
-			if (current_dt < candidate_dt) {
-				candidate = i;
-			}
-		}
-
-		focused_rock = candidate;
 	}
 }
 
@@ -753,7 +741,7 @@ void Level::resume() noexcept {
 
 void Level::bind_rock(std::uint64_t x, Vector2f bind) noexcept {
 	auto it = xstd::find_member(rocks, xstd::offset_of(&Rock::running_id), x);
-	if (!it) return;
+	assert(it);
 
 	it->bindings.push_back(bind);
 }

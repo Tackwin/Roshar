@@ -133,6 +133,9 @@ struct Rock {
 	float mass;
 
 	void render(render::Orders& target) const noexcept;
+	auto operator==(const Rock& other) const {
+		return running_id == other.running_id;
+	}
 };
 
 struct Auto_Binding_Zone {
@@ -242,6 +245,8 @@ struct Level {
 	std::vector<Vector2f> markers;
 
 	std::filesystem::path save_path;
+	
+	std::optional<size_t> focused_rock;
 
 	Player player;
 
@@ -279,8 +284,6 @@ private:
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;
 	Vector2u window_size;
-
-	std::optional<size_t> focused_rock;
 
 	void test_collisions(float dt) noexcept;
 

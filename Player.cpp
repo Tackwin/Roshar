@@ -347,7 +347,14 @@ void Player::end_drag(double angle) noexcept{
 	prest -= prest_gathered;
 	prest = std::max(0.f, prest);
 
-	if (dragged_rock) return game->current_level.bind_rock(dragged_rock, unit * prest_gathered);
+	auto amount = unit * prest_gathered;
+
+	if (dragged_rock) return game->current_level.bind_rock(dragged_rock, amount);
+	if (game->current_level.focused_rock) {
+		auto id = game->current_level.rocks[*game->current_level.focused_rock].running_id;
+		return game->current_level.bind_rock(id, amount);
+	}
+
 	add_own_binding(unit * prest_gathered);
 }
 
