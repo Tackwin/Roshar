@@ -381,29 +381,53 @@ struct Vector : public __vec_member<D, T> {
 	}
     
 	template<typename U>
-		Vector<D, T> operator+(const U& other) const {
+		Vector<D, T> operator+(const Vector<D, U>& other) const {
 		Vector<D, T> result;
 		for (size_t i = 0; i < getDimension(); ++i) {
 			result[i] = static_cast<T>(this->components[i] + other[i]);
 		}
-        
+
 		return result;
 	}
+
+	Vector<D, T> operator+(const T& other) const {
+		Vector<D, T> result;
+		for (size_t i = 0; i < getDimension(); ++i) {
+			result[i] = static_cast<T>(this->components[i] + other);
+		}
+
+		return result;
+	}
+
 	template<typename U>
-		Vector<D, T> operator-(const U& other) const {
+	Vector<D, T> operator-(const Vector<D, U>& other) const {
 		Vector<D, T> result;
 		for (size_t i = 0; i < getDimension(); ++i) {
 			result[i] = static_cast<T>(this->components[i] - other[i]);
 		}
-        
+
 		return result;
 	}
-    
-    
+
+	Vector<D, T> operator-(const T& other) const {
+		Vector<D, T> result;
+		for (size_t i = 0; i < getDimension(); ++i) {
+			result[i] = static_cast<T>(this->components[i] - other);
+		}
+
+		return result;
+	}
+
 	template<typename U>
-		Vector<D, T>& operator+=(const U& other) {
+	Vector<D, T>& operator+=(const Vector<D, U>& other) {
 		for (size_t i = 0; i < getDimension(); ++i) {
 			this->components[i] += static_cast<T>(other[i]);
+		}
+		return *this;
+	}
+	Vector<D, T>& operator+=(const T& other) {
+		for (size_t i = 0; i < getDimension(); ++i) {
+			this->components[i] += static_cast<T>(other);
 		}
 		return *this;
 	}

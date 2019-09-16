@@ -549,14 +549,20 @@ is there.",
 		Vector2f end = get_mouse_pos();
 
 		Rectangle_t rec{ start, end - start };
+		auto c = rec.center();
+		rec.size += snap_grid;
+		rec.setCenter(c);
 
 		target.push_rectangle(rec, { 0.2, 0.5, 0.2, 0.5 });
 	}
 
 	if (start_selection) {
-		target.push_rectangle(
-			*start_selection, get_mouse_pos() - *start_selection, { 0, 1, 0, .5 }
-		);
+		auto rec = Rectanglef{ *start_selection, get_mouse_pos() - *start_selection };
+		auto c = rec.center();
+		rec.size += snap_grid;
+		rec.setCenter(c);
+
+		target.push_rec(rec, { 0, 1, 0, .5 });
 	}
 
 	for (const auto& d : game->current_level.doors) {
@@ -610,34 +616,32 @@ is there.",
 		target.late_push_view(cam);
 		defer{ target.late_pop_view(); };
 
-		size_t n = (size_t)(std::abs(cam.w) / snap_grid);
-		for (size_t x = 0; x <= n; ++x) {
-			Vector2f A = cam.center() - cam.size / 2;
-			Vector2f B = cam.center() - cam.size / 2;
-			A = snap_grid * (Vector2i)(A / snap_grid);
-			B = snap_grid * (Vector2i)(B / snap_grid);
+		Vector2f row = snap_grid * (Vector2i)(cam.pos / snap_grid);
+		Vector2f col = snap_grid * (Vector2i)(cam.pos / snap_grid);
+		Vector4d color = { .6, .6, .6, .6 };
 
-			B.y = cam.center().y + cam.h / 2;
+		while (row.x < cam.x + cam.w) {
+			target.late_push_line(
+				row,
+				row + Vector2f{ 0, cam.h + snap_grid * 2 },
+				color,
+				cam.w / Environment.window_width
+			);
 
-			A.x += x * snap_grid;
-			B.x += x * snap_grid;
-
-			target.late_push_line(A, B, { 0.6, 0.6, 0.6, 0.6 }, cam.w / Environment.window_width);
+			row.x += snap_grid;
 		}
-		n = (size_t)(std::abs(cam.h) / snap_grid);
-		for (size_t y = 0; y <= n; ++y) {
-			Vector2f A = cam.center() - cam.size / 2;
-			Vector2f B = cam.center() - cam.size / 2;
-			A = snap_grid * (Vector2i)(A / snap_grid);
-			B = snap_grid * (Vector2i)(B / snap_grid);
+		while (col.y < cam.y + cam.h) {
+			target.late_push_line(
+				col ,
+				col + Vector2f{ cam.w + snap_grid * 2, 0},
+				color,
+				cam.h / Environment.window_height
+			);
 
-			B.x = cam.center().x + cam.w / 2;
-
-			A.y += y * snap_grid;
-			B.y += y * snap_grid;
-
-			target.late_push_line(A, B, { 0.6, 0.6, 0.6, 0.6 }, cam.h / Environment.window_height);
+			col.y += snap_grid;
 		}
+
+		target.late_push_rec(Rectanglef::centered(get_mouse_pos(), V2F(snap_grid)), color);
 	}
 }
 
@@ -798,21 +802,24 @@ Vector2f Editor::get_mouse_pos() const noexcept {
 	auto pos = IM::getMousePosInView(game->current_level.camera);
 	if (snap_grid == 0) return pos;
 
-	return snap_grid * (Vector2i)(pos / snap_grid);
+	return snap_grid * (1.f * (Vector2i)(pos / snap_grid) + Environment.offset);
 }
 
 void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 	Rectangle_t rec = { start, end - start };
+	auto c = rec.center();
+	rec.size += snap_grid;
+	rec.setCenter(c);
 
 	if (!element_to_create) return;
-#define RETURN_IF_AREA_0 if (rec.area() == 0) return
+#define RETURN_IF_AREA_0 if (start == end) return
 
 	switch (*element_to_create) {
 		case Creating_Element::Block: {
 			RETURN_IF_AREA_0;
 			Block new_block;
-			new_block.pos = start;
-			new_block.size = end - start;
+			new_block.pos = rec.pos;
+			new_block.size = rec.size;
 
 			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
 			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
@@ -825,8 +832,8 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 		case Creating_Element::Kill_Zone: {
 			RETURN_IF_AREA_0;
 			Kill_Zone new_block;
-			new_block.pos = start;
-			new_block.size = end - start;
+			new_block.pos = rec.pos;
+			new_block.size = rec.size;
 
 			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
 			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
@@ -839,8 +846,8 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 		case Creating_Element::Next_Zone: {
 			RETURN_IF_AREA_0;
 			Next_Zone new_block;
-			new_block.pos = start;
-			new_block.size = end - start;
+			new_block.pos = rec.pos;
+			new_block.size = rec.size;
 
 			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
 			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;

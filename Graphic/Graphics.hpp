@@ -191,6 +191,14 @@ namespace render {
 		) noexcept {
 			objects.push_back(rectangle(pos, size, color, outline, outline_color));
 		}
+		void push_rec(
+			Rectanglef rec,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0, 0, 0, 0 }
+		) noexcept {
+			objects.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
+		}
 
 		void late_push_rectangle(
 			Vector2f pos,
@@ -200,6 +208,15 @@ namespace render {
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
 			late.push_back(rectangle(pos, size, color, outline, outline_color));
+		}
+
+		void late_push_rec(
+			Rectanglef rec,
+			Vector4d color,
+			float outline = 0.f,
+			Vector4d outline_color = { 0, 0, 0, 0 }
+		) noexcept {
+			late.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
 		}
 
 

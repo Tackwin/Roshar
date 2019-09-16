@@ -40,9 +40,9 @@ void Player::input(Input_Iterator this_record) noexcept {
 		}
 
 	}
-	if (started_joystick_drag && wanted_drag.length() < 1 && right_joystick_timer_to_zero > 0) {
+	if (started_joystick_drag && wanted_drag.length() < 1) {
+		if (right_joystick_timer_to_zero > 0) end_drag(right_joystick_drag);
 		started_joystick_drag = false;
-		end_drag(right_joystick_drag);
 		right_joystick_drag = 0;
 	}
 
@@ -107,8 +107,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 			this_record->is_pressed(Joystick::RB)
 		) maintain_jump();
 
-		if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5)
-			directional_up();
+		if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5) directional_up();
 	}
 
 	if (this_record->is_just_pressed(Joystick::B)) {
@@ -236,6 +235,19 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 			mouse_world_pos - IM::applyInverseView(game->current_level.camera, start_drag_pos)
 		);
 	}
+	if (started_joystick_drag) {
+		auto prest_gathered =
+			std::ceilf((float)(Environment.gather_speed * (game->timeshots - start_drag_time))) *
+			Environment.gather_step;
+
+		if (saturated_touch_last_time <= 0) {
+			prest_gathered = std::min(prest_gathered, prest);
+		}
+
+		prest_gathered *= .1f;
+		orders.push_circle(prest_gathered, pos + size / 2, { 0, 1, 0, 1 });
+	}
+
 }
 
 

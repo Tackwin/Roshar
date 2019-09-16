@@ -32,6 +32,13 @@ struct Rectangle_t {
 		}
 	}
 
+	constexpr static Rectangle_t<T> centered(Vector2<T> p, Vector2<T> size) noexcept {
+		Rectangle_t<T> result;
+		result.size = size;
+		result.setCenter(p);
+		return result;
+	}
+
 	union {
 		struct {
 			Vector<2, T> pos;
