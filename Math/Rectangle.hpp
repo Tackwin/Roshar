@@ -12,6 +12,7 @@ struct Rectangle_t {
 		Size
 	};
 
+
 	constexpr static Vector2<T> get_normal(Side s) noexcept {
 		switch (s) {
 		case Side::Left: return { -1, 0 };
@@ -85,6 +86,20 @@ struct Rectangle_t {
 	Rectangle_t& operator=(const Rectangle_t&) = default;
 	Rectangle_t(Rectangle_t&&) = default;
 	Rectangle_t& operator=(Rectangle_t&&) = default;
+
+	constexpr Vector2f get_normal_to(Vector2<T> p) noexcept {
+		if (p.y < y + 0 && x < p.x && p.x < x + w) return { 0, -1 };
+		if (p.y > y + h && x < p.x && p.x < x + w) return { 0, +1 };
+		if (p.x < x + 0 && y < p.y && p.y < y + h) return { -1, 0 };
+		if (p.x > x + w && y < p.y && p.y < y + h) return { +1, 0 };
+
+		if (p.x < x + 0 && p.y < y + 0) return Vector2f{ -1, -1 }.normalize();
+		if (p.x > x + w && p.y < y + 0) return Vector2f{ +1, -1 }.normalize();
+		if (p.x < x + 0 && p.y > y + h) return Vector2f{ -1, +1 }.normalize();
+		if (p.x > x + w && p.y > y + h) return Vector2f{ +1, +1 }.normalize();
+
+		return {};
+	}
 
 	template<typename U> explicit operator Rectangle_t<U>() const noexcept {
 		return {

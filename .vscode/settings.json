@@ -1,0 +1,8 @@
+{
+	"files.associations": {
+		"*.tpp": "cpp",
+		"filesystem": "cpp"
+	},
+	"C_Cpp.dimInactiveRegions": false,
+	"terminal.integrated.shell.windows": "cmd.exe"
+}

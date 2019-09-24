@@ -2,22 +2,22 @@
 
 #include <assert.h>
 
+#include <imgui.h>
+
 #include "Game.hpp"
 #include "Collision.hpp"
 #include "Math/Circle.hpp"
 
 void Player::input(Input_Iterator this_record) noexcept {
 	auto prev_motion = wanted_motion;
-	auto prev_drag = wanted_drag;
 	wanted_drag = this_record->right_joystick;
 	wanted_motion = this_record->left_joystick;
 	mouse_screen_pos = this_record->mouse_screen_pos;
 	mouse_world_pos = this_record->mouse_world_pos(game->current_level.camera);
 
-	auto angle = wanted_motion.angleX();
-
 	want_slow = this_record->is_pressed(Keyboard::LSHIFT);
 	want_slow |= this_record->left_trigger == 1;
+	want_to_go = Dir::None;
 
 	if (wanted_drag.length() >= 1) {
 		auto candidate = wanted_drag.angleX();
@@ -55,7 +55,8 @@ void Player::input(Input_Iterator this_record) noexcept {
 			start_move_sideway();
 		}
 		move_factor = std::abs(wanted_motion.x);
-		move_sideway(wanted_motion.x > 0 ? Player::Right : Player::Left);
+		auto dir_to_go = wanted_motion.x > 0 ? Player::Right : Player::Left;
+		move_sideway(dir_to_go);
 	}
 	else {
 		if (this_record->is_pressed(Keyboard::Q)) {
@@ -76,6 +77,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 
 
 	if (this_record->is_pressed(Keyboard::S) || wanted_motion.y <= -.5) {
+		want_to_go = Dir::Down;
 		fall_back();
 	}
 	else {
@@ -88,12 +90,22 @@ void Player::input(Input_Iterator this_record) noexcept {
 		dragging = false;
 	}
 
+	if (this_record->is_just_pressed(Joystick::LB) || this_record->is_just_pressed(Mouse::Right)) {
+		cant_grap = false;
+	}
+
+	grappling  = this_record->is_pressed(Joystick::LB);
+	grappling |= this_record->is_pressed(Mouse::Right);
+	grappling &= !cant_grap;
+	
+	if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5) want_to_go = Dir::Up;
+
 	if (
 		this_record->is_just_pressed(Keyboard::Space) ||
 		this_record->is_just_pressed(Joystick::A) ||
 		this_record->is_just_pressed(Joystick::RB)
 	) {
-		if (floored || coyotee_timer > 0) {
+		if (floored || coyotee_timer > 0 || grappled) {
 			jump();
 		}
 		else {
@@ -171,19 +183,33 @@ void Player::update(float dt) noexcept {
 
 	if (dragging) on_drag();
 
-	for (const auto& x : own.basic_bindings) forces += x * Environment.gravity;
-	for (const auto& x : forced.basic_bindings) forces += x * Environment.gravity;
-	forces.y -= Environment.gravity;
+	if (!grappled) {
+		for (const auto& x : own.basic_bindings) forces += x * Environment.gravity;
+		for (const auto& x : forced.basic_bindings) forces += x * Environment.gravity;
+		forces.y -= Environment.gravity;
 
-	velocity += forces * dt;
-	velocity *= std::powf(Environment.drag * (floored ? 0.1f : 1.f), dt);
+		velocity += forces * dt;
+		velocity *= std::powf(Environment.drag * (floored ? 0.1f : 1.f), dt);
+	}
+
+	if (moving && !floored) {
+		float lambda = std::expf(-dt * velocity.length2());
+		ImGui::Text("Lambda: %f\n", lambda);
+		velocity *= lambda;
+	}
 
 	forces = {};
+
+	if (grappled) {
+		auto mass = 1;
+		prest -= dt * mass / 2;
+	}
+	grappling &= prest > 0;
+	grappled &= grappling;
+	grappled &= want_to_go == Dir::None;
 }
 
 void Player::render(render::Orders& target) const noexcept {
-	auto center = pos + size / 2;
-
 	target.push_rectangle(pos, size, { 0, 1, 1, 1 });
 
 	render_bindings(target);
@@ -267,6 +293,8 @@ void Player::stop_move_sideway() noexcept {
 	speed_down_timer = Speed_Down_Time;
 }
 void Player::move_sideway(Player::Dir dir) noexcept {
+	want_to_go = dir;
+
 	auto top_speed = std::sqrtf(std::clamp(1.f - speed_up_timer / Speed_Up_Time, 0.f, 1.f));
 
 	if (dir == Right) top_speed *= 5;
@@ -277,16 +305,43 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 	flat_velocities.push_back({ top_speed, 0 });
 	last_dir = dir;
 	moving = true;
+	grappling = false;
 }
 
 void Player::jump() noexcept {
-	if (!falling_back) {
-		velocity += Vector2f{ 0, 1.5f };
+	Vector2f normal = { 0, 1 };
+
+	if (grappled) {
+		normal = grappling_normal;
+		switch (want_to_go) {
+		case Dir::Left:
+			normal += Vector2f{ -1, 0 };
+			break;
+		case Dir::Right:
+			normal += Vector2f{ +1, 0 };
+			break;
+		case Dir::Up:
+			normal += Vector2f{ 0, +1 };
+			break;
+		case Dir::Down:
+			normal += Vector2f{ 0, -1 };
+			break;
+		default:
+			break;
+		}
 	}
-	velocity += Vector2f{ 0, 5.f };
+	normal.normalize();
+
+	if (!falling_back) {
+		velocity += 1.5f * normal;
+	}
+	velocity += 5.f * normal;
 	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
 	just_jumped = true;
 	coyotee_timer = 0.f;
+	grappled = false;
+	grappling = false;
+	cant_grap = true;
 }
 void Player::maintain_jump() noexcept {
 	if (!falling_back) flat_velocities.push_back({ 0, 1.5f });

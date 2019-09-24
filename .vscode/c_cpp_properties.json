@@ -1,0 +1,56 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${vcpkgRoot}/x64-windows-static/include",
+                "${vcpkgRoot}/x86-windows/include",
+                "${vcpkgRoot}/x86-windows-static/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.22.27905/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "msvc-x64"
+        },
+        {
+            "name": "Roshar",
+            "includePath": [
+                "${workspaceFolder}",
+                "${vcpkgRoot}/x64-windows-static/include",
+                "${vcpkgRoot}/x86-windows/include",
+                "${vcpkgRoot}/x86-windows-static/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "NDEBUG",
+                "NOMINMAX",
+                "NATIVE",
+                "CONSOLE"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.22.27905/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "${default}",
+            "forcedInclude": [
+                "macros.hpp",
+                "constexpr.hpp",
+                "xstd.hpp",
+                "global.hpp"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

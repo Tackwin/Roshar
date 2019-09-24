@@ -11,7 +11,7 @@ bool test(const Rock& r, const Rectangle_t<float>& x) noexcept {
 }
 
 bool test(const Block& b, const Rock& x) noexcept {
-	return is_in(Rectanglef(b.pos, b.size), Circlef{ .c = x.pos,.r = x.r });
+	return !b.back && is_in(Rectanglef(b.pos, b.size), Circlef{ .c = x.pos,.r = x.r });
 }
 
 bool test(const Dry_Zone& b, const Rock& x) noexcept {
@@ -31,6 +31,7 @@ bool test(const Moving_Block& x, const Rectangle_t<float>& rec) noexcept {
 
 
 bool test(const Block& b, const Player& p) noexcept {
+	if (!p.grappling && b.back) return false;
 	if (b.pos.x < p.pos.x + p.size.x && p.pos.x < b.pos.x + b.size.x &&
 		b.pos.y < p.pos.y + p.size.y && p.pos.y < b.pos.y + b.size.y) return true;
 	return false;

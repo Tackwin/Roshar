@@ -171,7 +171,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PreprocessorDefinitions>NATIVE;CONSOLE;NOMINMAX;DEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4307;4201;4068</DisableSpecificWarnings>
       <FloatingPointModel>Strict</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -233,7 +233,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>NATIVE;CONSOLE;NOMINMAX;NDEBUG;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>global.hpp;macros.hpp;xstd.hpp;constexpr.hpp;</ForcedIncludeFiles>
-      <DisableSpecificWarnings>4307;4201</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4307;4201;4068</DisableSpecificWarnings>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Precise</FloatingPointModel>
@@ -300,7 +300,6 @@
     <ClCompile Include="Graphic\Shader.cpp" />
     <ClCompile Include="Graphic\Texture.cpp" />
     <ClCompile Include="Level.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="Managers\AssetsManager.cpp" />
     <ClCompile Include="Managers\InputsManager.cpp" />
     <ClCompile Include="OS\Windows\file.cpp" />

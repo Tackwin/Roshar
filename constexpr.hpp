@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 constexpr unsigned SEED = 0;
 constexpr auto PI = 3.1415926;
 constexpr auto LEVEL_PATH = "levels/";

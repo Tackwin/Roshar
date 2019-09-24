@@ -9,7 +9,6 @@
 #include <SFML/Graphics.hpp>
 
 #include "imgui.h"
-#include "imgui-SFML.h"
 #include "../OS/file.hpp"
 
 [[nodiscard]] Vector2f Inputs_Info::mouse_world_pos(Rectanglef& v) const noexcept {
@@ -641,6 +640,7 @@ int IM::get_vkey(Keyboard::Key key) noexcept {
 		case Keyboard::F14:        return VK_F14;       
 		case Keyboard::F15:        return VK_F15;       
 		case Keyboard::Pause:      return VK_PAUSE;     */
+	default: break;
 	}
 	assert("Logic error.");
 	return 0;
@@ -651,6 +651,7 @@ int IM::get_vkey(Mouse::Button key) noexcept {
 	case Mouse::Button::Left:   return VK_LBUTTON;
 	case Mouse::Button::Right:  return VK_RBUTTON;
 	case Mouse::Button::Middle: return VK_MBUTTON;
+	default: break;
 	}
 	assert("Logic error.");
 	return 0;
@@ -672,6 +673,7 @@ int IM::get_vkey(Joystick::Button key) noexcept {
 	case Joystick::Button::RT:         return XINPUT_GAMEPAD_RIGHT_THUMB;
 	case Joystick::Button::LB:         return XINPUT_GAMEPAD_LEFT_SHOULDER;
 	case Joystick::Button::RB:         return XINPUT_GAMEPAD_RIGHT_SHOULDER;
+	default: break;
 	}
 	assert("Logic error.");
 	return 0;

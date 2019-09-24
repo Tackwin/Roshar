@@ -42,6 +42,8 @@ struct Game {
 
 	double timeshots{ 0 };
 	
+	void load_start_config() noexcept;
+
 	void input() noexcept;
 	void update(std::uint64_t dt) noexcept;
 	void render(render::Orders& target) noexcept;

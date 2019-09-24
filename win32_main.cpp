@@ -1,5 +1,3 @@
-#ifdef NATIVE
-
 #define WIN32_LEAN_AND_MEAN
 
 #include <stdio.h>
@@ -89,7 +87,7 @@ int WINAPI WinMain(
 	int       nShowCmd
 #endif
 ) {
-	
+
 	constexpr auto Class_Name = TEXT("Roshar Class");
 	constexpr auto Window_Title = TEXT("Roshar");
 
@@ -132,7 +130,7 @@ int WINAPI WinMain(
 	RECT window_rect;
 	if (!GetClientRect(window_handle, &window_rect)) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return 1;
 	}
 	Environment.window_width = (size_t)(window_rect.right - window_rect.left);
@@ -157,7 +155,7 @@ int WINAPI WinMain(
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	printf("Opengl ");
-	printf((char*)glGetString(GL_VERSION));
+	printf("%s", (char*)glGetString(GL_VERSION));
 	printf("\n");
 
 	// Setup Dear ImGui context
@@ -179,7 +177,7 @@ int WINAPI WinMain(
 	auto dc_window = GetDC(window_handle);
 	if (!dc_window) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return 1;
 	}
 
@@ -204,8 +202,9 @@ int WINAPI WinMain(
 	size_t last_dt_count = 200;
 	std::vector<float> last_dt;
 
-	game = new Game;
-	defer{ delete game; };
+	Game local_game;
+	game = &local_game;
+	game->load_start_config();
 
 	auto cpu_render_time = .0;
 
@@ -254,8 +253,10 @@ int WINAPI WinMain(
 
 		ImGui::End();
 
+		ImGui::Begin("Update debug");
 		update_game(dt);
-		
+		ImGui::End();
+
 		auto t_start = seconds();
 		render_game(orders);
 		cpu_render_time = seconds() - t_start;
@@ -274,10 +275,10 @@ int WINAPI WinMain(
 
 		ImGui::Text(
 			"current dt: %llu ms, avg(%u): %llu ms, max: %llu",
-			dt / 1000,
+			(unsigned long long)(dt / 1000),
 			last_dt_count,
-			avg / 1000,
-			max_dt / 1000
+			(unsigned long long)(avg / 1000),
+			(unsigned long long)(max_dt / 1000)
 		);
 		ImGui::Text("Fps: %d", (size_t)(1'000'000.0 / dt));
 		ImGui::Text("Cpu render time: %.3f ms.", cpu_render_time * 1'000);
@@ -350,7 +351,7 @@ void render_orders(render::Orders& orders) noexcept {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector<render::Ambient_Light> ambient_lights;
-	ambient_lights.push_back({ .color = {1, 1, 1, 1}, .intensity = {1} });
+	ambient_lights.push_back({ .color = {1, 1, 1, 1}, .intensity = 1 });
 
 	size_t point_light_idx = 0;
 	for (size_t j = 0; j < orders.lights.size(); ++j) {
@@ -367,6 +368,7 @@ void render_orders(render::Orders& orders) noexcept {
 			assert(!ambient_lights.empty());
 			ambient_lights.pop_back();
 			break;
+		default: break;
 		}
 	}
 
@@ -472,7 +474,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	auto dc = GetDC(handle_window);
 	if (!dc) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 	defer{ ReleaseDC(handle_window, dc); };
@@ -488,7 +490,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	auto suggested_pixel_format = ChoosePixelFormat(dc, &pixel_format);
 	if (!suggested_pixel_format) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 	auto result = DescribePixelFormat(
@@ -496,13 +498,13 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	);
 	if (!result) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
 	if (!SetPixelFormat(dc, suggested_pixel_format, &pixel_format)) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
@@ -510,14 +512,14 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	auto gl_context = wglCreateContext(dc);
 	if (!gl_context) {
 		// >TODO error handling
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
 	if (!wglMakeCurrent(dc, gl_context)) {
 		wglDeleteContext(gl_context);
 
-		printf(get_last_error_message()->c_str());
+		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
 
@@ -530,7 +532,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	auto gl = wglCreateContextAttribsARB(dc, nullptr, attribs);
 	if (!gl) {
 		auto err = glGetError();
-		printf(std::to_string(err).c_str());
+		printf("%s", std::to_string(err).c_str());
 
 		return gl_context;
 	}
@@ -547,7 +549,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 }
 void destroy_gl_context(HGLRC gl_context) noexcept {
 	// >TODO error handling
-	if (!wglDeleteContext(gl_context)) printf(get_last_error_message()->c_str());
+	if (!wglDeleteContext(gl_context)) printf("%s", get_last_error_message()->c_str());
 }
 
 
@@ -557,7 +559,8 @@ const char* debug_source_str(GLenum source) {
 	  "Other", "Unknown"
 	};
 	int str_idx = std::min(
-		source - GL_DEBUG_SOURCE_API, sizeof(sources) / sizeof(const char*) - 1
+		(size_t)(source - GL_DEBUG_SOURCE_API),
+		(size_t)(sizeof(sources) / sizeof(const char*) - 1)
 	);
 	return sources[str_idx];
 }
@@ -568,7 +571,10 @@ const char* debug_type_str(GLenum type) {
 	  "Performance", "Other",               "Unknown"
 	};
 
-	int str_idx = std::min(type - GL_DEBUG_TYPE_ERROR, sizeof(types) / sizeof(const char*) - 1);
+	int str_idx = std::min(
+		(size_t)(type - GL_DEBUG_TYPE_ERROR),
+		(size_t)(sizeof(types) / sizeof(const char*) - 1)
+	);
 	return types[str_idx];
 }
 
@@ -578,7 +584,8 @@ const char* debug_severity_str(GLenum severity) {
 	};
 
 	int str_idx = std::min(
-		severity - GL_DEBUG_SEVERITY_HIGH, sizeof(severities) / sizeof(const char*) - 1
+		(size_t)(severity - GL_DEBUG_SEVERITY_HIGH),
+		(size_t)(sizeof(severities) / sizeof(const char*) - 1)
 	);
 	return severities[str_idx];
 }
@@ -606,20 +613,18 @@ void APIENTRY opengl_debug(
 	printf("OpenGL Error:\n");
 	printf("=============\n");
 	printf(" Object ID: ");
-	printf(std::to_string(id).c_str());
-	printf("\n Severity:  ");
-	printf(debug_severity_str(severity));
-	printf("\n Type:      ");
-	printf(debug_type_str(type));
-	printf("\n Source:    ");
-	printf(debug_source_str(source));
-	printf("\n Message:   ");
-	printf(message);
-	printf("\n\n");
+	printf("%s\n", std::to_string(id).c_str());
+	printf(" Severity:  ");
+	printf("%s\n", debug_severity_str(severity));
+	printf(" Type:      ");
+	printf("%s\n", debug_type_str(type));
+	printf("Source:    ");
+	printf("%s\n", debug_source_str(source));
+	printf(" Message:   ");
+	printf("%s\n", message);
+	printf("\n");
 
 	if (std::find(BEG_END(To_Break_On), id) != std::end(To_Break_On)) {
 		DebugBreak();
 	}
 }
-
-#endif

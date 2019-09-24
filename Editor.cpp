@@ -236,27 +236,37 @@ void Editor::render(render::Orders& target) noexcept {
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Blocks");
-		Block::Kind kind = { Block::Kind::Normal };
-		if (n_selected == 1)
-			kind = std::find_if(BEG_END(game->current_level.blocks), pred)->kind;
+
+		Block::Prest_Kind kind = { Block::Prest_Kind::Normal };
+		bool back{ false };
+
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(game->current_level.blocks), pred);
+			kind = it->prest_kind;
+			back = it->back;
+		}
 		
 		ImGui::Text("kind");
 		ImGui::SameLine();
 		int k = (int)kind;
 		auto act = ImGui::ListBox("Kind", &k, [](void*, int i, const char** out) {
-				switch ((Block::Kind)i) {
-				case Block::Kind::Normal:       *out = "Normal";    break;
-				case Block::Kind::Saturated:    *out = "Saturated"; break;
-				case Block::Kind::Eponge:       *out = "Eponge";    break;
-				default: assert("Logic error"); *out = "";          break;
+				switch ((Block::Prest_Kind)i) {
+					case Block::Prest_Kind::Normal:       *out = "Normal";    break;
+					case Block::Prest_Kind::Saturated:    *out = "Saturated"; break;
+					case Block::Prest_Kind::Eponge:       *out = "Eponge";    break;
+					default: assert("Logic error"); *out = "";          break;
 				}
 				return true;
 			},
 			nullptr,
-			(int)Block::Kind::Count
+			(int)Block::Prest_Kind::Count
 		);
+		if (act) for (auto& x : game->current_level.blocks) if (pred(x))
+			x.prest_kind = (Block::Prest_Kind)k;
 
-		if (act) for (auto& x : game->current_level.blocks) if (pred(x)) x.kind = (Block::Kind)k;
+
+		if (ImGui::Checkbox("back", &back))
+			for (auto& x : game->current_level.blocks) if (pred(x)) x.back = back;
 	}
 
 	n_selected = std::count_if(BEG_END(game->current_level.key_items), pred);
@@ -632,7 +642,7 @@ is there.",
 		}
 		while (col.y < cam.y + cam.h) {
 			target.late_push_line(
-				col ,
+				col,
 				col + Vector2f{ cam.w + snap_grid * 2, 0},
 				color,
 				cam.h / Environment.window_height
@@ -821,11 +831,6 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.pos = rec.pos;
 			new_block.size = rec.size;
 
-			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
-			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
-			new_block.size.x = std::abs(new_block.size.x);
-			new_block.size.y = std::abs(new_block.size.y);
-
 			game->current_level.blocks.emplace_back(std::move(new_block));
 			break;
 		}
@@ -835,11 +840,6 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.pos = rec.pos;
 			new_block.size = rec.size;
 
-			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
-			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
-			new_block.size.x = std::abs(new_block.size.x);
-			new_block.size.y = std::abs(new_block.size.y);
-
 			game->current_level.kill_zones.emplace_back(std::move(new_block));
 			break;
 		}
@@ -848,11 +848,6 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			Next_Zone new_block;
 			new_block.pos = rec.pos;
 			new_block.size = rec.size;
-
-			if (new_block.size.x < 0) new_block.pos.x += new_block.size.x;
-			if (new_block.size.y < 0) new_block.pos.y += new_block.size.y;
-			new_block.size.x = std::abs(new_block.size.x);
-			new_block.size.y = std::abs(new_block.size.y);
 
 			game->current_level.next_zones.emplace_back(std::move(new_block));
 			break;

@@ -12,6 +12,16 @@ void update_game(std::uint64_t dt) noexcept {
 
 Game* game = nullptr;
 
+void Game::load_start_config() noexcept {
+	auto start_opt = load_from_json_file("start_config.json");
+	if (!start_opt) return;
+	auto start = *start_opt;
+
+	if (has(start, "start_level")) {
+		to_swap_level = load_level((std::string)start["start_level"]);
+	}
+}
+
 void Game::input() noexcept {
 	IM::update(Environment.physics_step / 1'000'000.f);
 

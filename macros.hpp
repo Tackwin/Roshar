@@ -1,4 +1,5 @@
 #pragma once
+#pragma clang diagnostic ignored "-Wnonportable-include-path"
 
 namespace details {
 	template<typename Callable>

@@ -14,7 +14,10 @@
 void match_and_destroy_keys(Player& p, Door& d) noexcept;
 
 void Block::render(render::Orders& target) const noexcept {
-	target.push_rectangle(pos, size, {1, 1, 1, 1});
+	Vector4d color = { 1, 1, 1, 1 };
+	if (back) color = { .2, .8, .2, 1 };
+
+	target.push_rectangle(pos, size, color);
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -132,7 +135,9 @@ void Trigger_Zone::render(render::Orders& target) const noexcept {
 }
 
 void Door::render(render::Orders& target) const noexcept {
-	target.push_rectangle(rec, { 0.9, 0.9, 0.9, closed ? 1.0 : 0.1 });
+	Vector4d color = { .9, .9, .9, 1. };
+	if (!closed) color.a = .1;
+	target.push_rectangle(rec, color);
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -486,15 +491,6 @@ void Level::update(float dt) noexcept {
 		}
 	}
 
-	constexpr auto path_length = [](const Moving_Block& x) noexcept {
-		double sum = 0;
-		for (size_t i = 1; i < x.waypoints.size(); ++i) {
-			sum += x.waypoints[i - 1].dist_to(x.waypoints[i]);
-		}
-		return (float)sum;
-	};
-
-
 	for (auto& x : moving_blocks) {
 		x.update(dt);
 		x.rec.pos += x.to_move;
@@ -534,6 +530,8 @@ void Level::test_collisions(float dt) noexcept {
 		for (const auto& block : blocks) {
 			rec.pos = block.pos;
 			rec.size = block.size;
+
+			if (block.back) continue;
 
 			if (auto opt = get_next_velocity(circle, rock.velocity, rec, dt); opt) {
 				rock.velocity = *opt;
@@ -593,6 +591,9 @@ void Level::update_player(float dt) noexcept {
 	auto previous_player_pos = player.pos;
 	player.update(dt);
 
+	bool just_direct_control_velocity{ false };
+	bool hard_border{ false };
+
 	auto test_solids = [&](bool auto_climb) {
 		auto_climb &= player.velocity.y < 0.1f;
 
@@ -601,45 +602,63 @@ void Level::update_player(float dt) noexcept {
 
 		bool flag = false;
 		for (size_t i = 0; i < doors.size(); ++i) {
-			if (test(doors[i], player)) {
-				if (auto_climb) {
-					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
-					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
-						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
-						previous_player_pos.y = player.pos.y;
-						if (correcting_count-- > 0) goto corrected_position;
-					}
-				}
+			if (!test(doors[i], player)) continue;
+			flag = true;
 
-				flag = true;
+			if (!auto_climb) continue;
+			
+			auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
+			if (-player.size.y / 5.f < dt_y && dt_y < 0) {
+				player.pos.y = blocks[i].pos.y + blocks[i].size.y;
+				previous_player_pos.y = player.pos.y;
+				if (correcting_count-- > 0) goto corrected_position;
 			}
 		}
 
 		for (size_t i = 0; i < blocks.size(); ++i) {
-			if (test(blocks[i], player)) {
-				if (auto_climb) {
-					auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
-					if (-player.size.y / 5.f < dt_y && dt_y < 0) {
-						player.pos.y = blocks[i].pos.y + blocks[i].size.y;
-						previous_player_pos.y = player.pos.y;
-						if (correcting_count-- > 0) goto corrected_position;
-					}
-				}
+			auto& b = blocks[i];
 
-				if (blocks[i].kind == Block::Kind::Saturated) {
-					player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
-				}
-				flag = true;
+			auto grap_box = Rectanglef{ player.pos, player.size };
+			grap_box.size += .1f;
+			grap_box.pos -= .05f;
+
+			if (player.grappling && test(b, grap_box)) {
+
+				player.grappled = true;
+				just_direct_control_velocity = true;
+				player.forces = {};
+				player.velocity = {};
+
+				player.grappling_normal = Rectanglef{ b.pos, b.size }.get_normal_to(player.pos);
+			}
+
+			if (!test(b, player)) continue;
+
+			hard_border = !b.back;
+			flag = true;
+
+
+			if (b.prest_kind == Block::Prest_Kind::Saturated) {
+				player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
+			}
+
+			if (!auto_climb) continue;
+
+			auto dt_y = player.pos.y - (b.pos.y + b.size.y);
+			if (-player.size.y / 5.f < dt_y && dt_y < 0) {
+				player.pos.y = b.pos.y + b.size.y;
+				previous_player_pos.y = player.pos.y;
+				if (correcting_count-- > 0) goto corrected_position;
 			}
 		}
 
 		for (size_t i = 0; i < moving_blocks.size(); ++i) {
 			moving_blocks[i].colliding_player = false;
-			if (test(player, moving_blocks[i].rec)) {
-				moving_blocks[i].colliding_player |=
-					player.pos.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
-				flag = true;
-			}
+			if (!test(player, moving_blocks[i].rec)) continue;
+
+			moving_blocks[i].colliding_player |=
+				player.pos.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
+			flag = true;
 		}
 
 
@@ -661,20 +680,35 @@ void Level::update_player(float dt) noexcept {
 	float impact = 0;
 	bool new_floored = false;
 
+	bool collided_x{ false };
+	bool collided_y{ false };
+
+	bool hard_border_x{ false };
+	bool hard_border_y{ false };
+
 	player.pos.x += velocities.x * dt;
-	if (test_solids(true)) {
+	collided_x = test_solids(true);
+	hard_border_x = hard_border;
+	if (collided_x) {
 		impact += velocities.x * velocities.x;
 		player.pos.x = previous_player_pos.x;
 		player.velocity.x = 0;
 		player.forces.x = 0;
 	}
 	player.pos.y += velocities.y * dt;
-	if (test_solids(false)) {
+	collided_y = test_solids(false);
+	hard_border_y = hard_border;
+	if (collided_y) {
 		impact += velocities.y * velocities.y;
 		player.pos.y = previous_player_pos.y;
 		new_floored = velocities.y < 0;
 		player.velocity.y = 0;
 		player.forces.y = 0;
+	}
+
+	if (just_direct_control_velocity) {
+		if (collided_x && !hard_border_x) player.pos.x += flat_velocities.x * dt * .1f;
+		if (collided_y && !hard_border_y) player.pos.y += flat_velocities.y * dt * .1f;
 	}
 
 	if (player.floored && !new_floored && !player.just_jumped) {
@@ -779,7 +813,8 @@ void to_dyn_struct(dyn_struct& str, const Moving_Block& block) noexcept {
 	str["waypoints"] = block.waypoints;
 }
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
-	if (has(str, "kind")) block.kind = (Block::Kind)((int)str["kind"]);
+	if (has(str, "kind")) block.prest_kind = (Block::Prest_Kind)((int)str["kind"]);
+	if (has(str, "back")) block.back = (bool)str["back"];
 	block.pos = (Vector2f)str["pos"];
 	block.size = (Vector2f)str["size"];
 }
@@ -787,7 +822,9 @@ void to_dyn_struct(dyn_struct& str, const Block& block) noexcept {
 	str = dyn_struct::structure_t{};
 	str["pos"] = block.pos;
 	str["size"] = block.size;
-	str["kind"] = (int)block.kind;
+	str["kind"] = (int)block.prest_kind;
+	str["back"] = block.back;
+
 }
 void from_dyn_struct(const dyn_struct& str, Auto_Binding_Zone& zone) noexcept {
 	zone.rec = (Rectanglef)str["rec"];

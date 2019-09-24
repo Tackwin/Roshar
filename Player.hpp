@@ -18,9 +18,13 @@ struct Player {
 	Vector2f wanted_motion{0, 0};
 	Vector2f wanted_drag{ 0, 0 };
 
+	Vector2f grappling_normal{ 0, 0 };
+
 	enum Dir {
 		Right,
 		Left,
+		Up,
+		Down,
 		None
 	};
 
@@ -68,7 +72,8 @@ struct Player {
 
 	Dir last_dir{ None };
 
-
+	bool grappled{ false };
+	bool grappling{ false };
 
 	void input(Input_Iterator this_record) noexcept;
 	void update(float dt) noexcept;
@@ -95,6 +100,8 @@ private:
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;
 
+	Dir want_to_go{ None };
+
 	float move_factor{ 1.f };
 	bool want_slow{ false };
 	bool dragging{ false };
@@ -114,6 +121,8 @@ private:
 	float controller_clear_timer{ 0.f };
 
 	float drag_indicator_t{ 0.f };
+
+	bool cant_grap{ false };
 
 	void render_bindings(render::Orders& orders) const noexcept;
 

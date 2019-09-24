@@ -18,12 +18,14 @@
 struct Block {
 	bool editor_selected{ false };
 
-	enum class Kind {
+	bool back{ false };
+
+	enum class Prest_Kind {
 		Normal = 0,
 		Eponge,
 		Saturated,
 		Count
-	} kind{ Kind::Normal };
+	} prest_kind{ Prest_Kind::Normal };
 
 	Vector2f pos;
 	Vector2f size;
@@ -252,7 +254,7 @@ struct Level {
 
 	float camera_speed{ 10 };
 	float camera_idle_radius{ 0.3f };
-	Rectanglef camera{ {0, 0}, {128, 72} };
+	Rectanglef camera{ { -64, -36 }, { 128, 72 } };
 	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
 	Rectanglef camera_start;
 
@@ -273,14 +275,6 @@ struct Level {
 	void bind_rock(std::uint64_t x, Vector2f bind) noexcept;
 
 private:
-	bool full_test{ false };
-	bool in_replay{ false };
-	bool in_test{ false };
-
-	std::uint64_t test_record_id;
-
-	std::uint64_t speedrun_clock_start;
-
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;
 	Vector2u window_size;

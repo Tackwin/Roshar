@@ -244,8 +244,6 @@ std::function<void(std::optional<std::filesystem::path>)>&& callback
 std::optional<std::filesystem::path> file::open_dir() noexcept {
 	std::optional<std::filesystem::path> result = std::nullopt;
 	std::thread{ [&result] {
-		constexpr auto BUFFER_SIZE = 2048;
-
 		HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 		if (FAILED(hr)) return;
 
