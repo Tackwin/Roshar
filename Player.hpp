@@ -92,6 +92,13 @@ struct Player {
 
 	void clear_all_basic_bindings() noexcept;
 
+	void clear_movement_x() noexcept;
+	void clear_movement_y() noexcept;
+
+	Vector2f get_final_velocity() noexcept;
+	Vector2f get_direct_control_velocity() noexcept;
+	void apply_friction(float factor) noexcept;
+
 private:
 	static constexpr float Slow_Factor{ 0.5f };
 	static constexpr float Drag_Dead_Zone{ 50.f };
@@ -120,9 +127,14 @@ private:
 	static constexpr float Controller_Clear_Time = { 0.2f };
 	float controller_clear_timer{ 0.f };
 
+	static constexpr float Jump_Cant_Grap_Time = { .1f };
+	float jump_cant_grap_timer{ 0.f };
+
 	float drag_indicator_t{ 0.f };
 
 	bool cant_grap{ false };
+
+	Vector2f velocity_from_jump{};
 
 	void render_bindings(render::Orders& orders) const noexcept;
 

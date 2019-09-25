@@ -90,10 +90,6 @@ void Player::input(Input_Iterator this_record) noexcept {
 		dragging = false;
 	}
 
-	if (this_record->is_just_pressed(Joystick::LB) || this_record->is_just_pressed(Mouse::Right)) {
-		cant_grap = false;
-	}
-
 	grappling  = this_record->is_pressed(Joystick::LB);
 	grappling |= this_record->is_pressed(Mouse::Right);
 	grappling &= !cant_grap;
@@ -166,6 +162,12 @@ void Player::update(float dt) noexcept {
 	jump_strength_modifier_timer -= dt;
 	right_joystick_timer_to_zero -= dt;
 	controller_binding_candidate_time -= dt;
+	jump_cant_grap_timer -= dt;
+
+
+	if (jump_cant_grap_timer < 0.f) {
+		cant_grap = false;
+	}
 
 	drag_indicator_t += dt * 5;
 	drag_indicator_t = std::fmodf(drag_indicator_t, 1.f);
@@ -179,7 +181,6 @@ void Player::update(float dt) noexcept {
 
 		flat_velocities.push_back({ slow_down, 0 });
 	}
-	moving = false;
 
 	if (dragging) on_drag();
 
@@ -194,12 +195,12 @@ void Player::update(float dt) noexcept {
 
 	if (moving && !floored) {
 		float lambda = std::expf(-dt * velocity.length2());
-		ImGui::Text("Lambda: %f\n", lambda);
-		velocity *= lambda;
+		velocity_from_jump.x *= lambda;
 	}
 
 	forces = {};
 
+	moving = false;
 	if (grappled) {
 		auto mass = 1;
 		prest -= dt * mass / 2;
@@ -333,15 +334,16 @@ void Player::jump() noexcept {
 	normal.normalize();
 
 	if (!falling_back) {
-		velocity += 1.5f * normal;
+		velocity_from_jump += 1.5f * normal;
 	}
-	velocity += 5.f * normal;
+	velocity_from_jump += 5.f * normal;
 	jump_strength_modifier_timer = Jump_Strength_Modifier_Time;
 	just_jumped = true;
 	coyotee_timer = 0.f;
 	grappled = false;
 	grappling = false;
 	cant_grap = true;
+	jump_cant_grap_timer = Jump_Cant_Grap_Time;
 }
 void Player::maintain_jump() noexcept {
 	if (!falling_back) flat_velocities.push_back({ 0, 1.5f });
@@ -423,5 +425,29 @@ void Player::end_drag(double angle) noexcept{
 	}
 
 	add_own_binding(unit * prest_gathered);
+}
+
+void Player::clear_movement_x() noexcept {
+	velocity.x = 0;
+	velocity_from_jump.x = 0;
+	forces.x = 0;
+}
+void Player::clear_movement_y() noexcept {
+	velocity.y = 0;
+	velocity_from_jump.y = 0;
+	forces.y = 0;
+}
+
+Vector2f Player::get_final_velocity() noexcept {
+	return velocity + velocity_from_jump + get_direct_control_velocity();
+}
+void Player::apply_friction(float factor) noexcept {
+	velocity *= factor;
+	velocity_from_jump *= factor;
+}
+Vector2f Player::get_direct_control_velocity() noexcept {
+	Vector2f flat_sum = { 0, 0 };
+	for (const auto& x : flat_velocities) flat_sum += x;
+	return flat_sum;
 }
 

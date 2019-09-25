@@ -28,3 +28,7 @@ namespace details {
 #define IF_1(foo) foo
 #define IF_NOT_1(foo)
 #define IF_NOT_0(foo) foo
+
+#define IM_BOOL(x)  ImGui::Checkbox(#x, &x)
+#define IM_TEXT(x)  ImGui::Text(x)
+

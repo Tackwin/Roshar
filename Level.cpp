@@ -626,8 +626,8 @@ void Level::update_player(float dt) noexcept {
 
 				player.grappled = true;
 				just_direct_control_velocity = true;
-				player.forces = {};
-				player.velocity = {};
+				player.clear_movement_x();
+				player.clear_movement_y();
 
 				player.grappling_normal = Rectanglef{ b.pos, b.size }.get_normal_to(player.pos);
 			}
@@ -666,15 +666,13 @@ void Level::update_player(float dt) noexcept {
 		return flag;
 	};
 
-	Vector2f flat_velocities = { 0, 0 };
-	for (const auto& x : player.flat_velocities) flat_velocities += x;
+	auto velocities = player.get_final_velocity();
+	auto direct_velocities = player.get_direct_control_velocity();
 	player.flat_velocities.clear();
-
-	auto velocities = flat_velocities + player.velocity;
 	for (const auto& x : friction_zones) {
 		if (x.rec.intersect({ player.pos, player.size })) {
 			velocities *= x.friction;
-			player.velocity *= std::powf(x.friction, dt);
+			player.apply_friction(std::powf(x.friction, dt));
 		}
 	}
 	float impact = 0;
@@ -692,8 +690,7 @@ void Level::update_player(float dt) noexcept {
 	if (collided_x) {
 		impact += velocities.x * velocities.x;
 		player.pos.x = previous_player_pos.x;
-		player.velocity.x = 0;
-		player.forces.x = 0;
+		player.clear_movement_x();
 	}
 	player.pos.y += velocities.y * dt;
 	collided_y = test_solids(false);
@@ -702,13 +699,12 @@ void Level::update_player(float dt) noexcept {
 		impact += velocities.y * velocities.y;
 		player.pos.y = previous_player_pos.y;
 		new_floored = velocities.y < 0;
-		player.velocity.y = 0;
-		player.forces.y = 0;
+		player.clear_movement_y();
 	}
 
 	if (just_direct_control_velocity) {
-		if (collided_x && !hard_border_x) player.pos.x += flat_velocities.x * dt * .1f;
-		if (collided_y && !hard_border_y) player.pos.y += flat_velocities.y * dt * .1f;
+		if (collided_x && !hard_border_x) player.pos.x += direct_velocities.x * dt * .1f;
+		if (collided_y && !hard_border_y) player.pos.y += direct_velocities.y * dt * .1f;
 	}
 
 	if (player.floored && !new_floored && !player.just_jumped) {
