@@ -5,9 +5,9 @@
 #include "Math/Vector.hpp"
 
 struct TextureInfo {
-	size_t id = 0u;
-	size_t width = 0u;
-	size_t height = 0u;
+	std::uint32_t id = 0u;
+	std::uint32_t width = 0u;
+	std::uint32_t height = 0u;
 };
 
 class Texture {
@@ -30,7 +30,7 @@ public:
 
 	void bind(size_t unit = 0u) const;
 
-	size_t get_texture_id() const;
+	std::uint32_t get_texture_id() const;
 
 	Vector2u get_size() noexcept;
 private:

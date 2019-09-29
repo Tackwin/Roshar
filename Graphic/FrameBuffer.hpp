@@ -22,20 +22,20 @@ struct G_Buffer {
 	void set_disable_texture() noexcept;
 
 	void render_quad() noexcept;
-	void copy_depth_to(uint32_t id = 0) noexcept;
-	void copy_depth_to(uint32_t id, Rectanglef viewport) noexcept;
+	void copy_depth_to(std::uint32_t id = 0) noexcept;
+	void copy_depth_to(std::uint32_t id, Rectanglef viewport) noexcept;
 
 	void clear(Vector4d color) noexcept;
 private:
 	Vector2u size;
 
-	uint32_t g_buffer{ 0 };
-	uint32_t pos_buffer{ 0 };
-	uint32_t normal_buffer{ 0 };
-	uint32_t albedo_buffer{ 0 };
-	uint32_t depth_rbo{ 0 };
-	uint32_t quad_VAO{ 0 };
-	uint32_t quad_VBO{ 0 };
+	std::uint32_t g_buffer{ 0 };
+	std::uint32_t pos_buffer{ 0 };
+	std::uint32_t normal_buffer{ 0 };
+	std::uint32_t albedo_buffer{ 0 };
+	std::uint32_t depth_rbo{ 0 };
+	std::uint32_t quad_VAO{ 0 };
+	std::uint32_t quad_VBO{ 0 };
 };
 
 struct HDR_Buffer {
@@ -55,15 +55,15 @@ struct HDR_Buffer {
 
 	void render_quad() noexcept;
 
-	uint32_t get_depth_id() const noexcept;
+	std::uint32_t get_depth_id() const noexcept;
 private:
 	Vector2u size;
 
-	uint32_t hdr_buffer{ 0 };
-	uint32_t rbo_buffer{ 0 };
-	uint32_t color_buffer{ 0 };
-	uint32_t quad_VAO{ 0 };
-	uint32_t quad_VBO{ 0 };
+	std::uint32_t hdr_buffer{ 0 };
+	std::uint32_t rbo_buffer{ 0 };
+	std::uint32_t color_buffer{ 0 };
+	std::uint32_t quad_VAO{ 0 };
+	std::uint32_t quad_VBO{ 0 };
 };
 
 struct Texture_Buffer {
@@ -75,7 +75,7 @@ struct Texture_Buffer {
 	Texture_Buffer(Vector2u size) noexcept;
 	~Texture_Buffer() noexcept;
 
-	uint32_t get_frame_buffer_id() const noexcept;
+	std::uint32_t get_frame_buffer_id() const noexcept;
 
 	const Texture& get_texture() const noexcept;
 
@@ -87,10 +87,10 @@ struct Texture_Buffer {
 	void clear(Vector4f color) noexcept;
 
 private:
-	uint32_t frame_buffer{ 0 };
-	uint32_t rbo_buffer{ 0 };
-	uint32_t quad_VAO{ 0 };
-	uint32_t quad_VBO{ 0 };
+	std::uint32_t frame_buffer{ 0 };
+	std::uint32_t rbo_buffer{ 0 };
+	std::uint32_t quad_VAO{ 0 };
+	std::uint32_t quad_VBO{ 0 };
 	Texture texture;
 };
 
@@ -112,10 +112,10 @@ struct SSAO_Buffer {
 
 private:
 
-	uint32_t quad_VAO{ 0 };
-	uint32_t quad_VBO{ 0 };
-	uint32_t ssao_buffer{ 0 };
-	uint32_t ssao_blur_buffer{ 0 };
-	uint32_t color_buffer{ 0 };
-	uint32_t blur_buffer{ 0 };
+	std::uint32_t quad_VAO{ 0 };
+	std::uint32_t quad_VBO{ 0 };
+	std::uint32_t ssao_buffer{ 0 };
+	std::uint32_t ssao_blur_buffer{ 0 };
+	std::uint32_t color_buffer{ 0 };
+	std::uint32_t blur_buffer{ 0 };
 };

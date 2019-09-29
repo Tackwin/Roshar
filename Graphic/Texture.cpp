@@ -1,9 +1,7 @@
 #include "Graphic/Texture.hpp"
 #include <GL/glew.h>
 
-// >STB >SFML >SEE:
-// SFML already define this in its static lib don't forget to remove it when we do the transition.
-// #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <iostream>
@@ -74,8 +72,8 @@ void Texture::create_rgb_null(Vector2u size) const {
 		GL_TEXTURE_2D,
 		0,
 		GL_RGB,
-		size.x,
-		size.y,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
 		0,
 		GL_RGB,
 		GL_UNSIGNED_BYTE,
@@ -89,8 +87,8 @@ void Texture::create_depth_null(Vector2u size) const {
 		GL_TEXTURE_2D,
 		0,
 		GL_DEPTH24_STENCIL8,
-		size.x,
-		size.y,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
 		0,
 		GL_DEPTH_STENCIL,
 		GL_UNSIGNED_BYTE,
@@ -109,11 +107,11 @@ void Texture::set_parameterfv(int parameter, float* value) const {
 }
 
 void Texture::bind(size_t unit) const {
-	glActiveTexture(GL_TEXTURE0 + unit);
+	glActiveTexture((GLenum)(GL_TEXTURE0 + unit));
 	glBindTexture(GL_TEXTURE_2D, info.id);
 }
 
-size_t Texture::get_texture_id() const {
+std::uint32_t Texture::get_texture_id() const {
 	return info.id;
 }
 

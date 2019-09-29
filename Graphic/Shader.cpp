@@ -127,7 +127,7 @@ bool Shader::build_shaders() noexcept {
 	return true;
 }
 
-std::optional<std::string> Shader::check_shader_error(size_t shader) noexcept {
+std::optional<std::string> Shader::check_shader_error(std::uint32_t shader) noexcept {
 	auto success = 0;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	std::string log(512, 0);
@@ -138,7 +138,7 @@ std::optional<std::string> Shader::check_shader_error(size_t shader) noexcept {
 	return std::nullopt;
 }
 
-std::optional<std::string> Shader::check_program_error(size_t program) noexcept {
+std::optional<std::string> Shader::check_program_error(std::uint32_t program) noexcept {
 	auto success = 0;
 	glGetProgramiv(program, GL_LINK_STATUS, &success);
 	if (!success) {
@@ -170,7 +170,7 @@ void Shader::set_position(Vector2f pos) noexcept {
 void Shader::set_size(Vector2f size) noexcept {
 	glUniform2fv(loc("size"), 1, &size.x);
 }
-void Shader::set_texture(size_t id) noexcept {
+void Shader::set_texture(std::uint32_t id) noexcept {
 	glUniform1i(loc("color_texture"), (int)id);
 }
 void Shader::set_view(Rectanglef view) noexcept {

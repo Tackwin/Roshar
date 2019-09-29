@@ -11,8 +11,6 @@
 #include <io.h>
 #include <fcntl.h>
 
-#include <magic_enum.hpp>
-
 #include "Math/Vector.hpp"
 #include "Graphic/Graphics.hpp"
 #include "Graphic/OpenGL.hpp"
@@ -243,7 +241,13 @@ int WINAPI WinMain(
 			&x,
 			[](void*, int i, const char** out) {
 				if (i >= (int)Debug_Framebuffer::Count) return false;
-				*out = magic_enum::enum_name<Debug_Framebuffer>((Debug_Framebuffer)i).data();
+				switch ((Debug_Framebuffer)i) {
+				case Debug_Framebuffer::Albedo:    *out = "Albedo";  break;
+				case Debug_Framebuffer::Default:   *out = "Default"; break;
+				case Debug_Framebuffer::Depth:     *out = "Depth";   break;
+				case Debug_Framebuffer::Normal:    *out = "Normal";  break;
+				case Debug_Framebuffer::Position:  *out = "Position"; break;
+				}
 				return true;
 			},
 			nullptr,
@@ -305,7 +309,7 @@ void render_orders(render::Orders& orders) noexcept {
 	static HDR_Buffer hdr_buffer{ Gl_Buffer_Size };
 	std::vector<render::View_Info> view_stack;
 
-	glViewport(0, 0, Gl_Buffer_Size.x, Gl_Buffer_Size.y);
+	glViewport(0, 0, (GLsizei)Gl_Buffer_Size.x, (GLsizei)Gl_Buffer_Size.y);
 
 	g_buffer.set_active();
 	g_buffer.clear({ 0.6, 0.3, 0.4, 1. });
@@ -558,7 +562,7 @@ const char* debug_source_str(GLenum source) {
 	  "API",   "Window System", "Shader Compiler", "Third Party", "Application",
 	  "Other", "Unknown"
 	};
-	int str_idx = std::min(
+	auto str_idx = std::min(
 		(size_t)(source - GL_DEBUG_SOURCE_API),
 		(size_t)(sizeof(sources) / sizeof(const char*) - 1)
 	);
@@ -571,7 +575,7 @@ const char* debug_type_str(GLenum type) {
 	  "Performance", "Other",               "Unknown"
 	};
 
-	int str_idx = std::min(
+	auto str_idx = std::min(
 		(size_t)(type - GL_DEBUG_TYPE_ERROR),
 		(size_t)(sizeof(types) / sizeof(const char*) - 1)
 	);
@@ -583,7 +587,7 @@ const char* debug_severity_str(GLenum severity) {
 	  "High", "Medium", "Low", "Unknown"
 	};
 
-	int str_idx = std::min(
+	auto str_idx = std::min(
 		(size_t)(severity - GL_DEBUG_SEVERITY_HIGH),
 		(size_t)(sizeof(severities) / sizeof(const char*) - 1)
 	);

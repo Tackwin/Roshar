@@ -212,7 +212,7 @@ void render::immediate(Sprite_Info info) noexcept {
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
 		auto label = "sprite_info_vbo";
-		glObjectLabel(GL_BUFFER, quad_vbo, strlen(label) - 1, label);
+		glObjectLabel(GL_BUFFER, quad_vbo, (GLsizei)strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
@@ -290,7 +290,7 @@ void render::immediate(Circle_Info info) noexcept {
 			GL_ARRAY_BUFFER, 2 * Half_Prec * 3 * sizeof(GLfloat), vertices, GL_STATIC_DRAW
 		);
 		auto label = "circle_info_vbo";
-		glObjectLabel(GL_BUFFER, vbo, strlen(label) - 1, label);
+		glObjectLabel(GL_BUFFER, vbo, (GLsizei)strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
@@ -332,7 +332,7 @@ void render::immediate(Rectangle_Info info) noexcept {
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
 		auto label = "rectangle_info_vbo";
-		glObjectLabel(GL_BUFFER, quad_vbo, strlen(label) - 1, label);
+		glObjectLabel(GL_BUFFER, quad_vbo, (GLsizei)strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
@@ -437,7 +437,7 @@ void render::immediate(Line_Info info) noexcept {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
 		auto label = "line_info_vbo";
-		glObjectLabel(GL_BUFFER, vbo, strlen(label) - 1, label);
+		glObjectLabel(GL_BUFFER, vbo, (GLsizei)strlen(label) - 1, label);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}

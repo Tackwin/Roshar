@@ -7,9 +7,9 @@
 #include "Math/Matrix.hpp"
 
 struct ShaderInfo {
-	size_t vertexId = 0;
-	size_t programId = 0;
-	size_t fragmentId = 0;
+	std::uint32_t vertexId = 0;
+	std::uint32_t programId = 0;
+	std::uint32_t fragmentId = 0;
 
 	bool vertex_compiled{ false };
 	bool vertex_linked{ false };
@@ -43,7 +43,7 @@ public:
 	void set_origin(Vector2f origin) noexcept;
 	void set_position(Vector2f pos) noexcept;
 	void set_size(Vector2f size) noexcept;
-	void set_texture(size_t id) noexcept;
+	void set_texture(std::uint32_t id) noexcept;
 
 	void set_use_texture(bool x) noexcept;
 
@@ -60,10 +60,10 @@ public:
 	void set_uniform(const std::string& name, int x) noexcept;
 
 private:
-	std::unordered_map<std::string, size_t> cache_loc;
+	std::unordered_map<std::string, std::uint32_t> cache_loc;
 
-	std::optional<std::string> check_shader_error(size_t shader) noexcept;
-	std::optional<std::string> check_program_error(size_t program) noexcept;
+	std::optional<std::string> check_shader_error(std::uint32_t shader) noexcept;
+	std::optional<std::string> check_program_error(std::uint32_t program) noexcept;
 
 	ShaderInfo info;
 };

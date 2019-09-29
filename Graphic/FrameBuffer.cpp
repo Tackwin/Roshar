@@ -6,37 +6,67 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 	glGenFramebuffers(1, &g_buffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, g_buffer);
 	auto label = "geometry_buffer";
-	glObjectLabel(GL_FRAMEBUFFER, g_buffer, strlen(label) - 1, label);
+	glObjectLabel(GL_FRAMEBUFFER, g_buffer, (GLsizei)strlen(label) - 1, label);
 
 	// - color + specular color buffer
 	glGenTextures(1, &albedo_buffer);
 	glBindTexture(GL_TEXTURE_2D, albedo_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		0,
+		GL_RGBA,
+		GL_UNSIGNED_BYTE,
+		NULL
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, albedo_buffer, 0);
 	label = "geometry_color + specular";
-	glObjectLabel(GL_TEXTURE, albedo_buffer, strlen(label) - 1, label);
+	glObjectLabel(GL_TEXTURE, albedo_buffer, (GLsizei)strlen(label) - 1, label);
 
 	// - normal color buffer
 	glGenTextures(1, &normal_buffer);
 	glBindTexture(GL_TEXTURE_2D, normal_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA16F,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		0,
+		GL_RGBA,
+		GL_FLOAT,
+		NULL
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normal_buffer, 0);
 	label = "geometry_normal_color";
-	glObjectLabel(GL_TEXTURE, normal_buffer, strlen(label) - 1, label);
+	glObjectLabel(GL_TEXTURE, normal_buffer, (GLsizei)strlen(label) - 1, label);
 
 	// - position color buffer
 	glGenTextures(1, &pos_buffer);
 	glBindTexture(GL_TEXTURE_2D, pos_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA16F,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		0,
+		GL_RGBA,
+		GL_FLOAT,
+		NULL
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, pos_buffer, 0);
 	label = "geometry_pos_buffer";
-	glObjectLabel(GL_TEXTURE, pos_buffer, strlen(label) - 1, label);
+	glObjectLabel(GL_TEXTURE, pos_buffer, (GLsizei)strlen(label) - 1, label);
 
 	// - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
 	unsigned int attachments[] = {
@@ -46,14 +76,14 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 
 	glGenRenderbuffers(1, &depth_rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)size.x, (GLsizei)size.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		assert("Framebuffer not complete!");
 	}
 	label = "geometry_depth";
-	glObjectLabel(GL_RENDERBUFFER, depth_rbo, strlen(label) - 1, label);
+	glObjectLabel(GL_RENDERBUFFER, depth_rbo, (GLsizei)strlen(label) - 1, label);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -135,7 +165,18 @@ void G_Buffer::copy_depth_to(uint32_t id) noexcept {
 	// blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
 	// the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the 		
 	// depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-	glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(
+		0,
+		0,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		0,
+		0,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		GL_DEPTH_BUFFER_BIT,
+		GL_NEAREST
+	);
 	glBindFramebuffer(GL_FRAMEBUFFER, id);
 }
 
@@ -148,12 +189,12 @@ void G_Buffer::copy_depth_to(uint32_t id, Rectanglef v) noexcept {
 	glBlitFramebuffer(
 		0,
 		0,
-		size.x,
-		size.y,
-		(size_t)(v.x * size.x),
-		(size_t)(v.y * size.y),
-		(size_t)((v.x + v.w) * size.x),
-		(size_t)((v.y + v.h) * size.y),
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		(GLsizei)(v.x * size.x),
+		(GLsizei)(v.y * size.y),
+		(GLsizei)((v.x + v.w) * size.x),
+		(GLsizei)((v.y + v.h) * size.y),
 		GL_DEPTH_BUFFER_BIT,
 		GL_NEAREST
 	);
@@ -166,17 +207,27 @@ HDR_Buffer::HDR_Buffer(Vector2u size) noexcept : size(size) {
 
 	glGenTextures(1, &color_buffer);
 	glBindTexture(GL_TEXTURE_2D, color_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA16F,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		0,
+		GL_RGBA,
+		GL_FLOAT,
+		NULL
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	auto label = "hdr_color_buffer";
-	glObjectLabel(GL_TEXTURE, color_buffer, strlen(label) - 1, label);
+	glObjectLabel(GL_TEXTURE, color_buffer, (GLsizei)strlen(label) - 1, label);
 
 	// attach buffers
 	glBindFramebuffer(GL_FRAMEBUFFER, hdr_buffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_buffer, 0);
 	label = "hdr_frame_buffer";
-	glObjectLabel(GL_FRAMEBUFFER, hdr_buffer, strlen(label) - 1, label);
+	glObjectLabel(GL_FRAMEBUFFER, hdr_buffer, (GLsizei)strlen(label) - 1, label);
 
 	unsigned int attachments[1] = {
 		GL_COLOR_ATTACHMENT0
@@ -185,7 +236,7 @@ HDR_Buffer::HDR_Buffer(Vector2u size) noexcept : size(size) {
 
 	glGenRenderbuffers(1, &rbo_buffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_buffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)size.x, (GLsizei)size.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_buffer);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -258,7 +309,7 @@ Texture_Buffer::Texture_Buffer(Vector2u size) noexcept {
 
 	texture.create_rgb_null(size);
 	label = "texture_target";
-	glObjectLabel(GL_TEXTURE, texture.get_texture_id(), strlen(label) - 1, label);
+	glObjectLabel(GL_TEXTURE, texture.get_texture_id(), (GLsizei)strlen(label) - 1, label);
 
 	// attach buffers
 	glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
@@ -273,7 +324,7 @@ Texture_Buffer::Texture_Buffer(Vector2u size) noexcept {
 
 	glGenRenderbuffers(1, &rbo_buffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_buffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)size.x, (GLsizei)size.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_buffer);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -348,7 +399,17 @@ SSAO_Buffer::SSAO_Buffer(Vector2u size) noexcept {
 
 	glGenTextures(1, &color_buffer);
 	glBindTexture(GL_TEXTURE_2D, color_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, size.x, size.y, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RED,
+		(GLsizei)size.x,
+		(GLsizei)size.y,
+		0,
+		GL_RGB,
+		GL_FLOAT,
+		NULL
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_buffer, 0);
@@ -356,7 +417,9 @@ SSAO_Buffer::SSAO_Buffer(Vector2u size) noexcept {
 	glBindFramebuffer(GL_FRAMEBUFFER, ssao_blur_buffer);
 	glGenTextures(1, &blur_buffer);
 	glBindTexture(GL_TEXTURE_2D, blur_buffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, size.x, size.y, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(
+		GL_TEXTURE_2D, 0, GL_RED, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_FLOAT, NULL
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blur_buffer, 0);
@@ -418,6 +481,6 @@ void SSAO_Buffer::set_active_texture_for_blur() noexcept {
 }
 
 void SSAO_Buffer::set_active_texture(size_t n) noexcept {
-	glActiveTexture(GL_TEXTURE0 + n);
+	glActiveTexture((GLenum)(GL_TEXTURE0 + n));
 	glBindTexture(GL_TEXTURE_2D, blur_buffer);
 }

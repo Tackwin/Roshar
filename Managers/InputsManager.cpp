@@ -6,8 +6,6 @@
 #include <Windows.h>
 #include <Xinput.h>
 
-#include <SFML/Graphics.hpp>
-
 #include "imgui.h"
 #include "../OS/file.hpp"
 
