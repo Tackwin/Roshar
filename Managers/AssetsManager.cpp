@@ -9,6 +9,7 @@
 #include "../Level.hpp"
 
 #include "Graphic/OpenGL.hpp"
+#include "Assets.hpp"
 
 using namespace asset;
 
@@ -85,6 +86,24 @@ namespace asset {
 	textures.emplace(k, Asset_t<Texture>{});
 
 	return k;
+}
+
+[[nodiscard]] Animation& Store_t::get_animation(Key k) noexcept {
+	return animations.at(k).asset;
+}
+[[nodiscard]] std::optional<Key> Store_t::load_animation(std::filesystem::path path) noexcept {
+	auto k = xstd::uuid();
+	if (!load_animation(k, path)) return std::nullopt;
+	return k;
+}
+[[nodiscard]] bool Store_t::load_animation(Key k, std::filesystem::path path) noexcept {
+	auto opt_str = load_from_json_file(path);
+	if (!opt_str) return false;
+
+	animations[k].asset = (Animation)*opt_str;
+	animations[k].path = path;
+
+	return true;
 }
 
 static int attribs[] = {
@@ -164,7 +183,7 @@ void Store_t::load_known_textures() noexcept {
 	printf("Loading " str " ... ");\
 	opt = load_texture(str);\
 	if (opt) {\
-		Known_Textures::x = *opt;\
+		Texture_Id::x = *opt;\
 		printf("sucess :) !\n");\
 	}\
 	else {\
@@ -174,6 +193,7 @@ void Store_t::load_known_textures() noexcept {
 	X("textures/basic_binding_indicator_head.png", Basic_Binding_Indicator_Head);
 	X("textures/basic_binding_indicator_body.png", Basic_Binding_Indicator_Body);
 	X("textures/indicator.png",                    Indicator                   );
+	X("textures/guy_sheet.png",                    Guy_Sheet                   );
 	X("textures/rock.png",                         Rock                        );
 	X("textures/key.png",                          Key_Item                    );
 
@@ -189,7 +209,7 @@ void Store_t::load_known_shaders() noexcept {
 	printf("Loading " #x " shader... ");\
 	opt = load_shader(f, v);\
 	if (opt) {\
-		Known_Shaders::x = *opt;\
+		Shader_Id::x = *opt;\
 		printf("sucess :) !\n");\
 	}\
 	else {\
@@ -201,3 +221,30 @@ void Store_t::load_known_shaders() noexcept {
 	X("shaders/hdr.vertex",     "shaders/hdr.fragment",     HDR    );
 #undef X
 }
+
+void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
+	Animation_Id::Guy = xstd::uuid();
+	auto f = [&, config_path] {
+		auto opt = load_from_json_file(config_path);
+		if (!opt) {
+			printf("Erreur.\n");
+			return;
+		}
+
+		dyn_struct config = std::move(*opt);
+
+		std::lock_guard guard{ Main_Mutex };
+		if (has(config, "animations")) {
+			const auto& anim = config["animations"];
+
+			if (has(anim, "Guy")) {
+				printf("Load Guy animations.\n");
+				animations[Animation_Id::Guy].asset = (Animation)anim["Guy"];
+			}
+		}
+	};
+	file::monitor_file(std::filesystem::canonical(Exe_Path / config_path), f);
+	f();
+}
+
+

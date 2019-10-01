@@ -11,9 +11,10 @@
 #include <io.h>
 #include <fcntl.h>
 
+#include "Assets.hpp"
 #include "Math/Vector.hpp"
-#include "Graphic/Graphics.hpp"
 #include "Graphic/OpenGL.hpp"
+#include "Graphic/Graphics.hpp"
 #include "Graphic/FrameBuffer.hpp"
 
 #include <imgui.h>
@@ -183,7 +184,8 @@ int WINAPI WinMain(
 
 	asset::Store.monitor_path("shaders/");
 	asset::Store.monitor_path("textures/");
-	
+
+	asset::Store.load_from_config("config.json");
 	asset::Store.load_known_shaders();
 	asset::Store.load_known_textures();
 
@@ -219,7 +221,7 @@ int WINAPI WinMain(
 
 		Main_Mutex.lock();
 		defer{ Main_Mutex.unlock(); };
-		
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
@@ -235,7 +237,9 @@ int WINAPI WinMain(
 		ImGui::InputFloat("Speed up", &Environment.speed_up_step);
 		ImGui::InputFloat("Offset", &Environment.offset);
 		ImGui::Checkbox("Debug Input", &Environment.debug_input);
+
 		int x = (int)Environment.debug_framebuffer;
+
 		ImGui::ListBox(
 			"Debug Framebuffer",
 			&x,
@@ -376,7 +380,7 @@ void render_orders(render::Orders& orders) noexcept {
 		}
 	}
 
-	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Light);
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Light);
 	shader.use();
 	if (!ambient_lights.empty()) {
 		auto& back = ambient_lights.back();
@@ -403,7 +407,7 @@ void render_orders(render::Orders& orders) noexcept {
 	ImGui::InputFloat("gamma", &gamma);
 	ImGui::InputFloat("exposure", &exposure);
 
-	auto& shader_hdr = asset::Store.get_shader(asset::Known_Shaders::HDR);
+	auto& shader_hdr = asset::Store.get_shader(asset::Shader_Id::HDR);
 	shader_hdr.use();
 	shader_hdr.set_uniform("gamma", gamma);
 	shader_hdr.set_uniform("exposure", exposure);

@@ -1,5 +1,7 @@
 #include "Graphics.hpp"
 
+#include "Assets.hpp"
+
 #include <GL/glew.h>
 
 void render::Orders::clear() noexcept {
@@ -134,7 +136,7 @@ render::Order render::sprite(
 	info.rotation = rotation;
 	info.color = color;
 	info.texture = texture;
-	info.shader = shader ? 0 : asset::Known_Shaders::Default;
+	info.shader = shader ? 0 : asset::Shader_Id::Default;
 	info.texture_rect = texture_rect;
 
 	Order order;
@@ -295,7 +297,7 @@ void render::immediate(Circle_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 	
-	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
 	shader.set_view(current_view.world_bounds);
@@ -337,7 +339,7 @@ void render::immediate(Rectangle_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
-	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
 	shader.set_view(current_view.world_bounds);
@@ -396,7 +398,7 @@ void render::immediate(Arrow_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
-	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
 	shader.set_view(current_view.world_bounds);
@@ -442,7 +444,7 @@ void render::immediate(Line_Info info) noexcept {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	}
 
-	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Default);
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Default);
 	shader.use();
 	shader.set_window_size({ Environment.window_width, Environment.window_height });
 	shader.set_view(current_view.world_bounds);
@@ -461,7 +463,7 @@ void render::immediate(Line_Info info) noexcept {
 }
 
 void render::immediate(Point_Light_Info info) noexcept {
-	auto& shader = asset::Store.get_shader(asset::Known_Shaders::Light);
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Light);
 	shader.use();
 
 	auto pre = "light_points[" + std::to_string(info.idx) + "].";

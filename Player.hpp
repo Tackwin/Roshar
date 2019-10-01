@@ -7,7 +7,9 @@
 
 #include "Math/Vector.hpp"
 
+#include "Graphic/Animation.hpp"
 #include "Graphic/Graphics.hpp"
+
 
 struct Player {
 	Vector2f pos;
@@ -135,6 +137,8 @@ private:
 	bool cant_grap{ false };
 
 	Vector2f velocity_from_jump{};
+
+	size_t animation_idx{ 0 };
 
 	void render_bindings(render::Orders& orders) const noexcept;
 

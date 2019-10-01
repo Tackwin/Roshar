@@ -47,8 +47,13 @@ file::read_whole_file(const std::filesystem::path& path) noexcept {
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL,
 		nullptr
-        );
+	);
 	if (handle == INVALID_HANDLE_VALUE) {
+		auto err = GetLastError();
+
+		
+
+		printf("Erreur create file. %d\n", err);
 		return Error::Win_Create_File;
 	}
 	defer{ CloseHandle(handle); };
@@ -286,7 +291,7 @@ void file::monitor_file(std::filesystem::path path, std::function<void()> f) noe
 		hNotify = FindFirstChangeNotification(
 			path_str.data(),
 			FALSE,
-			FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE
+			FILE_NOTIFY_CHANGE_LAST_WRITE
 		);
 
 		for (;;) {
@@ -300,9 +305,11 @@ void file::monitor_file(std::filesystem::path path, std::function<void()> f) noe
 			}
 
 			f();
+
+			if (!FindNextChangeNotification(hNotify)) break;
 		}
 
-		FindClose(hNotify);
+		FindCloseChangeNotification(hNotify);
 	} };
 
 	t.detach();

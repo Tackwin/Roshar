@@ -11,6 +11,8 @@
 #include "OS/file.hpp"
 #include "Game.hpp"
 
+#include "Assets.hpp"
+
 void match_and_destroy_keys(Player& p, Door& d) noexcept;
 
 void Block::render(render::Orders& target) const noexcept {
@@ -97,7 +99,7 @@ void Rock::render(render::Orders& target) const noexcept {
 	target.push_sprite(
 		pos,
 		{ 2 * r, 2 * r },
-		asset::Known_Textures::Rock,
+		asset::Texture_Id::Rock,
 		{ 0, 0, 1, 1 },
 		{ .5, .5 },
 		0.f,
@@ -249,7 +251,7 @@ void Key_Item::render(render::Orders& target) const noexcept {
 	target.push_sprite(
 		pos,
 		Key_World_Size,
-		asset::Known_Textures::Key_Item,
+		asset::Texture_Id::Key_Item,
 		{ 0, 0, 1, 1 },
 		{ 0, 0 },
 		0,
@@ -380,7 +382,7 @@ void Level::render(render::Orders& target) const noexcept {
 		target.push_sprite(
 			rocks[*focused_rock].pos,
 			V2F(1.5f),
-			asset::Known_Textures::Indicator,
+			asset::Texture_Id::Indicator,
 			{ 0, 0, 1, 1 },
 			{.5f , .5f}
 		);

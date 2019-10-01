@@ -52,14 +52,14 @@ bool Texture::load_file(std::filesystem::path path) {
 	bind();
 
 	glTexImage2D(
-		GL_TEXTURE_2D, 
-		0, 
-		GL_RGBA, 
-		info.width, 
-		info.height, 
-		0, 
-		GL_RGBA, 
-		GL_UNSIGNED_BYTE, 
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA,
+		info.width,
+		info.height,
+		0,
+		GL_RGBA,
+		GL_UNSIGNED_BYTE,
 		data
 	);
 	glGenerateMipmap(GL_TEXTURE_2D);

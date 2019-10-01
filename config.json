@@ -1,0 +1,8 @@
+{
+	"animations": {
+		"Guy": [
+			{ "count": 2, "time": 1 },
+			{ "count": 7, "time": 1 }
+		]		
+	}
+}

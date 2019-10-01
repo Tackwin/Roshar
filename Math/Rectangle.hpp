@@ -148,6 +148,13 @@ struct Rectangle_t {
 		return y > other.y && distEdgeToEdge < sumOfWidth;
 	}
 
+	Rectangle_t<T> flip_x() noexcept {
+		auto copy = *this;
+		copy.x += copy.w;
+		copy.w *= -1;
+		return copy;
+	}
+
 	Rectangle_t<T> zoom(float factor) noexcept {
 		return {
 			center() - size * factor * 0.5,
@@ -318,4 +325,8 @@ double dist_to2(const Vector<2, T>& vec, const Rectangle_t<T> & rec) noexcept {
 	}
 
 	return dt.length2();
+}
+
+inline void printf(const Rectanglef& rec) noexcept {
+	printf("%3.3f, %3.3f, %3.3f, %3.3f\n", rec.x, rec.y, rec.w, rec.h);
 }

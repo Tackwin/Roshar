@@ -315,6 +315,7 @@
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="global.cpp" />
+    <ClCompile Include="Graphic\Animation.cpp" />
     <ClCompile Include="Graphic\FrameBuffer.cpp" />
     <ClCompile Include="Graphic\Graphics.cpp" />
     <ClCompile Include="Graphic\imgui_impl_opengl3.cpp" />
@@ -330,12 +331,14 @@
     <ClCompile Include="win32_main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Assets.hpp" />
     <ClInclude Include="Collision.hpp" />
     <ClInclude Include="constexpr.hpp" />
     <ClInclude Include="dyn_struct.hpp" />
     <ClInclude Include="Editor.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="global.hpp" />
+    <ClInclude Include="Graphic\Animation.hpp" />
     <ClInclude Include="Graphic\FrameBuffer.hpp" />
     <ClInclude Include="Graphic\Graphics.hpp" />
     <ClInclude Include="Graphic\imgui_impl_opengl3.hpp" />
