@@ -258,3 +258,4 @@ paket-files/
 /Build
 /Debug_Win
 /Release_Win
+/out/build/x64-Debug

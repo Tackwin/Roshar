@@ -717,8 +717,10 @@ void Level::update_player(float dt) noexcept {
 	}
 	else {
 		player.just_jumped = false;
+		if (new_floored && !player.floored) player.just_floored = true;
 		player.floored = new_floored;
 	}
+
 
 	if (!game->died) {
 		for (auto& x : kill_zones) if (test(x, player)) {

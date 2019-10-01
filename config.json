@@ -1,8 +1,10 @@
 {
 	"animations": {
 		"Guy": [
-			{ "count": 2, "time": 1 },
-			{ "count": 7, "time": 1 }
+			{ "count": 2, "time": 0.50 },
+			{ "count": 7, "time": 1.00 },
+			{ "count": 2, "time": 0.1 },			
+			{ "count": 2, "time": 0.50 }			
 		]		
 	}
 }

@@ -305,7 +305,7 @@ std::optional<Level> Game::load_level(std::filesystem::path path) noexcept {
 		return std::nullopt;
 	}
 
-	Level new_level = (Level)* opt_dyn;
+	Level new_level = (Level)*opt_dyn;
 	new_level.save_path = path;
 	return new_level;
 }

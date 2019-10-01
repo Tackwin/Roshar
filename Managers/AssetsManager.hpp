@@ -39,7 +39,7 @@ namespace asset {
 
 		std::unordered_map<std::uint64_t, Asset_t<Shader>> shaders;
 		std::unordered_map<std::uint64_t, Asset_t<Texture>> textures;
-		std::unordered_map<std::uint64_t, Asset_t<Animation>> animations;
+		std::unordered_map<std::uint64_t, Asset_t<Animation_Sheet>> animations;
 
 		[[nodiscard]] Texture* get_normal(Key k) const noexcept;
 		[[nodiscard]] Texture& get_albedo(Key k) noexcept;
@@ -55,7 +55,7 @@ namespace asset {
 			Key k, std::filesystem::path vertex, std::filesystem::path fragment
 		) noexcept;
 
-		[[nodiscard]] Animation& get_animation(Key k) noexcept;
+		[[nodiscard]] Animation_Sheet& get_animation(Key k) noexcept;
 		[[nodiscard]] std::optional<Key> load_animation(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_animation(Key k, std::filesystem::path path) noexcept;
 

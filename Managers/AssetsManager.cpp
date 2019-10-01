@@ -88,7 +88,7 @@ namespace asset {
 	return k;
 }
 
-[[nodiscard]] Animation& Store_t::get_animation(Key k) noexcept {
+[[nodiscard]] Animation_Sheet& Store_t::get_animation(Key k) noexcept {
 	return animations.at(k).asset;
 }
 [[nodiscard]] std::optional<Key> Store_t::load_animation(std::filesystem::path path) noexcept {
@@ -100,7 +100,7 @@ namespace asset {
 	auto opt_str = load_from_json_file(path);
 	if (!opt_str) return false;
 
-	animations[k].asset = (Animation)*opt_str;
+	animations[k].asset = (Animation_Sheet)*opt_str;
 	animations[k].path = path;
 
 	return true;
@@ -239,7 +239,7 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 
 			if (has(anim, "Guy")) {
 				printf("Load Guy animations.\n");
-				animations[Animation_Id::Guy].asset = (Animation)anim["Guy"];
+				animations[Animation_Id::Guy].asset = (Animation_Sheet)anim["Guy"];
 			}
 		}
 	};

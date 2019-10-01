@@ -9,10 +9,12 @@
 #include "Collision.hpp"
 #include "Math/Circle.hpp"
 
-constexpr size_t Idle_Animation = 0;
-constexpr size_t Run_Animation = 1;
+constexpr size_t Idle_Animation      = 0;
+constexpr size_t Run_Animation       = 1;
+constexpr size_t Jump_Animation      = 2;
+constexpr size_t Jump_Idle_Animation = 3;
 
-Animation& get_animation() noexcept;
+Animation_Sheet& get_animation() noexcept;
 
 void Player::input(Input_Iterator this_record) noexcept {
 	auto prev_motion = wanted_motion;
@@ -170,7 +172,12 @@ void Player::update(float dt) noexcept {
 	controller_binding_candidate_time -= dt;
 	jump_cant_grap_timer -= dt;
 
-	get_animation().update(animation_idx, dt);
+	if (just_floored) {
+		animation.running_idx = Idle_Animation;
+		just_floored = false;
+	}
+
+	animation.update(dt);
 
 	if (jump_cant_grap_timer < 0.f) {
 		cant_grap = false;
@@ -221,7 +228,7 @@ void Player::render(render::Orders& target) const noexcept {
 	auto rec = Rectanglef{ pos, size };
 	if (last_dir == Dir::Left) rec = rec.flip_x();
 
-	target.push_sprite(rec, asset::Texture_Id::Guy_Sheet, get_animation().get_rec(animation_idx));
+	target.push_sprite(rec, asset::Texture_Id::Guy_Sheet, animation.get_rec());
 
 	render_bindings(target);
 }
@@ -296,14 +303,13 @@ void Player::clear_all_basic_bindings() noexcept {
 }
 
 void Player::start_move_sideway() noexcept {
-	animation_idx = Run_Animation;
 	if (speed_up_timer <= 0) speed_up_timer = Speed_Up_Time;
 	speed_down_timer = 0.f;
 	move_factor = 1.f;
 }
 void Player::stop_move_sideway() noexcept {
 	speed_down_timer = Speed_Down_Time;
-	animation_idx = Idle_Animation;
+	animation.running_idx = Idle_Animation;
 }
 void Player::move_sideway(Player::Dir dir) noexcept {
 	want_to_go = dir;
@@ -313,6 +319,8 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 	if (dir == Right) top_speed *= 5;
 	else if (dir == Left) top_speed *= -5;
 	else assert(false); // Logic error.
+
+	if (floored) animation.running_idx = Run_Animation;
 
 	top_speed *= move_factor * (want_slow ? Slow_Factor : 1);
 	flat_velocities.push_back({ top_speed, 0 });
@@ -344,6 +352,9 @@ void Player::jump() noexcept {
 		}
 	}
 	normal.normalize();
+
+	animation.running_idx = Jump_Idle_Animation;
+	animation.once_stack.push_back(Jump_Animation);
 
 	if (!falling_back) {
 		velocity_from_jump += 1.5f * normal;
@@ -463,6 +474,6 @@ Vector2f Player::get_direct_control_velocity() noexcept {
 	return flat_sum;
 }
 
-Animation& get_animation() noexcept {
+Animation_Sheet& get_animation() noexcept {
 	return asset::Store.get_animation(asset::Animation_Id::Guy);
 }

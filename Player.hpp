@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "Managers/InputsManager.hpp"
+#include "Assets.hpp"
 
 #include "Math/Vector.hpp"
 
@@ -41,6 +42,7 @@ struct Player {
 		std::vector<std::uint64_t> zones_uuid;
 	} forced;
 
+
 	std::vector<std::uint64_t> own_keys;
 
 	std::vector<std::vector<Vector2f>*> binding_origin_history;
@@ -48,6 +50,7 @@ struct Player {
 	float prest{ 0.f };
 
 	bool floored{ false };
+	bool just_floored{ false };
 	bool just_jumped{ false };
 	bool falling_back{ false };
 
@@ -138,7 +141,7 @@ private:
 
 	Vector2f velocity_from_jump{};
 
-	size_t animation_idx{ 0 };
+	Animation animation{ asset::Animation_Id::Guy };
 
 	void render_bindings(render::Orders& orders) const noexcept;
 
