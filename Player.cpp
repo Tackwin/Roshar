@@ -225,7 +225,7 @@ void Player::update(float dt) noexcept {
 }
 
 void Player::render(render::Orders& target) const noexcept {
-	auto rec = Rectanglef{ pos, size };
+	auto rec = Rectanglef{ hitbox }.zoom(2);
 	if (last_dir == Dir::Left) rec = rec.flip_x();
 
 	target.push_sprite(rec, asset::Texture_Id::Guy_Sheet, animation.get_rec());
@@ -234,7 +234,7 @@ void Player::render(render::Orders& target) const noexcept {
 }
 
 void Player::render_bindings(render::Orders& orders) const noexcept {
-	auto center = pos + size / 2;
+	auto center = hitbox.center();
 	auto body_texture = asset::Texture_Id::Basic_Binding_Indicator_Body;
 	auto head_texture = asset::Texture_Id::Basic_Binding_Indicator_Head;
 
@@ -289,7 +289,7 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 		}
 
 		prest_gathered *= .1f;
-		orders.push_circle(prest_gathered, pos + size / 2, { 0, 1, 0, 1 });
+		orders.push_circle(prest_gathered, hitbox.center(), { 0, 1, 0, 1 });
 	}
 
 }
@@ -402,7 +402,7 @@ void Player::start_drag() noexcept {
 		auto range = Environment.binding_range * Environment.binding_range;
 		if (
 			is_in(mouse_world_pos, { x.pos, x.r }) &&
-			(x.pos - (pos + size / 2)).length2() <= range
+			(x.pos - hitbox.center()).length2() <= range
 		) {
 			dragged_rock = x.running_id;
 			return;

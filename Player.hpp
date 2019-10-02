@@ -13,8 +13,7 @@
 
 
 struct Player {
-	Vector2f pos;
-	Vector2f size{ 0.4f, 0.7f };
+	Rectanglef hitbox{ 0, 0, .4f, .7f };
 	Vector2f velocity;
 	Vector2f forces;
 

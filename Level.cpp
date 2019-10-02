@@ -396,7 +396,7 @@ void Level::input(IM::Input_Iterator record) noexcept {
 
 	player.input(record);
 	if (record->is_just_pressed(Keyboard::Return)) {
-		markers.push_back(player.pos);
+		markers.push_back(player.hitbox.center());
 
 		if (record->is_pressed(Keyboard::LSHIFT)) markers.clear();
 	}
@@ -405,10 +405,10 @@ void Level::input(IM::Input_Iterator record) noexcept {
 	if (record->is_just_pressed(Joystick::LB) && !rocks.empty()) {
 		auto sorted_rocks = rocks;
 		sorted_rocks.erase(std::remove_if(BEG_END(sorted_rocks), [&](Rock& x) {
-			return (x.pos - player.pos).length2() > range;
+			return (x.pos - player.hitbox.pos).length2() > range;
 		}), END(sorted_rocks));
 		std::sort(BEG_END(sorted_rocks), [&](const Rock& a, const Rock& b) {
-			return (a.pos - player.pos).length() < (b.pos - player.pos).length();
+			return (a.pos - player.hitbox.pos).length() < (b.pos - player.hitbox.pos).length();
 		});
 
 		if (!sorted_rocks.empty() && !focused_rock) {
@@ -443,7 +443,7 @@ void Level::update(float dt) noexcept {
 
 	for (auto& x : trigger_zones) {
 		x.triggered =
-			test(x, { player.pos, player.size }) ||
+			test(x, player.hitbox) ||
 			std::any_of(BEG_END(rocks), [&x](const Rock& y) { return test(y, x.rec); });
 	}
 
@@ -498,19 +498,21 @@ void Level::update(float dt) noexcept {
 		x.rec.pos += x.to_move;
 
 		if (test(player, x.rec)) x.colliding_player = true;
-		if (x.colliding_player) player.pos += x.to_move;
+		if (x.colliding_player) player.hitbox.pos += x.to_move;
 	}
 
 	if (focused_rock) {
 		auto range = Environment.binding_range * Environment.binding_range;
 
-		if (player.pos.dist_to2(rocks[*focused_rock].pos) > range) focused_rock.reset();
+		if (player.hitbox.center().dist_to2(rocks[*focused_rock].pos) > range)
+			focused_rock.reset();
 	}
 
 	update_player(dt);
 	test_collisions(dt);
 
-	for (auto& d : doors) if (dist_to2(player.pos, d.rec) < 1) match_and_destroy_keys(player, d);
+	for (auto& d : doors) if (dist_to2(player.hitbox.center(), d.rec) < 1)
+		match_and_destroy_keys(player, d);
 }
 
 void Level::test_collisions(float dt) noexcept {
@@ -567,7 +569,7 @@ void Level::test_collisions(float dt) noexcept {
 		if (player.auto_binded_from_zones.count(x.uuid)) continue;
 
 		if (
-			x.rec.intersect({ player.pos, player.size }) &&
+			x.rec.intersect(player.hitbox) &&
 			!player.auto_binded_from_zones.contains(x.uuid)
 		) {
 			player.add_forced_binding(x.binding, x.uuid);
@@ -582,7 +584,7 @@ void Level::test_collisions(float dt) noexcept {
 	}
 
 	for (size_t i = key_items.size() - 1; i + 1 > 0; --i) {
-		if (test(key_items[i], { player.pos, player.size })) {
+		if (test(key_items[i], player.hitbox)) {
 			player.own_keys.push_back(key_items[i].id);
 			key_items.erase(BEG(key_items) + i);
 		}
@@ -590,7 +592,7 @@ void Level::test_collisions(float dt) noexcept {
 }
 
 void Level::update_player(float dt) noexcept {
-	auto previous_player_pos = player.pos;
+	auto previous_player_pos = player.hitbox.pos;
 	player.update(dt);
 
 	bool just_direct_control_velocity{ false };
@@ -609,10 +611,10 @@ void Level::update_player(float dt) noexcept {
 
 			if (!auto_climb) continue;
 			
-			auto dt_y = player.pos.y - (blocks[i].pos.y + blocks[i].size.y);
-			if (-player.size.y / 5.f < dt_y && dt_y < 0) {
-				player.pos.y = blocks[i].pos.y + blocks[i].size.y;
-				previous_player_pos.y = player.pos.y;
+			auto dt_y = player.hitbox.y - (blocks[i].pos.y + blocks[i].size.y);
+			if (-player.hitbox.h / 5.f < dt_y && dt_y < 0) {
+				player.hitbox.y = blocks[i].pos.y + blocks[i].size.y;
+				previous_player_pos.y = player.hitbox.y;
 				if (correcting_count-- > 0) goto corrected_position;
 			}
 		}
@@ -620,7 +622,7 @@ void Level::update_player(float dt) noexcept {
 		for (size_t i = 0; i < blocks.size(); ++i) {
 			auto& b = blocks[i];
 
-			auto grap_box = Rectanglef{ player.pos, player.size };
+			auto grap_box = player.hitbox;
 			grap_box.size += .1f;
 			grap_box.pos -= .05f;
 
@@ -631,7 +633,8 @@ void Level::update_player(float dt) noexcept {
 				player.clear_movement_x();
 				player.clear_movement_y();
 
-				player.grappling_normal = Rectanglef{ b.pos, b.size }.get_normal_to(player.pos);
+				player.grappling_normal =
+					Rectanglef{ b.pos, b.size }.get_normal_to(player.hitbox.pos);
 			}
 
 			if (!test(b, player)) continue;
@@ -646,10 +649,10 @@ void Level::update_player(float dt) noexcept {
 
 			if (!auto_climb) continue;
 
-			auto dt_y = player.pos.y - (b.pos.y + b.size.y);
-			if (-player.size.y / 5.f < dt_y && dt_y < 0) {
-				player.pos.y = b.pos.y + b.size.y;
-				previous_player_pos.y = player.pos.y;
+			auto dt_y = player.hitbox.y - (b.pos.y + b.size.y);
+			if (-player.hitbox.h / 5.f < dt_y && dt_y < 0) {
+				player.hitbox.y = b.pos.y + b.size.y;
+				previous_player_pos.y = player.hitbox.y;
 				if (correcting_count-- > 0) goto corrected_position;
 			}
 		}
@@ -659,7 +662,7 @@ void Level::update_player(float dt) noexcept {
 			if (!test(player, moving_blocks[i].rec)) continue;
 
 			moving_blocks[i].colliding_player |=
-				player.pos.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
+				player.hitbox.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
 			flag = true;
 		}
 
@@ -672,7 +675,7 @@ void Level::update_player(float dt) noexcept {
 	auto direct_velocities = player.get_direct_control_velocity();
 	player.flat_velocities.clear();
 	for (const auto& x : friction_zones) {
-		if (x.rec.intersect({ player.pos, player.size })) {
+		if (x.rec.intersect(player.hitbox)) {
 			velocities *= x.friction;
 			player.apply_friction(std::powf(x.friction, dt));
 		}
@@ -686,27 +689,27 @@ void Level::update_player(float dt) noexcept {
 	bool hard_border_x{ false };
 	bool hard_border_y{ false };
 
-	player.pos.x += velocities.x * dt;
+	player.hitbox.x += velocities.x * dt;
 	collided_x = test_solids(true);
 	hard_border_x = hard_border;
 	if (collided_x) {
 		impact += velocities.x * velocities.x;
-		player.pos.x = previous_player_pos.x;
+		player.hitbox.x = previous_player_pos.x;
 		player.clear_movement_x();
 	}
-	player.pos.y += velocities.y * dt;
+	player.hitbox.y += velocities.y * dt;
 	collided_y = test_solids(false);
 	hard_border_y = hard_border;
 	if (collided_y) {
 		impact += velocities.y * velocities.y;
-		player.pos.y = previous_player_pos.y;
+		player.hitbox.y = previous_player_pos.y;
 		new_floored = velocities.y < 0;
 		player.clear_movement_y();
 	}
 
 	if (just_direct_control_velocity) {
-		if (collided_x && !hard_border_x) player.pos.x += direct_velocities.x * dt * .1f;
-		if (collided_y && !hard_border_y) player.pos.y += direct_velocities.y * dt * .1f;
+		if (collided_x && !hard_border_x) player.hitbox.x += direct_velocities.x * dt * .1f;
+		if (collided_y && !hard_border_y) player.hitbox.y += direct_velocities.y * dt * .1f;
 	}
 
 	if (player.floored && !new_floored && !player.just_jumped) {
@@ -737,7 +740,7 @@ void Level::update_player(float dt) noexcept {
 
 
 void Level::update_camera(float dt) noexcept {
-	auto camera_target = player.pos;
+	auto camera_target = player.hitbox.center();
 	auto camera_center = camera.center();
 	auto dist = (camera_target - camera_center).length();
 
@@ -936,7 +939,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	player.forces = {};
 	player.velocity = {};
 	player.prest = (float)str["player"]["prest"];
-	player.pos = (Vector2f)str["player"]["pos"];
+	player.hitbox.pos = (Vector2f)str["player"]["pos"];
 	level.player = player;
     
 	if (has(str, "ambient")) {
@@ -980,7 +983,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	auto& player = str["player"] = dyn_struct::structure_t{};
     
 	player["prest"] = level.player.prest;
-	player["pos"] = level.player.pos;
+	player["pos"] = level.player.hitbox.pos;
     
 	str["ambient"] = {
 		{"color", level.ambient_color},

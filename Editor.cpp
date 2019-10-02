@@ -755,7 +755,7 @@ void Editor::update(float dt) noexcept {
 		if (placing_player) {
 			placing_player = false;
 
-			game->current_level.player.pos = get_mouse_pos();
+			game->current_level.player.hitbox.pos = get_mouse_pos();
 			game->current_level.player.velocity = {};
 		}
 		if (edit_texture) {
