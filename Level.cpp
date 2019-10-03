@@ -376,6 +376,8 @@ void Level::render(render::Orders& target) const noexcept {
 
 	for (const auto& x : debug_vectors) target.push_arrow(x.a, x.a + x.b, { 1, 1, 0, 1 });
 
+	for (auto& x : particles) x.render(target);
+
 	target.push_ambient_light(ambient_color, ambient_intensity);
 
 	if (focused_rock) {
@@ -429,6 +431,12 @@ void Level::input(IM::Input_Iterator record) noexcept {
 
 void Level::update(float dt) noexcept {
 	update_camera(dt);
+
+	if (sample.is_valid()) {
+		sample.update(dt, particles);
+	}
+
+	for (auto& x : particles) x.update(dt);
 
 	for (size_t i = 0; i < decor_sprites.size(); ++i) {
 		auto& x = decor_sprites[i];

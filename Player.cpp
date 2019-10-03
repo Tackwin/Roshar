@@ -225,7 +225,7 @@ void Player::update(float dt) noexcept {
 }
 
 void Player::render(render::Orders& target) const noexcept {
-	auto rec = Rectanglef{ hitbox }.zoom(2);
+	auto rec = Rectanglef{ hitbox }.zoom(1.2f);
 	if (last_dir == Dir::Left) rec = rec.flip_x();
 
 	target.push_sprite(rec, asset::Texture_Id::Guy_Sheet, animation.get_rec());

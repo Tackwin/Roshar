@@ -19,14 +19,16 @@ struct Animation {
 	Rectanglef get_rec() const noexcept;
 };
 
+
 struct Animation_Sheet {
-	struct Row {
+	struct Entry {
+		Vector2u start;
 		size_t count{ 0 };
 		float time{ 0.f };
 	};
 
 	size_t col{ 0 };
-	std::vector<Row> rows;
+	std::vector<Entry> entries;
 };
 
 extern void from_dyn_struct(const dyn_struct& str, Animation_Sheet& animation) noexcept;

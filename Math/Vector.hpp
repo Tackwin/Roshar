@@ -16,6 +16,23 @@ static constexpr auto Vector4_Type_Tag = "Vector4<T>"_id;
 #define XYZW_UNROLL(v) (v).x, (v).y, (v).z, (v).w
 
 template<size_t D, typename T>
+struct Vector;
+
+template<typename T> using Vector2 = Vector<2U, T>;
+template<typename T> using Vector3 = Vector<3U, T>;
+template<typename T> using Vector4 = Vector<4U, T>;
+using Vector2u = Vector2<std::size_t>;
+using Vector2i = Vector2<std::int32_t>;
+using Vector2f = Vector2<float>;
+using Vector2d = Vector2<double>;
+using Vector3f = Vector3<float>;
+using Vector3d = Vector3<double>;
+using Vector4i = Vector4<std::int32_t>;
+using Vector4u = Vector4<std::size_t>;
+using Vector4f = Vector4<float>;
+using Vector4d = Vector4<double>;
+
+template<size_t D, typename T>
 struct __vec_member {
 	T components[D];
 };
@@ -78,30 +95,18 @@ struct __vec_member<4, T> {
 			T b;
 			T a;
 		};
+		struct {
+			T h;
+			T s;
+			T v;
+			T a;
+		};
 		T components[4];
 	};
 
 	constexpr __vec_member() : x(0), y(0), z(0), w(0) {}
 	constexpr __vec_member(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
 };
-
-
-template<size_t D, typename T>
-struct Vector;
-
-template<typename T> using Vector2 = Vector<2U, T>;
-template<typename T> using Vector3 = Vector<3U, T>;
-template<typename T> using Vector4 = Vector<4U, T>;
-using Vector2u = Vector2<std::size_t>;
-using Vector2i = Vector2<std::int32_t>;
-using Vector2f = Vector2<float>;
-using Vector2d = Vector2<double>;
-using Vector3f = Vector3<float>;
-using Vector3d = Vector3<double>;
-using Vector4i = Vector4<std::int32_t>;
-using Vector4u = Vector4<std::size_t>;
-using Vector4f = Vector4<float>;
-using Vector4d = Vector4<double>;
 
 template<size_t D, typename T = float>
 struct Vector : public __vec_member<D, T> {
@@ -199,11 +204,12 @@ struct Vector : public __vec_member<D, T> {
 		constexpr Vector(T x, T y, T z, std::enable_if_t<Dp == 4, T> w) :
 	__vec_member<4, T>(x, y, z, w)
 	{}
-    
+
+
 	size_t getDimension() const {
 		return D;
 	}
-    
+
 	Vector<D, T>& clamp(const Vector<D, T>& min, const Vector<D, T>& max) {
 		for (std::size_t i = 0u; i < D; ++i) {
 			this->components[i] = std::clamp(this->components[i], min[i], max[i]);
@@ -529,4 +535,52 @@ void from_dyn_struct(const dyn_struct& s, Vector<4, T>& x) noexcept {
 	x.z = (T)s[2];
 	x.w = (T)s[3];
 }
+
+
+inline Vector4d to_rgba(Vector4d vec) noexcept {
+	Vector4d result;
+	result.a = vec.a;
+
+	auto C = vec.v * vec.s;
+	auto X = C * (1 - std::abs(std::fmod(6 * vec.h, 2) - 1));
+	auto m = vec.v - C;
+
+	if (vec.h < 1 / 6) {
+		result.r = C;
+		result.g = X;
+		result.b = 0;
+	}
+	else if (vec.h < 2 / 6) {
+		result.r = X;
+		result.g = C;
+		result.b = 0;
+	}
+	else if (vec.h < 3 / 6) {
+		result.r = 0;
+		result.g = C;
+		result.b = X;
+	}
+	else if (vec.h < 4 / 6) {
+		result.r = 0;
+		result.g = X;
+		result.b = C;
+	}
+	else if (vec.h < 5 / 6) {
+		result.r = X;
+		result.g = 0;
+		result.b = C;
+	}
+	else {
+		result.r = C;
+		result.g = 0;
+		result.b = X;
+	}
+
+	result.r += m;
+	result.g += m;
+	result.b += m;
+
+	return result;
+}
+
 #pragma warning(pop)

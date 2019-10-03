@@ -5,9 +5,9 @@
 #include <GL/glew.h>
 #include <GL/wglew.h>
 
-#include "Managers/AssetsManager.hpp"
 #include "Math/Vector.hpp"
 #include "Math/Rectangle.hpp"
+#include "Assets.hpp"
 
 namespace render {
 

@@ -19,4 +19,7 @@ namespace asset {
 	struct Animation_Id {
 		inline static Key Guy{ 1 };
 	};
+	struct Particle_Id {
+		inline static Key Sample{ 1 };
+	};
 }

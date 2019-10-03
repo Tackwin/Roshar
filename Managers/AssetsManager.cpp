@@ -100,8 +100,26 @@ namespace asset {
 	auto opt_str = load_from_json_file(path);
 	if (!opt_str) return false;
 
-	animations[k].asset = (Animation_Sheet)*opt_str;
+	animations[k].asset = (Animation_Sheet)* opt_str;
 	animations[k].path = path;
+
+	return true;
+}
+
+[[nodiscard]] Particle_System& Store_t::get_particle(Key k) noexcept {
+	return particle_systems.at(k).asset;
+}
+[[nodiscard]] std::optional<Key> Store_t::load_particle(std::filesystem::path path) noexcept {
+	auto k = xstd::uuid();
+	if (!load_particle(k, path)) return std::nullopt;
+	return k;
+}
+[[nodiscard]] bool Store_t::load_particle(Key k, std::filesystem::path path) noexcept {
+	auto opt_str = load_from_json_file(path);
+	if (!opt_str) return false;
+
+	particle_systems[k].asset = (Particle_System)* opt_str;
+	particle_systems[k].path = path;
 
 	return true;
 }
@@ -240,6 +258,14 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 			if (has(anim, "Guy")) {
 				printf("Load Guy animations.\n");
 				animations[Animation_Id::Guy].asset = (Animation_Sheet)anim["Guy"];
+			}
+		}
+		if (has(config, "particles")) {
+			const auto& part = config["particles"];
+
+			if (has(part, "Sample")) {
+				printf("Load Sample particle system.\n");
+				particle_systems[Particle_Id::Sample].asset = (Particle_System)part["Sample"];
 			}
 		}
 	};

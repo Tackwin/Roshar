@@ -2,6 +2,8 @@
 
 #include "Assets.hpp"
 
+#include "Managers/AssetsManager.hpp"
+
 #include <GL/glew.h>
 
 void render::Orders::clear() noexcept {

@@ -8,6 +8,7 @@
 
 #include "Graphic/Shader.hpp"
 #include "Graphic/Texture.hpp"
+#include "Graphic/Particle.hpp"
 #include "Graphic/Animation.hpp"
 
 namespace asset {
@@ -40,6 +41,7 @@ namespace asset {
 		std::unordered_map<std::uint64_t, Asset_t<Shader>> shaders;
 		std::unordered_map<std::uint64_t, Asset_t<Texture>> textures;
 		std::unordered_map<std::uint64_t, Asset_t<Animation_Sheet>> animations;
+		std::unordered_map<std::uint64_t, Asset_t<Particle_System>> particle_systems;
 
 		[[nodiscard]] Texture* get_normal(Key k) const noexcept;
 		[[nodiscard]] Texture& get_albedo(Key k) noexcept;
@@ -58,6 +60,10 @@ namespace asset {
 		[[nodiscard]] Animation_Sheet& get_animation(Key k) noexcept;
 		[[nodiscard]] std::optional<Key> load_animation(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_animation(Key k, std::filesystem::path path) noexcept;
+
+		[[nodiscard]] Particle_System& get_particle(Key k) noexcept;
+		[[nodiscard]] std::optional<Key> load_particle(std::filesystem::path path) noexcept;
+		[[nodiscard]] bool load_particle(Key k, std::filesystem::path path) noexcept;
 
 		void monitor_path(std::filesystem::path dir) noexcept;
 

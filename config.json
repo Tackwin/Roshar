@@ -1,10 +1,35 @@
 {
 	"animations": {
 		"Guy": [
-			{ "count": 2, "time": 0.50 },
-			{ "count": 7, "time": 1.00 },
-			{ "count": 2, "time": 0.1 },			
-			{ "count": 2, "time": 0.50 }			
-		]		
+			{ "start": [0, 0], "count": 2, "time": 0.50 },
+			{ "start": [0, 1], "count": 7, "time": 1.00 },
+			{ "start": [0, 2], "count": 2, "time": 0.10 },			
+			{ "start": [0, 3], "count": 2, "time": 0.50 }			
+		]	
+	},
+	"particles": {
+		"Sample": {
+			"emitters": [
+				{
+					"offset": [0, 0],
+					"spawn_zone": [-1, -1, 1, 1],
+					"color_hsva": [0.5, 0.5, 0.5, 1],
+					"color_range": [1, 1, 1, 0],
+					"direction_range": 0.1,
+					"direction": 0.25,
+					"distribution_kind": 0,
+					"speed": 10,
+					"speed_range": 0,
+					"gravity_probability": 0,
+					"size": 0.15,
+					"size_range": 0.1,
+					"dt_time": 0.05,
+					"dt_time_range": 0.025,
+					"time": 0,
+					"time_range": 0,
+					"once": false
+				}
+			]
+		}
 	}
 }

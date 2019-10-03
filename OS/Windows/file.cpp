@@ -281,38 +281,10 @@ std::optional<std::filesystem::path> file::open_dir() noexcept {
 }
 
 void file::monitor_file(std::filesystem::path path, std::function<void()> f) noexcept {
-	std::thread t{ [f, path] {
-		bool bRC = false;
-		HANDLE  hNotify;
-		DWORD   dwWaitResult;
-
-		auto path_str = path.parent_path().string();
-
-		hNotify = FindFirstChangeNotification(
-			path_str.data(),
-			FALSE,
-			FILE_NOTIFY_CHANGE_LAST_WRITE
-		);
-
-		for (;;) {
-			dwWaitResult = WaitForSingleObject(hNotify, INFINITE);
-
-			if (dwWaitResult != WAIT_OBJECT_0) break;
-
-			if (GetFileAttributes(path_str.data()) == INVALID_FILE_ATTRIBUTES) {
-				bRC = true;
-				break;
-			}
-
-			f();
-
-			if (!FindNextChangeNotification(hNotify)) break;
-		}
-
-		FindCloseChangeNotification(hNotify);
-	} };
-
-	t.detach();
+	file::monitor_dir(path.parent_path(), [path, f](std::filesystem::path changed) {
+		if (changed.filename() != path.filename()) return;
+		f();
+	});
 }
 
 void file::monitor_dir(
@@ -360,8 +332,15 @@ void file::monitor_dir(
 
 				for (size_t i = 0; i < byte_returned;) {
 					auto* info = (FILE_NOTIFY_INFORMATION*)(buffer + i);
-					if (info->Action == FILE_ACTION_MODIFIED)
+					if (info->Action == FILE_ACTION_MODIFIED) {
+						using namespace std::chrono_literals;
+						// So WinApi doesnt have a function to wait for a file to be free somehow ?
+						// When we receive this notification another process just finished writing
+						// to this file so it's highly probable that the handle is not free
+						// We wait 5ms in the hope to be able to CreateFile.
+						std::this_thread::sleep_for(5ms);
 						f(std::wstring(info->FileName, info->FileNameLength / sizeof(WCHAR)));
+					}
 
 					i += info->NextEntryOffset;
 					if (info->NextEntryOffset == 0) break;

@@ -3,6 +3,7 @@
 #include "Math/Rectangle.hpp"
 
 #include "Graphics.hpp"
+#include "Managers/AssetsManager.hpp"
 
 // >Note: Tackwin
 // Every time i do a class wrapper around an OpenGl concept i try to have const mean doesn't

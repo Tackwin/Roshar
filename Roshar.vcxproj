@@ -320,6 +320,7 @@
     <ClCompile Include="Graphic\Graphics.cpp" />
     <ClCompile Include="Graphic\imgui_impl_opengl3.cpp" />
     <ClCompile Include="Graphic\imgui_impl_win32.cpp" />
+    <ClCompile Include="Graphic\Particle.cpp" />
     <ClCompile Include="Graphic\Shader.cpp" />
     <ClCompile Include="Graphic\Texture.cpp" />
     <ClCompile Include="Level.cpp" />
@@ -344,6 +345,7 @@
     <ClInclude Include="Graphic\imgui_impl_opengl3.hpp" />
     <ClInclude Include="Graphic\imgui_impl_win32.hpp" />
     <ClInclude Include="Graphic\OpenGL.hpp" />
+    <ClInclude Include="Graphic\Particle.hpp" />
     <ClInclude Include="Graphic\Shader.hpp" />
     <ClInclude Include="Graphic\Texture.hpp" />
     <ClInclude Include="imconfig.h" />

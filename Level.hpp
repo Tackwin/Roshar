@@ -10,6 +10,7 @@
 #include "Math/Vector.hpp"
 #include "Memory/ValuePtr.hpp"
 #include "dyn_struct.hpp"
+#include "Assets.hpp"
 
 #include "Graphic/Graphics.hpp"
 
@@ -243,6 +244,10 @@ struct Level {
 	std::vector<Prest_Source>       prest_sources;
 	std::vector<Friction_Zone>      friction_zones;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones;
+
+	std::vector<Particle> particles;
+
+	Particle_Spot sample{ asset::Particle_Id::Sample };
 
 	std::vector<Vector2f> markers;
 
