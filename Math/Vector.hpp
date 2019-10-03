@@ -537,50 +537,63 @@ void from_dyn_struct(const dyn_struct& s, Vector<4, T>& x) noexcept {
 }
 
 
-inline Vector4d to_rgba(Vector4d vec) noexcept {
-	Vector4d result;
-	result.a = vec.a;
+inline Vector4d to_rgba(Vector4d in) noexcept {
+	double      hh, p, q, t, ff;
+	long        i;
+	Vector4d    out;
 
-	auto C = vec.v * vec.s;
-	auto X = C * (1 - std::abs(std::fmod(6 * vec.h, 2) - 1));
-	auto m = vec.v - C;
+	if (in.s <= 0.0) {       // < is bogus, just shuts up warnings
+		out.r = in.v;
+		out.g = in.v;
+		out.b = in.v;
+		return out;
+	}
+	hh = in.h * 360;
+	if (hh >= 360.0) hh = 0.0;
+	hh /= 60.0;
+	i = (long)hh;
+	ff = hh - i;
+	p = in.v * (1.0 - in.s);
+	q = in.v * (1.0 - (in.s * ff));
+	t = in.v * (1.0 - (in.s * (1.0 - ff)));
 
-	if (vec.h < 1 / 6) {
-		result.r = C;
-		result.g = X;
-		result.b = 0;
-	}
-	else if (vec.h < 2 / 6) {
-		result.r = X;
-		result.g = C;
-		result.b = 0;
-	}
-	else if (vec.h < 3 / 6) {
-		result.r = 0;
-		result.g = C;
-		result.b = X;
-	}
-	else if (vec.h < 4 / 6) {
-		result.r = 0;
-		result.g = X;
-		result.b = C;
-	}
-	else if (vec.h < 5 / 6) {
-		result.r = X;
-		result.g = 0;
-		result.b = C;
-	}
-	else {
-		result.r = C;
-		result.g = 0;
-		result.b = X;
+	switch (i) {
+	case 0:
+		out.r = in.v;
+		out.g = t;
+		out.b = p;
+		break;
+	case 1:
+		out.r = q;
+		out.g = in.v;
+		out.b = p;
+		break;
+	case 2:
+		out.r = p;
+		out.g = in.v;
+		out.b = t;
+		break;
+
+	case 3:
+		out.r = p;
+		out.g = q;
+		out.b = in.v;
+		break;
+	case 4:
+		out.r = t;
+		out.g = p;
+		out.b = in.v;
+		break;
+	case 5:
+	default:
+		out.r = in.v;
+		out.g = p;
+		out.b = q;
+		break;
 	}
 
-	result.r += m;
-	result.g += m;
-	result.b += m;
-
-	return result;
+	out.a = in.a;
+	return out;
 }
 
 #pragma warning(pop)

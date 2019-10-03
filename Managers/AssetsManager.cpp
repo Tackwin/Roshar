@@ -243,7 +243,7 @@ void Store_t::load_known_shaders() noexcept {
 void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 	Animation_Id::Guy = xstd::uuid();
 	auto f = [&, config_path] {
-		auto opt = load_from_json_file(config_path);
+		auto opt = load_from_json_file(Exe_Path / config_path);
 		if (!opt) {
 			printf("Erreur.\n");
 			return;
@@ -263,9 +263,10 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 		if (has(config, "particles")) {
 			const auto& part = config["particles"];
 
-			if (has(part, "Sample")) {
-				printf("Load Sample particle system.\n");
-				particle_systems[Particle_Id::Sample].asset = (Particle_System)part["Sample"];
+			if (has(part, "Player_Foot")) {
+				printf("Load Player_Foot particle system.\n");
+				particle_systems[Particle_Id::Player_Foot].asset =
+					(Particle_System)part["Player_Foot"];
 			}
 		}
 	};

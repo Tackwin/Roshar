@@ -432,11 +432,20 @@ void Level::input(IM::Input_Iterator record) noexcept {
 void Level::update(float dt) noexcept {
 	update_camera(dt);
 
-	if (sample.is_valid()) {
-		sample.update(dt, particles);
+
+	for (auto& x : particle_spots) if (x.is_valid()) {
+		x.update(dt, particles);
 	}
+	particle_spots.erase(
+		std::remove_if(BEG_END(particle_spots), [](auto& p) { return p.timers.empty(); }),
+		END(particle_spots)
+	);
 
 	for (auto& x : particles) x.update(dt);
+	particles.erase(
+		std::remove_if(BEG_END(particles), [](auto& x) { return x.t <= 0; }),
+		END(particles)
+	);
 
 	for (size_t i = 0; i < decor_sprites.size(); ++i) {
 		auto& x = decor_sprites[i];

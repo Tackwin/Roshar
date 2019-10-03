@@ -134,6 +134,9 @@ private:
 	static constexpr float Jump_Cant_Grap_Time = { .1f };
 	float jump_cant_grap_timer{ 0.f };
 
+	float particle_foot_timer{ 0.f };
+	bool run_particle{ true };
+
 	float drag_indicator_t{ 0.f };
 
 	bool cant_grap{ false };

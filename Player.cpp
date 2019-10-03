@@ -171,10 +171,24 @@ void Player::update(float dt) noexcept {
 	right_joystick_timer_to_zero -= dt;
 	controller_binding_candidate_time -= dt;
 	jump_cant_grap_timer -= dt;
+	particle_foot_timer -= dt;
 
 	if (just_floored) {
 		animation.running_idx = Idle_Animation;
 		just_floored = false;
+		particle_foot_timer = 0.f;
+	}
+	run_particle = floored;
+	run_particle &= get_final_velocity().length() > .1;
+
+	if (particle_foot_timer < 0.f && run_particle) {
+		Particle_Spot new_spot = { asset::Particle_Id::Player_Foot };
+		new_spot.pos = hitbox.pos;
+		new_spot.pos.x += hitbox.w / 2;
+		game->current_level.particle_spots.push_back(new_spot);
+
+		auto vel = get_final_velocity().length();
+		particle_foot_timer = (vel == 0 ? 1 : vel) / 20;
 	}
 
 	animation.update(dt);

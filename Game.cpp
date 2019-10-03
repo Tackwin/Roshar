@@ -13,7 +13,7 @@ void update_game(std::uint64_t dt) noexcept {
 Game* game = nullptr;
 
 void Game::load_start_config() noexcept {
-	auto start_opt = load_from_json_file("start_config.json");
+	auto start_opt = load_from_json_file("config.json");
 	if (!start_opt) return;
 	auto start = *start_opt;
 

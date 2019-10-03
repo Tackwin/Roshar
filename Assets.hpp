@@ -20,6 +20,6 @@ namespace asset {
 		inline static Key Guy{ 1 };
 	};
 	struct Particle_Id {
-		inline static Key Sample{ 1 };
+		inline static Key Player_Foot{ 1 };
 	};
 }

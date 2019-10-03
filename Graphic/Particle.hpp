@@ -16,12 +16,15 @@ struct Particle {
 	Vector2f speed;
 	bool gravity;
 
+	float t;
+
 	void update(float dt) noexcept;
 	void render(render::Orders& orders) const noexcept;
 };
 
 struct Particle_Spot {
 	asset::Key system_key;
+	Vector2f pos;
 
 	struct Timers {
 		float dt_t = 0.f;
@@ -62,6 +65,9 @@ struct Particle_System {
 
 		float time;
 		float time_range;
+
+		float life_time;
+		float life_time_range;
 
 		bool once;
 

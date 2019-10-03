@@ -247,7 +247,7 @@ struct Level {
 
 	std::vector<Particle> particles;
 
-	Particle_Spot sample{ asset::Particle_Id::Sample };
+	std::vector<Particle_Spot> particle_spots;
 
 	std::vector<Vector2f> markers;
 
