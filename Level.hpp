@@ -255,6 +255,9 @@ struct Level {
 	
 	std::optional<size_t> focused_rock;
 
+	size_t phantom_path_idx{ 0 };
+	std::vector<std::vector<Player::Graphic_State>> phantom_paths;
+
 	Player player;
 
 	float camera_speed{ 10 };
@@ -279,6 +282,7 @@ struct Level {
 
 	void bind_rock(std::uint64_t x, Vector2f bind) noexcept;
 
+	void feed_phantom_path(std::vector<std::vector<Player::Graphic_State>> p) noexcept;
 private:
 	Vector2f mouse_screen_pos;
 	Vector2f mouse_world_pos;

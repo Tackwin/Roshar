@@ -373,6 +373,12 @@ void Level::render(render::Orders& target) const noexcept {
 	for (auto& x : markers) target.push_circle(0.05f, x, { 1, 0, 0, 1 });
 
 	player.render(target);
+	for (auto& p : phantom_paths) {
+		if (phantom_path_idx >= p.size()) continue;
+
+		thread_local Player phantom_player;
+		phantom_player.render(target, p[phantom_path_idx]);
+	}
 
 	for (const auto& x : debug_vectors) target.push_arrow(x.a, x.a + x.b, { 1, 1, 0, 1 });
 
@@ -432,6 +438,7 @@ void Level::input(IM::Input_Iterator record) noexcept {
 void Level::update(float dt) noexcept {
 	update_camera(dt);
 
+	phantom_path_idx++;
 
 	for (auto& x : particle_spots) if (x.is_valid()) {
 		x.update(dt, particles);
@@ -798,6 +805,11 @@ void Level::bind_rock(std::uint64_t x, Vector2f bind) noexcept {
 	assert(it);
 
 	it->bindings.push_back(bind);
+}
+
+void Level::feed_phantom_path(std::vector<std::vector<Player::Graphic_State>> p) noexcept {
+	phantom_paths = std::move(p);
+	phantom_path_idx = 0;
 }
 
 void match_and_destroy_keys(Player& p, Door& d) noexcept {

@@ -123,6 +123,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 		editor.save_path = current_level.save_path.string();
 
 		if (in_full_test) return go_in_test();
+		if (in_replay) current_level.feed_phantom_path(phantom_paths);
 	}
 
 	if (!in_editor) {
@@ -141,6 +142,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 		camera_fade_in_timer -= dt;
 
 		current_level.update(dt);
+		phantom_paths.back().push_back(current_level.player.get_graphic_state());
 	}
 	else {
 		editor.update(dt);
@@ -172,6 +174,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 	if (died) {
 		camera_fade_out_timer = Camera_Fade_Time;
 		died = false;
+		phantom_paths.push_back({});
 	}
 
 }

@@ -13,6 +13,11 @@
 
 
 struct Player {
+	struct Graphic_State {
+		Rectanglef world_rec;
+		Rectanglef texture_rec;
+	};
+
 	Rectanglef hitbox{ 0, 0, .4f, .7f };
 	Vector2f velocity;
 	Vector2f forces;
@@ -79,9 +84,12 @@ struct Player {
 	bool grappled{ false };
 	bool grappling{ false };
 
+	Graphic_State graphic_state;
+
 	void input(Input_Iterator this_record) noexcept;
 	void update(float dt) noexcept;
 	void render(render::Orders& target) const noexcept;
+	void render(render::Orders& target, Graphic_State graphic_state) const noexcept;
 
 	void jump() noexcept;
 	void maintain_jump() noexcept;
@@ -103,6 +111,7 @@ struct Player {
 	Vector2f get_direct_control_velocity() noexcept;
 	void apply_friction(float factor) noexcept;
 
+	Graphic_State get_graphic_state() const noexcept;
 private:
 	static constexpr float Slow_Factor{ 0.5f };
 	static constexpr float Drag_Dead_Zone{ 50.f };

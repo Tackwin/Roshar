@@ -99,7 +99,7 @@ void Player::input(Input_Iterator this_record) noexcept {
 	}
 
 	grappling  = this_record->is_pressed(Joystick::LB);
-	grappling |= this_record->is_pressed(Mouse::Right);
+	grappling |= this_record->is_pressed(Keyboard::LCTRL);
 	grappling &= !cant_grap;
 	
 	if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5) want_to_go = Dir::Up;
@@ -239,12 +239,25 @@ void Player::update(float dt) noexcept {
 }
 
 void Player::render(render::Orders& target) const noexcept {
-	auto rec = Rectanglef{ hitbox }.zoom(1.2f);
-	if (last_dir == Dir::Left) rec = rec.flip_x();
+	render(target, get_graphic_state());
+}
 
-	target.push_sprite(rec, asset::Texture_Id::Guy_Sheet, animation.get_rec());
+void Player::render(render::Orders& target, Graphic_State graphic_state) const noexcept {
+	target.push_sprite(
+		graphic_state.world_rec, asset::Texture_Id::Guy_Sheet, graphic_state.texture_rec
+	);
 
 	render_bindings(target);
+}
+
+
+Player::Graphic_State Player::get_graphic_state() const noexcept {
+	auto w = Rectanglef{ hitbox }.zoom(1.2f);
+	if (last_dir == Dir::Left) w.flip_x();
+	return {
+		.world_rec = w,
+		.texture_rec = animation.get_rec()
+	};
 }
 
 void Player::render_bindings(render::Orders& orders) const noexcept {

@@ -26,6 +26,8 @@ struct Game {
 	std::optional<IM::Input_Iterator> begin_record;
 	std::optional<IM::Input_Iterator> end_record;
 
+	std::vector<std::vector<Player::Graphic_State>> phantom_paths{ {} };
+
 	bool died{ false };
 	bool succeed{ false };
 	std::filesystem::path next_level_path;
