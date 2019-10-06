@@ -43,6 +43,8 @@ void Game::input() noexcept {
 		(IM::isKeyJustPressed(Keyboard::Return) || IM::isKeyJustPressed(Joystick::A))
 	) {
 		to_swap_level = load_level(next_level_path);
+		phantom_paths.clear();
+		phantom_paths.push_back({});
 		in_replay = false;
 	}
 	if (IM::isKeyPressed(Keyboard::Escape)) {
