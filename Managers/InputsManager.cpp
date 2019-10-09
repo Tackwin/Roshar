@@ -1,13 +1,8 @@
 #include "InputsManager.hpp"
 
-#define WIN32_LEAN_AND_MEAN
-#define NOGDI
-#include <cassert>
-#include <Windows.h>
-#include <Xinput.h>
-
 #include "imgui.h"
-#include "../OS/file.hpp"
+#include "OS/file.hpp"
+#include "OS/RealTimeIO.hpp"
 
 [[nodiscard]] Vector2f Inputs_Info::mouse_world_pos(Rectanglef& v) const noexcept {
 	render::View_Info info;
@@ -257,11 +252,10 @@ void InputsManager::update(float dt) {
 
 	new_record.dt = dt;
 
-	BYTE keyboard_state[256] = {};
-	GetKeyboardState(keyboard_state);
-	for (size_t i = 0; i < Keyboard::Count; ++i) {
-		auto vk = get_vkey((Keyboard::Key)i);
-		auto pressed = (bool)(keyboard_state[vk] & 0b10000000);
+	auto keyboard_state = io::get_keyboard_state();
+	for (size_t i = 0; i < io::Keyboard::Count; ++i) {
+		auto vk = map_key((io::Keyboard::Key)i);
+		auto pressed = (bool)(keyboard_state.keys[vk] & 0b10000000);
 		auto last_pressed = records.empty() ? false : records.back().key_infos[i].pressed;
 
 		new_record.key_infos[i].just_pressed = !last_pressed && pressed;
@@ -269,8 +263,8 @@ void InputsManager::update(float dt) {
 		new_record.key_infos[i].pressed = pressed;
 	}
 
-	for (size_t i = 0; i < Mouse::Count; ++i) {
-		auto pressed = (bool)(keyboard_state[get_vkey((Mouse::Button)i)] & 0b10000000);
+	for (size_t i = 0; i < io::Mouse::Count; ++i) {
+		auto pressed = (bool)(keyboard_state.keys[map_mouse((io::Mouse::Button)i)] & 0b10000000);
 		auto last_pressed = records.empty() ? false : records.back().mouse_infos[i].pressed;
 
 		new_record.mouse_infos[i].just_pressed = !last_pressed && pressed;
@@ -278,25 +272,24 @@ void InputsManager::update(float dt) {
 		new_record.mouse_infos[i].pressed = pressed;
 	}
 
-	XINPUT_STATE state = {};
-	XInputGetState(0, &state);
-	auto Max_Range = .5f + (1 << (8 * sizeof(state.Gamepad.sThumbLX) - 1));
+	auto state = io::get_controller_state();
+	auto Max_Range = .5f + (1 << (8 * sizeof(state.left_thumb_x) - 1));
 
-	new_record.left_trigger = state.Gamepad.bLeftTrigger / 255.f;
-	new_record.right_trigger = state.Gamepad.bRightTrigger / 255.f;
+	new_record.left_trigger = state.left_trigger / 255.f;
+	new_record.right_trigger = state.right_trigger / 255.f;
 	new_record.left_trigger *= new_record.left_trigger;
 	new_record.right_trigger *= new_record.right_trigger;
 
 	new_record.left_joystick = {
-		(state.Gamepad.sThumbLX + 0.5f) / Max_Range,
-		(state.Gamepad.sThumbLY + 0.5f) / Max_Range
+		(state.left_thumb_x + 0.5f) / Max_Range,
+		(state.left_thumb_y + 0.5f) / Max_Range
 	};
 	new_record.right_joystick = {
-		(state.Gamepad.sThumbRX + 0.5f) / Max_Range,
-		(state.Gamepad.sThumbRY + 0.5f) / Max_Range
+		(state.right_thumb_x + 0.5f) / Max_Range,
+		(state.right_thumb_y + 0.5f) / Max_Range
 	};
 
-	auto dead_range = (XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE + .5) / (double)Max_Range;
+	auto dead_range = (io::Controller_State::Left_Thumb_Deadzone + .5) / (double)Max_Range;
 	auto length = new_record.left_joystick.length();
 	if (length < dead_range) {
 		new_record.left_joystick = {};
@@ -309,8 +302,8 @@ void InputsManager::update(float dt) {
 	}
 	new_record.right_joystick.applyCW([](auto x) { return std::powf(x, 1); });
 
-	for (size_t i = 0; i < Joystick::Count; ++i) {
-		auto pressed = (bool)(state.Gamepad.wButtons & get_vkey((Joystick::Button)i));
+	for (size_t i = 0; i < io::Controller::Count; ++i) {
+		auto pressed = (bool)(state.buttons_mask & io::map_controller((io::Controller::Button)i));
 		auto last_pressed =
 			records.empty() ? false : records.back().joystick_buttons_infos[i].pressed;
 		new_record.joystick_buttons_infos[i].just_pressed = !last_pressed && pressed;
@@ -532,148 +525,3 @@ size_t IM::size(std::uint64_t id) noexcept {
 void IM::forget_record(std::uint64_t id) noexcept {
 	if (loaded_record.count(id)) loaded_record.erase(id);
 }
-
-int IM::get_vkey(Keyboard::Key key) noexcept {
-	switch (key)
-	{
-		case Keyboard::A:          return 'A';          
-		case Keyboard::B:          return 'B';          
-		case Keyboard::C:          return 'C';          
-		case Keyboard::D:          return 'D';          
-		case Keyboard::E:          return 'E';          
-		case Keyboard::F:          return 'F';          
-		case Keyboard::G:          return 'G';          
-		case Keyboard::H:          return 'H';          
-		case Keyboard::I:          return 'I';          
-		case Keyboard::J:          return 'J';          
-		case Keyboard::K:          return 'K';          
-		case Keyboard::L:          return 'L';          
-		case Keyboard::M:          return 'M';          
-		case Keyboard::N:          return 'N';          
-		case Keyboard::O:          return 'O';          
-		case Keyboard::P:          return 'P';          
-		case Keyboard::Q:          return 'Q';          
-		case Keyboard::R:          return 'R';          
-		case Keyboard::S:          return 'S';          
-		case Keyboard::T:          return 'T';          
-		case Keyboard::U:          return 'U';          
-		case Keyboard::V:          return 'V';          
-		case Keyboard::W:          return 'W';          
-		case Keyboard::X:          return 'X';          
-		case Keyboard::Y:          return 'Y';          
-		case Keyboard::Z:          return 'Z';          
-		case Keyboard::Escape:     return VK_ESCAPE;    
-		case Keyboard::LCTRL:      return VK_LCONTROL;  
-		case Keyboard::LSHIFT:     return VK_LSHIFT;    
-		case Keyboard::LALT:       return VK_LMENU;     
-		case Keyboard::LSYS:       return VK_LWIN;      
-		case Keyboard::RCTRL:      return VK_RCONTROL;  
-		case Keyboard::RSHIFT:     return VK_RSHIFT;    
-		case Keyboard::RALT:       return VK_RMENU;     
-		case Keyboard::RSYS:       return VK_RWIN;      
-		case Keyboard::Quote:      return VK_OEM_7;     
-		case Keyboard::F1:         return VK_F1;        
-		case Keyboard::F2:         return VK_F2;        
-		case Keyboard::F3:         return VK_F3;        
-		case Keyboard::F4:         return VK_F4;        
-		case Keyboard::F5:         return VK_F5;        
-		case Keyboard::F6:         return VK_F6;        
-		case Keyboard::F7:         return VK_F7;        
-		case Keyboard::F8:         return VK_F8;        
-		case Keyboard::F9:         return VK_F9;        
-		case Keyboard::F10:        return VK_F10;       
-		case Keyboard::F11:        return VK_F11;       
-		case Keyboard::F12:        return VK_F12;       
-		case Keyboard::Space:      return VK_SPACE;     
-		case Keyboard::DEL:        return VK_DELETE;    
-		case Keyboard::Return:     return VK_RETURN;
-		/*case Keyboard::Num0:       return '0';          
-		case Keyboard::Num1:       return '1';          
-		case Keyboard::Num2:       return '2';          
-		case Keyboard::Num3:       return '3';          
-		case Keyboard::Num4:       return '4';          
-		case Keyboard::Num5:       return '5';          
-		case Keyboard::Num6:       return '6';          
-		case Keyboard::Num7:       return '7';          
-		case Keyboard::Num8:       return '8';          
-		case Keyboard::Num9:       return '9';          
-		case Keyboard::Menu:       return VK_APPS;      
-		case Keyboard::LBracket:   return VK_OEM_4;     
-		case Keyboard::RBracket:   return VK_OEM_6;     
-		case Keyboard::Semicolon:  return VK_OEM_1;     
-		case Keyboard::Comma:      return VK_OEM_COMMA; 
-		case Keyboard::Period:     return VK_OEM_PERIOD;
-		case Keyboard::Slash:      return VK_OEM_2;     
-		case Keyboard::Backslash:  return VK_OEM_5;     
-		case Keyboard::Tilde:      return VK_OEM_3;     
-		case Keyboard::Equal:      return VK_OEM_PLUS;  
-		case Keyboard::Hyphen:     return VK_OEM_MINUS; 
-		case Keyboard::Enter:      return VK_RETURN;    
-		case Keyboard::Backspace:  return VK_BACK;      
-		case Keyboard::Tab:        return VK_TAB;       
-		case Keyboard::PageUp:     return VK_PRIOR;     
-		case Keyboard::PageDown:   return VK_NEXT;      
-		case Keyboard::End:        return VK_END;       
-		case Keyboard::Home:       return VK_HOME;      
-		case Keyboard::Insert:     return VK_INSERT;    
-		case Keyboard::Add:        return VK_ADD;       
-		case Keyboard::Subtract:   return VK_SUBTRACT;  
-		case Keyboard::Multiply:   return VK_MULTIPLY;  
-		case Keyboard::Divide:     return VK_DIVIDE;    
-		case Keyboard::Left:       return VK_LEFT;      
-		case Keyboard::Right:      return VK_RIGHT;     
-		case Keyboard::Up:         return VK_UP;        
-		case Keyboard::Down:       return VK_DOWN;      
-		case Keyboard::Numpad0:    return VK_NUMPAD0;   
-		case Keyboard::Numpad1:    return VK_NUMPAD1;   
-		case Keyboard::Numpad2:    return VK_NUMPAD2;   
-		case Keyboard::Numpad3:    return VK_NUMPAD3;   
-		case Keyboard::Numpad4:    return VK_NUMPAD4;   
-		case Keyboard::Numpad5:    return VK_NUMPAD5;   
-		case Keyboard::Numpad6:    return VK_NUMPAD6;   
-		case Keyboard::Numpad7:    return VK_NUMPAD7;   
-		case Keyboard::Numpad8:    return VK_NUMPAD8;   
-		case Keyboard::Numpad9:    return VK_NUMPAD9;   
-		case Keyboard::F13:        return VK_F13;       
-		case Keyboard::F14:        return VK_F14;       
-		case Keyboard::F15:        return VK_F15;       
-		case Keyboard::Pause:      return VK_PAUSE;     */
-	default: break;
-	}
-	assert("Logic error.");
-	return 0;
-}
-
-int IM::get_vkey(Mouse::Button key) noexcept {
-	switch (key) {
-	case Mouse::Button::Left:   return VK_LBUTTON;
-	case Mouse::Button::Right:  return VK_RBUTTON;
-	case Mouse::Button::Middle: return VK_MBUTTON;
-	default: break;
-	}
-	assert("Logic error.");
-	return 0;
-}
-
-int IM::get_vkey(Joystick::Button key) noexcept {
-	switch (key) {
-	case Joystick::Button::A:          return XINPUT_GAMEPAD_A;
-	case Joystick::Button::B:          return XINPUT_GAMEPAD_B;
-	case Joystick::Button::X:          return XINPUT_GAMEPAD_X;
-	case Joystick::Button::Y:          return XINPUT_GAMEPAD_Y;
-	case Joystick::Button::BACK:       return XINPUT_GAMEPAD_BACK;
-	case Joystick::Button::START:      return XINPUT_GAMEPAD_START;
-	case Joystick::Button::DPAD_DOWN:  return XINPUT_GAMEPAD_DPAD_DOWN;
-	case Joystick::Button::DPAD_LEFT:  return XINPUT_GAMEPAD_DPAD_LEFT;
-	case Joystick::Button::DPAD_RIGHT: return XINPUT_GAMEPAD_DPAD_RIGHT;
-	case Joystick::Button::DPAD_UP:    return XINPUT_GAMEPAD_DPAD_UP;
-	case Joystick::Button::LT:         return XINPUT_GAMEPAD_LEFT_THUMB;
-	case Joystick::Button::RT:         return XINPUT_GAMEPAD_RIGHT_THUMB;
-	case Joystick::Button::LB:         return XINPUT_GAMEPAD_LEFT_SHOULDER;
-	case Joystick::Button::RB:         return XINPUT_GAMEPAD_RIGHT_SHOULDER;
-	default: break;
-	}
-	assert("Logic error.");
-	return 0;
-}
-

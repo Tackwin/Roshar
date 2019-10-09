@@ -75,6 +75,9 @@
     <ClCompile Include="Graphic\Particle.cpp">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClCompile>
+    <ClCompile Include="OS\Windows\RealTimeIO.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="macros.hpp">
@@ -177,6 +180,9 @@
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="Graphic\Particle.hpp">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="OS\RealTimeIO.hpp">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>

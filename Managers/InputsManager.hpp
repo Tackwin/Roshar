@@ -6,6 +6,12 @@
 #include "./../Math/Vector.hpp"
 #include "Graphic/Graphics.hpp"
 
+
+// >TODO(Tackwin): for now i'm duplicating those structs here and in RealTime.hpp
+// because the ones in RealTime.hpp are supposed to be an abstraction of the os
+// and the ones here are supposed to be the key mapping to actions (like jump, run etc..)
+// When i'll be doing custom and run time key bindings the names here will change.
+
 struct Keyboard {
 	enum Key {
 		Unknown = -1, ///< Unhandled key
@@ -248,10 +254,6 @@ public:
 	static Input_Iterator begin(std::uint64_t id) noexcept;
 	static size_t size(std::uint64_t id) noexcept;
 	static Input_Iterator end(std::uint64_t id) noexcept;
-private:
-	static int get_vkey(Keyboard::Key k) noexcept;
-	static int get_vkey(Mouse::Button k) noexcept;
-	static int get_vkey(Joystick::Button k) noexcept;
 };
 
 using IM = InputsManager;

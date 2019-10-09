@@ -259,3 +259,8 @@ paket-files/
 /Debug_Win
 /Release_Win
 /out/build/x64-Debug
+/a.out.js
+/a.out.wasm
+/hello.html
+/hello.js
+/hello.wasm

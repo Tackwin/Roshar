@@ -327,6 +327,7 @@
     <ClCompile Include="Managers\AssetsManager.cpp" />
     <ClCompile Include="Managers\InputsManager.cpp" />
     <ClCompile Include="OS\Windows\file.cpp" />
+    <ClCompile Include="OS\Windows\RealTimeIO.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="win32_main.cpp" />
@@ -362,6 +363,7 @@
     <ClInclude Include="Math\Vector.hpp" />
     <ClInclude Include="Memory\ValuePtr.hpp" />
     <ClInclude Include="OS\file.hpp" />
+    <ClInclude Include="OS\RealTimeIO.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="render_commang.hpp" />
     <ClInclude Include="Time.hpp" />
