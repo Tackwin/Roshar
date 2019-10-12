@@ -113,6 +113,7 @@ void from_dyn_struct(const dyn_struct& str, Particle_System& system) noexcept {
 				e.sigma = (float)x["sigma"];
 				break;
 			}
+			default: break;
 		}
 		system.emitters.push_back(e);
 	}

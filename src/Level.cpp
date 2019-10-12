@@ -402,6 +402,7 @@ void Level::input(IM::Input_Iterator record) noexcept {
 	mouse_world_pos = record->mouse_world_pos(camera);
 	window_size = record->window_size;
 
+
 	player.input(record);
 	if (record->is_just_pressed(Keyboard::Return)) {
 		markers.push_back(player.hitbox.center());

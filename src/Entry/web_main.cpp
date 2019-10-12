@@ -7,6 +7,7 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <stdio.h>
+#include "Game.hpp"
 
 #include "imgui_impl_web.hpp"
 #include "External/web/imgui.h"
@@ -36,17 +37,19 @@ int main() {
 
 	FunImGui::init();
 
-	printf("1\n");
 	asset::Store.monitor_path("shaders/");
-	printf("2\n");
 	asset::Store.monitor_path("textures/");
 
-	printf("3\n");
 	asset::Store.load_from_config("assets/config.json");
-	printf("4\n");
 	asset::Store.load_known_shaders();
-	printf("5\n");
 	asset::Store.load_known_textures();
+
+	Environment.window_width = 1280;
+	Environment.window_height = 720;
+
+	Game local_game;
+	game = &local_game;
+	game->load_start_config();
 
 	emscripten_set_main_loop(loop, 0, 1);
 
@@ -96,6 +99,7 @@ void loop() noexcept{
 			case Debug_Framebuffer::Depth:     *out = "Depth";   break;
 			case Debug_Framebuffer::Normal:    *out = "Normal";  break;
 			case Debug_Framebuffer::Position:  *out = "Position"; break;
+			default: return false;
 			}
 			return true;
 		},
@@ -107,17 +111,14 @@ void loop() noexcept{
 	ImGui::End();
 
 	ImGui::Begin("Update debug");
-	printf("6\n");
 	update_game(dt);
 	ImGui::End();
 
 
 	auto t_start = seconds();
-	printf("7\n");
 	render_game(orders);
 	auto cpu_render_time = seconds() - t_start;
 
-	printf("8\n");
 	render_orders(orders);
 
 
@@ -125,19 +126,20 @@ void loop() noexcept{
 
 	ImGui::Begin("Perf");
 
-	float avg = 0;
-	for (auto y : last_dt) avg += y;
-	avg /= last_dt_count;
-
-	ImGui::Text(
-		"current dt: %llu ms, avg(%u): %llu ms, max: %llu",
-		(unsigned long long)(dt / 1000),
-		last_dt_count,
-		(unsigned long long)(avg / 1000),
-		(unsigned long long)(max_dt / 1000)
-	);
-	ImGui::Text("Fps: %d", (size_t)(1'000'000.0 / dt));
+	//float avg = 0;
+	//for (auto y : last_dt) avg += y;
+	//avg /= last_dt_count;
+//
+	//ImGui::Text(
+	//	"current dt: %llu ms, avg(%lu): %llu ms, max: %llu",
+	//	(unsigned long long)(dt / 1000),
+	//	last_dt_count,
+	//	(unsigned long long)(avg / 1000),
+	//	(unsigned long long)(max_dt / 1000)
+	//);
+	//ImGui::Text("Fps: %lu", (size_t)(1'000'000.0 / dt));
 	ImGui::Text("Cpu render time: %.3f ms.", cpu_render_time * 1'000);
+	ImGui::Text("dt time: %.3f ms.", dt / 1000);
 
 	ImGui::End();
 
@@ -299,6 +301,9 @@ void render_orders(render::Orders& orders) noexcept {
 bool init_gl_context() noexcept {
 	EmscriptenWebGLContextAttributes attribs;
 	emscripten_webgl_init_context_attributes(&attribs);
+
+	attribs.majorVersion = 2;
+	attribs.minorVersion = 0;
 
 	auto context = emscripten_webgl_create_context(nullptr, &attribs);
 	if (context <= 0) return false;

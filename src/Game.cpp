@@ -111,6 +111,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 	timeshots = fixed_point_timeshot / 1'000'000.0;
 
+
 	input();
 
 	if (!in_editor) current_level.input(this_record);
@@ -138,7 +139,6 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 			camera_fade_in_timer = Camera_Fade_Time;
 			return;
 		}
-
 
 		input_active_timer -= dt;
 		camera_fade_in_timer -= dt;

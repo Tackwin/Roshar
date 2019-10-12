@@ -143,8 +143,10 @@ void Player::input(Input_Iterator this_record) noexcept {
 	auto keyboard_cancel =
 		this_record->is_pressed(Keyboard::LCTRL) && this_record->is_just_pressed(Keyboard::Z);
 	auto controller_cancel = this_record->is_just_pressed(Joystick::B);
-	auto back_not_empty =
-		!binding_origin_history.empty() && !binding_origin_history.back()->empty();
+	bool back_not_empty = false;
+	if (!binding_origin_history.empty()) {
+		back_not_empty = !binding_origin_history.back()->empty();
+	}
 
 	if ((keyboard_cancel || controller_cancel) && back_not_empty) {
 		binding_origin_history.back()->pop_back();
