@@ -5,185 +5,179 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Fichiers d%27en-tête">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="Fichiers de ressources">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="OS\Windows\file.cpp">
+    <ClInclude Include="src\Assets.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Managers\InputsManager.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Collision.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor.cpp">
+    </ClInclude>
+    <ClInclude Include="src\constexpr.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Level.cpp">
+    </ClInclude>
+    <ClInclude Include="src\dyn_struct.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Collision.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Editor.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Time.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Game.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="global.cpp">
+    </ClInclude>
+    <ClInclude Include="src\global.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="dyn_struct.cpp">
+    </ClInclude>
+    <ClInclude Include="src\imconfig.h">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Managers\AssetsManager.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Level.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Player.cpp">
+    </ClInclude>
+    <ClInclude Include="src\macros.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Game.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Player.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="win32_main.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Time.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\Shader.cpp">
+    </ClInclude>
+    <ClInclude Include="src\xstd.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\Texture.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\Animation.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\Graphics.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\FrameBuffer.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\imgui_impl_opengl3.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\Graphics.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\imgui_impl_win32.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\imgui_impl_opengl3.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\FrameBuffer.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\imgui_impl_win32.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\Animation.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\OpenGL.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic\Particle.cpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClCompile>
-    <ClCompile Include="OS\Windows\RealTimeIO.cpp">
+    </ClInclude>
+    <ClInclude Include="src\Graphic\Particle.hpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="src\Graphic\Shader.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphic\Texture.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Managers\AssetsManager.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Managers\InputsManager.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Circle.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Matrix.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\RandomData.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Ray.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Rectangle.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Segment.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Vector.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Memory\ValuePtr.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OS\file.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OS\RealTimeIO.hpp">
+      <Filter>Fichiers sources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OS\OpenGL.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="macros.hpp">
+    <ClCompile Include="src\Collision.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="constexpr.hpp">
+    </ClCompile>
+    <ClCompile Include="src\dyn_struct.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Circle.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Editor.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\RandomData.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Game.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Ray.hpp">
+    </ClCompile>
+    <ClCompile Include="src\global.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Rectangle.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Level.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Segment.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Player.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Vector.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Time.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="xstd.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Entry\win32_main.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="OS\file.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="render_commang.hpp">
+    </ClCompile>
+    <ClCompile Include="src\Graphic\Animation.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Managers\InputsManager.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="imconfig.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Level.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Collision.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Time.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="global.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="dyn_struct.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Memory\ValuePtr.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Managers\AssetsManager.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Player.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Game.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\Shader.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Matrix4f.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\Texture.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\Graphics.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\OpenGL.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\imgui_impl_opengl3.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\imgui_impl_win32.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\FrameBuffer.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Assets.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\Animation.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic\Particle.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="OS\RealTimeIO.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\FrameBuffer.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\Graphics.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\imgui_impl_opengl3.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\Particle.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\Shader.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\Texture.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Managers\AssetsManager.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Managers\InputsManager.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OS\Windows\file.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OS\Windows\RealTimeIO.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphic\imgui_impl_win32.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

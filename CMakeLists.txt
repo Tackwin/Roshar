@@ -4,8 +4,7 @@ project(Roshar VERSION 0.1.0)
 include(CTest)
 enable_testing()
 
-
-file(GLOB_RECURSE ALL_SRC "*.hpp" "*.cpp")
+file(GLOB_RECURSE ALL_SRC "./src/*.hpp" "./src/*.cpp")
 
 add_executable(Roshar ${ALL_SRC})
 
@@ -14,14 +13,22 @@ set_property(TARGET Roshar PROPERTY CXX_STANDARD 20)
 target_include_directories(Roshar PRIVATE
 	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/include"
 	"C:/Users/tackw/Code/vcpkg/installed/x86-windows-static/include"
-	"."
+	"./src/"
 )
 
 target_include_directories(Roshar PRIVATE
 	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/include"
 	"C:/Users/tackw/Code/vcpkg/installed/x86-windows-static/include"
-	"."
+	"./src/"
 )
+
+target_link_libraries(Roshar PRIVATE
+	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/lib/imgui.lib"
+	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/lib/glew32.lib"
+	"opengl32.lib"
+)
+
+set_property(TARGET Roshar PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ".")
 
 add_definitions(/FI"xstd.hpp")
 add_definitions(/FI"global.hpp")
@@ -32,6 +39,10 @@ add_compile_definitions(NDEBUG)
 add_compile_definitions(CONSOLE)
 add_compile_definitions(NATIVE)
 add_compile_definitions(NOMINMAX)
+
+add_compile_definitions(WIN32)
+# add_compile_definitions(WEB)
+
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

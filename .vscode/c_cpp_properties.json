@@ -49,7 +49,8 @@
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true
-            }
+            },
+            "compileCommands": "C:/USERS/TACKW/CODE/ROSHAR/BUILD/COMPILE_COMMANDS.JSON"
         }
     ],
     "version": 4
