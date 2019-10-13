@@ -1,6 +1,7 @@
 #include "FrameBuffer.hpp"
 
 #include <cassert>
+#include <stdio.h>
 
 #ifdef ES
 #include <GLES3/gl3.h>
@@ -90,7 +91,7 @@ G_Buffer::G_Buffer(Vector2u size) noexcept : size(size) {
 
 	glGenRenderbuffers(1, &depth_rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)size.x, (GLsizei)size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, (GLsizei)size.x, (GLsizei)size.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -136,11 +137,11 @@ G_Buffer::~G_Buffer() noexcept {
 void G_Buffer::clear(Vector4d color) noexcept {
 	Vector4f f = (Vector4f)color;
 #ifdef ES
-	glClear(GL_COLOR_BUFFER_BIT);
 	unsigned int attachments[] = {
 		GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2
 	};
 	glDrawBuffers(sizeof(attachments) / sizeof(unsigned int), attachments);
+	glClear(GL_COLOR_BUFFER_BIT);
 #else
 	glClearTexImage(albedo_buffer, 0, GL_RGBA, GL_UNSIGNED_BYTE, &f.x);
 	glClearTexImage(normal_buffer, 0, GL_RGBA, GL_FLOAT, nullptr);
@@ -262,7 +263,7 @@ HDR_Buffer::HDR_Buffer(Vector2u size) noexcept : size(size) {
 
 	glGenRenderbuffers(1, &rbo_buffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_buffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)size.x, (GLsizei)size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, (GLsizei)size.x, (GLsizei)size.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_buffer);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -351,7 +352,7 @@ Texture_Buffer::Texture_Buffer(Vector2u size) noexcept {
 
 	glGenRenderbuffers(1, &rbo_buffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_buffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)size.x, (GLsizei)size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, (GLsizei)size.x, (GLsizei)size.y);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_buffer);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {

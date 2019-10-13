@@ -16,7 +16,10 @@
 #include "Graphic/Graphics.hpp"
 #include "Graphic/FrameBuffer.hpp"
 
-io::Keyboard_State emscripten_keyboard_state;
+io::Keyboard_State emscripten_keyboard_state{};
+io::Controller_State emscripten_controller_state{};
+Vector2f emscripten_mouse_pos{};
+
 constexpr Vector2u Gl_Buffer_Size = { 1280, 720 };
 
 bool init_gl_context() noexcept;
@@ -36,6 +39,10 @@ int main() {
 	setup_controls_callback();
 
 	FunImGui::init();
+	
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	asset::Store.monitor_path("shaders/");
 	asset::Store.monitor_path("textures/");
@@ -139,7 +146,7 @@ void loop() noexcept{
 	//);
 	//ImGui::Text("Fps: %lu", (size_t)(1'000'000.0 / dt));
 	ImGui::Text("Cpu render time: %.3f ms.", cpu_render_time * 1'000);
-	ImGui::Text("dt time: %.3f ms.", dt / 1000);
+	ImGui::Text("dt time: %llu µs.", dt);
 
 	ImGui::End();
 
@@ -316,14 +323,30 @@ bool init_gl_context() noexcept {
 void setup_controls_callback() noexcept {
 	auto mouse = [](int event_type, const EmscriptenMouseEvent* event, void*) -> int {
 		FunImGui::mouseCallback(event_type, event, nullptr);
+		printf("a");
+		emscripten_keyboard_state.keys[io::Keyboard_State::Max_Key - 1] = event->buttons & 1;
+		emscripten_keyboard_state.keys[io::Keyboard_State::Max_Key - 2] = event->buttons & 2;
+		emscripten_keyboard_state.keys[io::Keyboard_State::Max_Key - 3] = event->buttons & 4;
 		return 1;
 	};
 	auto wheel = [](int event_type, const EmscriptenWheelEvent* event, void*) -> int {
+		printf("b");
 		FunImGui::wheelCallback(event_type, event, nullptr);
 		return 1;
 	};
 	auto key = [](int event_type, const EmscriptenKeyboardEvent* event, void*) -> int {
+		printf("c");
 		FunImGui::keyboardCallback(event_type, event, nullptr);
+		switch (event_type) {
+		case EMSCRIPTEN_EVENT_KEYDOWN: {
+			emscripten_keyboard_state.keys[event->which] = 1;
+			break;
+		}
+		case EMSCRIPTEN_EVENT_KEYUP: {
+			emscripten_keyboard_state.keys[event->which] = 0;
+			break;
+		}
+		}
 		return 1;
 	};
 

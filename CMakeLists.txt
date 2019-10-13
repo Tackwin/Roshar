@@ -1,49 +1,65 @@
-cmake_minimum_required(VERSION 3.0.0)
-project(Roshar VERSION 0.1.0)
+cmake_minimum_required(VERSION 3.15)
+project(Roshar)
 
-include(CTest)
-enable_testing()
+set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB_RECURSE ALL_SRC "./src/*.hpp" "./src/*.cpp")
+include_directories(src)
 
-add_executable(Roshar ${ALL_SRC})
-
-set_property(TARGET Roshar PROPERTY CXX_STANDARD 20)
-
-target_include_directories(Roshar PRIVATE
-	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/include"
-	"C:/Users/tackw/Code/vcpkg/installed/x86-windows-static/include"
-	"./src/"
-)
-
-target_include_directories(Roshar PRIVATE
-	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/include"
-	"C:/Users/tackw/Code/vcpkg/installed/x86-windows-static/include"
-	"./src/"
-)
-
-target_link_libraries(Roshar PRIVATE
-	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/lib/imgui.lib"
-	"C:/Users/tackw/Code/vcpkg/installed/x64-windows-static/lib/glew32.lib"
-	"opengl32.lib"
-)
-
-set_property(TARGET Roshar PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ".")
-
-add_definitions(/FI"xstd.hpp")
-add_definitions(/FI"global.hpp")
-add_definitions(/FI"macros.hpp")
-add_definitions(/FI"constexpr.hpp")
-
-add_compile_definitions(NDEBUG)
-add_compile_definitions(CONSOLE)
-add_compile_definitions(NATIVE)
-add_compile_definitions(NOMINMAX)
-
-add_compile_definitions(WIN32)
-# add_compile_definitions(WEB)
-
-
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
+add_executable(Roshar
+        src/Entry/win32_main.cpp
+        src/Graphic/Animation.cpp
+        src/Graphic/Animation.hpp
+        src/Graphic/FrameBuffer.cpp
+        src/Graphic/FrameBuffer.hpp
+        src/Graphic/Graphics.cpp
+        src/Graphic/Graphics.hpp
+        src/Graphic/imgui_impl_opengl3.cpp
+        src/Graphic/imgui_impl_opengl3.hpp
+        src/Graphic/imgui_impl_win32.cpp
+        src/Graphic/imgui_impl_win32.hpp
+        src/Graphic/Particle.cpp
+        src/Graphic/Particle.hpp
+        src/Graphic/Shader.cpp
+        src/Graphic/Shader.hpp
+        src/Graphic/Texture.cpp
+        src/Graphic/Texture.hpp
+        src/Managers/AssetsManager.cpp
+        src/Managers/AssetsManager.hpp
+        src/Managers/InputsManager.cpp
+        src/Managers/InputsManager.hpp
+        src/Math/Circle.hpp
+        src/Math/Matrix.hpp
+        src/Math/RandomData.hpp
+        src/Math/Ray.hpp
+        src/Math/Rectangle.hpp
+        src/Math/Segment.hpp
+        src/Math/Vector.hpp
+        src/Memory/ValuePtr.hpp
+        src/OS/Emscripten/file.cpp
+        src/OS/Emscripten/RealTimeIO.cpp
+        src/OS/Windows/file.cpp
+        src/OS/Windows/RealTimeIO.cpp
+        src/OS/file.hpp
+        src/OS/OpenGL.hpp
+        src/OS/RealTimeIO.hpp
+        src/Assets.hpp
+        src/Collision.cpp
+        src/Collision.hpp
+        src/constexpr.hpp
+        src/dyn_struct.cpp
+        src/dyn_struct.hpp
+        src/Editor.cpp
+        src/Editor.hpp
+        src/Game.cpp
+        src/Game.hpp
+        src/global.cpp
+        src/global.hpp
+        src/imconfig.h
+        src/Level.cpp
+        src/Level.hpp
+        src/macros.hpp
+        src/Player.cpp
+        src/Player.hpp
+        src/Time.cpp
+        src/Time.hpp
+        src/xstd.hpp)
