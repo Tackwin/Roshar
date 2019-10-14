@@ -255,7 +255,7 @@ void InputsManager::update(float dt) {
 	auto keyboard_state = io::get_keyboard_state();
 	for (size_t i = 0; i < io::Keyboard::Count; ++i) {
 		auto vk = map_key((io::Keyboard::Key)i);
-		auto pressed = (bool)(keyboard_state.keys[vk] & 0b10000000);
+		auto pressed = (bool)keyboard_state.keys[vk];
 		auto last_pressed = records.empty() ? false : records.back().key_infos[i].pressed;
 
 		new_record.key_infos[i].just_pressed = !last_pressed && pressed;
@@ -264,7 +264,7 @@ void InputsManager::update(float dt) {
 	}
 
 	for (size_t i = 0; i < io::Mouse::Count; ++i) {
-		auto pressed = (bool)(keyboard_state.keys[map_mouse((io::Mouse::Button)i)] & 0b10000000);
+		auto pressed = (bool)keyboard_state.keys[map_mouse((io::Mouse::Button)i)];
 		auto last_pressed = records.empty() ? false : records.back().mouse_infos[i].pressed;
 
 		new_record.mouse_infos[i].just_pressed = !last_pressed && pressed;

@@ -79,7 +79,7 @@ size_t io::map_key(size_t x) noexcept {
 	case Keyboard::Space:      return 0x20;
 	case Keyboard::DEL:        return 0x2E;
 	case Keyboard::Return:     return 0x0D;
-	default: break;
+	default: return 0;
 	}
 	assert("logic error");
 }
@@ -88,7 +88,7 @@ size_t io::map_mouse(size_t x) noexcept {
 	case Mouse::Button::Left:   return io::Keyboard_State::Max_Key - 1;
 	case Mouse::Button::Right:  return io::Keyboard_State::Max_Key - 2;
 	case Mouse::Button::Middle: return io::Keyboard_State::Max_Key - 3;
-	default: break;
+	default: return 0;
 	}
 	assert("logic error");
 }

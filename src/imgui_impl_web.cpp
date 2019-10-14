@@ -349,20 +349,6 @@ int FunImGui::keyboardCallback(int eventType, const EmscriptenKeyboardEvent* key
 	{
 		io.AddInputCharactersUTF8(keyEvent->key);
 	}
-#if DEBUGPRINT_KEYBOARD
-	printf(
-		"%d key: %s, code: %s, ctrl: %d, shift: %d, alt: %d, meta: %d, repeat: %d, which: %lu\n",
-		eventType,
-		keyEvent->key,
-		keyEvent->code,
-		keyEvent->ctrlKey,
-		keyEvent->shiftKey,
-		keyEvent->altKey,
-		keyEvent->metaKey,
-		keyEvent->repeat,
-		keyEvent->which
-	);
-#endif // DEBUGPRINT_KEYBOARD
 	if (keyEvent->repeat)
 	{
 		return true;
@@ -372,16 +358,6 @@ int FunImGui::keyboardCallback(int eventType, const EmscriptenKeyboardEvent* key
 	io.KeyAlt = keyEvent->altKey;
 	io.KeySuper = keyEvent->metaKey;
 	//io.KeySuper = false;
-
-#if DEBUGPRINT_KEYBOARD
-	printf("ctrl: %d, shift: %d, alt: %d, meta: %d\n",
-		keyEvent->ctrlKey,
-		keyEvent->shiftKey,
-		keyEvent->altKey,
-		keyEvent->metaKey
-	);
-#endif // DEBUGPRINT_KEYBOARD
-
 
 	switch (eventType)
 	{
@@ -397,7 +373,6 @@ int FunImGui::keyboardCallback(int eventType, const EmscriptenKeyboardEvent* key
 	break;
 	case EMSCRIPTEN_EVENT_KEYPRESS:
 	{
-		printf("%s was pressed\n", keyEvent->key);
 	}
 	break;
 	}

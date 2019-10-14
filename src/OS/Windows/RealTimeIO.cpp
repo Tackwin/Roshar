@@ -17,7 +17,7 @@ Keyboard_State io::get_keyboard_state() noexcept {
 
 	Keyboard_State state{};
 	for (size_t i = 0; i < Keyboard_State::Max_Key; ++i) {
-		state.keys[i] = windows_state[i];
+		state.keys[i] = windows_state[i] & 0b10000000;
 	}
 	return state;
 }
@@ -142,7 +142,7 @@ size_t io::map_key(size_t x) noexcept {
 		case Keyboard::F14:        return VK_F14;
 		case Keyboard::F15:        return VK_F15;
 		case Keyboard::Pause:      return VK_PAUSE;     */
-	default: break;
+	default: return 0;
 	}
 	assert("Logic error.");
 	return 0;
@@ -153,7 +153,7 @@ size_t io::map_mouse(size_t x) noexcept {
 	case Mouse::Button::Left:   return VK_LBUTTON;
 	case Mouse::Button::Right:  return VK_RBUTTON;
 	case Mouse::Button::Middle: return VK_MBUTTON;
-	default: break;
+	default: return 0;
 	}
 	assert("Logic error.");
 	return 0;
@@ -175,7 +175,7 @@ size_t io::map_controller(size_t x) noexcept {
 	case Controller::Button::RT:         return XINPUT_GAMEPAD_RIGHT_THUMB;
 	case Controller::Button::LB:         return XINPUT_GAMEPAD_LEFT_SHOULDER;
 	case Controller::Button::RB:         return XINPUT_GAMEPAD_RIGHT_SHOULDER;
-	default: break;
+	default: return 0;
 	}
 	assert("Logic error.");
 	return 0;

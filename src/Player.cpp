@@ -245,10 +245,14 @@ void Player::render(render::Orders& target) const noexcept {
 }
 
 void Player::render(render::Orders& target, Graphic_State state) const noexcept {
-	//target.push_sprite(
-	//	graphic_state.world_rec, asset::Texture_Id::Guy_Sheet, graphic_state.texture_rec
-	//);
-	target.push_rectangle(state.world_rec, { 0.2, 0.1, 1, 1 });
+	if (Environment.show_sprite) {
+		target.push_sprite(
+			graphic_state.world_rec, asset::Texture_Id::Guy_Sheet, graphic_state.texture_rec
+		);
+	}
+	else {
+		target.push_rectangle(state.world_rec, { 0.2, 0.1, 1, 1 });
+	}
 
 	render_bindings(target);
 }

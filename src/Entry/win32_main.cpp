@@ -236,6 +236,7 @@ int WINAPI WinMain(
 		ImGui::InputFloat("Speed up", &Environment.speed_up_step);
 		ImGui::InputFloat("Offset", &Environment.offset);
 		ImGui::Checkbox("Debug Input", &Environment.debug_input);
+		ImGui::Checkbox("Show Sprite", &Environment.show_sprite);
 
 		int x = (int)Environment.debug_framebuffer;
 
