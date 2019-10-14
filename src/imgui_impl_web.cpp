@@ -84,14 +84,6 @@ void FunImGui::init()
 	io.KeyRepeatRate = 0.5f;
 
 	//io.MouseDrawCursor = true;
-	emscripten_set_mousemove_callback(nullptr, nullptr, false, &FunImGui::mouseCallback);
-	emscripten_set_mousedown_callback(nullptr, nullptr, false, &FunImGui::mouseCallback);
-	emscripten_set_mouseup_callback(nullptr, nullptr, false, &FunImGui::mouseCallback);
-	emscripten_set_wheel_callback("canvas", nullptr, false, &FunImGui::wheelCallback);
-	emscripten_set_wheel_callback("canvas", nullptr, false, &FunImGui::wheelCallback);
-	//emscripten_set_keypress_callback(nullptr, nullptr, false, &FunImGui::keyboardCallback);
-	emscripten_set_keydown_callback(nullptr, nullptr, false, &FunImGui::keyboardCallback);
-	emscripten_set_keyup_callback(nullptr, nullptr, false, &FunImGui::keyboardCallback);
 
 	//emscripten_request_pointerlock(nullptr, true);
 	//printf("pixel ratio: %f\n", emscripten_get_device_pixel_ratio());

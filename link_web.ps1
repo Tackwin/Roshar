@@ -22,7 +22,7 @@
 	"build/Player.bc"`
 	"build/Time.bc"`
 	-o "build/Roshar.js"`
-	-s ASSERTIONS=1 -s TOTAL_STACK=32MB -s TOTAL_MEMORY=128MB `
-	-s USE_WEBGL2=1 -s DEMANGLE_SUPPORT=1 -s SAFE_HEAP=1 -s WASM=1 `
-	-s FULL_ES3=1 -s FULL_ES2=1 -s GL_ASSERTIONS=0 -g4 `
+	-s ASSERTIONS=0 -s TOTAL_STACK=32MB -s TOTAL_MEMORY=128MB `
+	-s USE_WEBGL2=1 -s DEMANGLE_SUPPORT=0 -s SAFE_HEAP=0 -s WASM=1 `
+	-s FULL_ES3=1 -s FULL_ES2=1 -s GL_ASSERTIONS=0 -O2 `
 	--embed-file ./assets/ --emrun

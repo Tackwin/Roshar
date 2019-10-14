@@ -112,8 +112,8 @@ void loop() noexcept{
 			return true;
 		},
 		nullptr,
-			(int)Debug_Framebuffer::Count
-			);
+		(int)Debug_Framebuffer::Count
+	);
 	Environment.debug_framebuffer = (Debug_Framebuffer)x;
 
 	ImGui::End();
@@ -324,20 +324,22 @@ bool init_gl_context() noexcept {
 void setup_controls_callback() noexcept {
 	auto mouse = [](int event_type, const EmscriptenMouseEvent* event, void*) -> int {
 		FunImGui::mouseCallback(event_type, event, nullptr);
-		printf("a");
 		emscripten_keyboard_state.keys[io::Keyboard_State::Max_Key - 1] = event->buttons & 1;
 		emscripten_keyboard_state.keys[io::Keyboard_State::Max_Key - 2] = event->buttons & 2;
 		emscripten_keyboard_state.keys[io::Keyboard_State::Max_Key - 3] = event->buttons & 4;
 		return 1;
 	};
 	auto wheel = [](int event_type, const EmscriptenWheelEvent* event, void*) -> int {
-		printf("b");
 		FunImGui::wheelCallback(event_type, event, nullptr);
+		if (event->deltaY > 0)
+			wheel_scroll = -1.f / 5.f;
+		else if (event->deltaY < 0)
+			wheel_scroll = 1.f / 5.f;
 		return 1;
 	};
 	auto key = [](int event_type, const EmscriptenKeyboardEvent* event, void*) -> int {
-		printf("c");
 		FunImGui::keyboardCallback(event_type, event, nullptr);
+		
 		switch (event_type) {
 		case EMSCRIPTEN_EVENT_KEYDOWN: {
 			emscripten_keyboard_state.keys[event->which] = 1;

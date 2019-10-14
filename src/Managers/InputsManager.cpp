@@ -312,6 +312,8 @@ void InputsManager::update(float dt) {
 	}
 	
 	new_record.focused = true;
+	new_record.scroll = wheel_scroll;
+
 	Vector2f last_mouse_screen_pos =
 		records.empty() ? Vector2f{} : records.back().mouse_screen_pos;
 
