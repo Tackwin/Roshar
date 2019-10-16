@@ -259,7 +259,7 @@ void Player::render(render::Orders& target, Graphic_State state) const noexcept 
 
 
 Player::Graphic_State Player::get_graphic_state() const noexcept {
-	auto w = Rectanglef{ hitbox }.zoom(1.2f);
+	auto w = Rectanglef{ hitbox }.zoom(1.0f);
 	if (last_dir == Dir::Left) w.flip_x();
 	return {
 		.world_rec = w,

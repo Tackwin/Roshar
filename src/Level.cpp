@@ -623,119 +623,133 @@ void Level::update_player(float dt) noexcept {
 	bool just_direct_control_velocity{ false };
 	bool hard_border{ false };
 
-	auto test_solids = [&](bool auto_climb) {
-		auto_climb &= player.velocity.y < 0.1f;
+	struct Player_Response {
+		bool collided{ false };
+		float auto_climbed{ 0.f };
+		bool touched_saturated{ false };
+		Block* holded{ nullptr };
+	};
 
-		size_t correcting_count = 1;
-	corrected_position:
+	struct Player_Capabilities {
+		bool auto_climb{ false };
+		bool holding{ false };
+	};
 
-		bool flag = false;
-		for (size_t i = 0; i < doors.size(); ++i) {
-			if (!test(doors[i], player)) continue;
-			flag = true;
+	auto simulate = [&](Player_Capabilities capabilities) -> Player_Response {
+		Player_Response response = {};
 
-			if (!auto_climb) continue;
-			
-			auto dt_y = player.hitbox.y - (blocks[i].pos.y + blocks[i].size.y);
-			if (-player.hitbox.h / 5.f < dt_y && dt_y < 0) {
-				player.hitbox.y = blocks[i].pos.y + blocks[i].size.y;
-				previous_player_pos.y = player.hitbox.y;
-				if (correcting_count-- > 0) goto corrected_position;
-			}
+		for (auto& x : doors) if (test(x, player)) response.collided = true;
+		for (auto& x : moving_blocks) {
+			x.colliding_player = false;
+			if (!test(player, x.rec)) continue;
+
+			x.colliding_player |= player.hitbox.y >= x.rec.y + x.rec.h;
+			response.collided = true;
 		}
 
-		for (size_t i = 0; i < blocks.size(); ++i) {
-			auto& b = blocks[i];
+		for (auto& x : blocks) {
 
 			auto grap_box = player.hitbox;
 			grap_box.size += .1f;
 			grap_box.pos -= .05f;
 
-			if (player.grappling && test(b, grap_box)) {
+			response.holded = capabilities.holding && test(x, grap_box) ? &x : response.holded;
 
-				player.grappled = true;
-				just_direct_control_velocity = true;
-				player.clear_movement_x();
-				player.clear_movement_y();
+			if (!test(x, player)) continue;
 
-				player.grappling_normal =
-					Rectanglef{ b.pos, b.size }.get_normal_to(player.hitbox.pos);
-			}
+			response.touched_saturated |= x.prest_kind == Block::Prest_Kind::Saturated;
 
-			if (!test(b, player)) continue;
+			auto dt_y = player.hitbox.y - (x.pos.y + x.size.y);
+			bool can_climb = capabilities.auto_climb && -player.hitbox.h / 5.f < dt_y && dt_y < 0;
 
-			hard_border = !b.back;
-			flag = true;
-
-
-			if (b.prest_kind == Block::Prest_Kind::Saturated) {
-				player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
-			}
-
-			if (!auto_climb) continue;
-
-			auto dt_y = player.hitbox.y - (b.pos.y + b.size.y);
-			if (-player.hitbox.h / 5.f < dt_y && dt_y < 0) {
-				player.hitbox.y = b.pos.y + b.size.y;
-				previous_player_pos.y = player.hitbox.y;
-				if (correcting_count-- > 0) goto corrected_position;
-			}
+			if (can_climb) response.auto_climbed = dt_y;
+			else           response.collided |= !x.back;
 		}
 
-		for (size_t i = 0; i < moving_blocks.size(); ++i) {
-			moving_blocks[i].colliding_player = false;
-			if (!test(player, moving_blocks[i].rec)) continue;
-
-			moving_blocks[i].colliding_player |=
-				player.hitbox.y >= moving_blocks[i].rec.y + moving_blocks[i].rec.h;
-			flag = true;
-		}
-
-
-
-		return flag;
+		return response;
 	};
 
 	auto velocities = player.get_final_velocity();
 	auto direct_velocities = player.get_direct_control_velocity();
 	player.flat_velocities.clear();
-	for (const auto& x : friction_zones) {
-		if (x.rec.intersect(player.hitbox)) {
-			velocities *= x.friction;
-			player.apply_friction(std::powf(x.friction, dt));
-		}
+
+	for (const auto& x : friction_zones) if (x.rec.intersect(player.hitbox)) {
+		velocities *= x.friction;
+		player.apply_friction(std::powf(x.friction, dt));
 	}
+
 	float impact = 0;
+
 	bool new_floored = false;
+	bool touched_saturated = false;
+	Block* grappled = nullptr;
 
-	bool collided_x{ false };
-	bool collided_y{ false };
 
-	bool hard_border_x{ false };
-	bool hard_border_y{ false };
+
+
+
+	Player_Capabilities capabilities = {};
+	Player_Response     response_x = {};
+	Player_Response     response_y = {};
 
 	player.hitbox.x += velocities.x * dt;
-	collided_x = test_solids(true);
-	hard_border_x = hard_border;
-	if (collided_x) {
+	capabilities.auto_climb = true;
+	capabilities.holding = player.grappling;
+	response_x = simulate(capabilities);
+
+	touched_saturated |= response_x.touched_saturated;
+	grappled = response_x.holded ? response_x.holded : grappled;
+
+	if (response_x.auto_climbed) {
+		// if we detected an opportunity to auto climb
+		// we re-run the simulation with the new pos.
+
+		capabilities.auto_climb = false; // making sure that we don't climb to infinities.
+		player.hitbox.y -= 1.1f * response_x.auto_climbed;
+		response_x = simulate(capabilities);
+	}
+
+	if (response_x.collided) {
 		impact += velocities.x * velocities.x;
 		player.hitbox.x = previous_player_pos.x;
 		player.clear_movement_x();
 	}
+
+	capabilities.auto_climb = false;
 	player.hitbox.y += velocities.y * dt;
-	collided_y = test_solids(false);
-	hard_border_y = hard_border;
-	if (collided_y) {
+	response_y = simulate(capabilities);
+
+	touched_saturated |= response_y.touched_saturated;
+	grappled = response_y.holded ? response_y.holded : grappled;
+
+	if (response_y.collided) {
 		impact += velocities.y * velocities.y;
 		player.hitbox.y = previous_player_pos.y;
-		new_floored = velocities.y < 0;
 		player.clear_movement_y();
+		new_floored = velocities.y < 0;
 	}
 
-	if (just_direct_control_velocity) {
-		if (collided_x && !hard_border_x) player.hitbox.x += direct_velocities.x * dt * .1f;
-		if (collided_y && !hard_border_y) player.hitbox.y += direct_velocities.y * dt * .1f;
+
+
+
+
+
+
+	if (touched_saturated) player.saturated_touch_last_time = Player::Saturated_Touch_Last_Time;
+	if (grappled) {
+		player.grappled = true;
+		just_direct_control_velocity = true;
+		player.clear_movement_x();
+		player.clear_movement_y();
+		
+		if (response_x.collided) player.hitbox.x += direct_velocities.x * dt * .1f;
+		if (response_y.collided) player.hitbox.y += direct_velocities.y * dt * .1f;
+
+		Rectanglef rec = { grappled->pos, grappled->size };
+		player.grappling_normal = rec.get_normal_to(player.hitbox.pos);
 	}
+
+
 
 	if (player.floored && !new_floored && !player.just_jumped) {
 		player.coyotee_timer = Player::Coyotee_Time;
