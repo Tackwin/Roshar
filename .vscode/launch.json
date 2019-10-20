@@ -1,4 +1,14 @@
 {
-    "version": "0.2.0",
-    "configurations": []
+	"version": "0.2.0",
+    "configurations": [
+		{
+			"name": "C++ Launch",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceRoot}/Build/Cmake/Roshar.exe",
+			"args": [],
+			"environment": [],
+			"cwd": "${workspaceRoot}"
+		  }
+    ]
 }

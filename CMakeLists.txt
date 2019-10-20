@@ -18,6 +18,10 @@ else()
     add_definitions(-include macros.hpp)
 endif()
 
+add_compile_definitions(NOMINMAX)
+add_compile_definitions(WIN32)
+add_compile_definitions(CONSOLE)
+
 add_executable(Roshar
         src/Entry/win32_main.cpp
         src/Graphic/Animation.cpp
@@ -76,3 +80,10 @@ add_executable(Roshar
         src/Time.cpp
         src/Time.hpp
         src/xstd.hpp)
+
+
+find_package(GLEW REQUIRED)
+target_link_libraries(Roshar PRIVATE GLEW::GLEW)
+
+find_package(imgui CONFIG REQUIRED)
+target_link_libraries(Roshar PRIVATE imgui::imgui)

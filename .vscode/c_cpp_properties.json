@@ -42,13 +42,16 @@
             "cppStandard": "c++20",
             "intelliSenseMode": "${default}",
             "forcedInclude": [
-                "macros.hpp",
-                "constexpr.hpp",
-                "xstd.hpp",
-                "global.hpp"
+                "src/macros.hpp",
+                "src/constexpr.hpp",
+                "src/xstd.hpp",
+                "src/global.hpp"
             ],
             "browse": {
-                "limitSymbolsToIncludedHeaders": true
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "${workspaceFolder}/src"
+                ]
             },
             "compileCommands": "C:/USERS/TACKW/CODE/ROSHAR/BUILD/COMPILE_COMMANDS.JSON"
         }

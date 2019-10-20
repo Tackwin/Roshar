@@ -99,7 +99,7 @@ void Editor::render(render::Orders& target) noexcept {
 		game->to_swap_level = std::move(new_level);
 	}
 	char buffer[512];
-	strcpy(buffer, save_path.data());
+	strcpy_s(buffer, save_path.data());
 	ImGui::PushItemWidth(ImGui::GetWindowWidth());
 	ImGui::InputText("", buffer, 512);
 	save_path = buffer;
