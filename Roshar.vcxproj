@@ -86,6 +86,9 @@
     <ClCompile Include="src\Player.cpp" />
     <ClCompile Include="src\Time.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\config.json" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VcpkgTriplet Condition="'$(Platform)'=='Win32'">x86-windows-static</VcpkgTriplet>
     <VcpkgTriplet Condition="'$(Platform)'=='x64'">x64-windows-static</VcpkgTriplet>

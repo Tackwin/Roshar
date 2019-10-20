@@ -66,7 +66,7 @@ void Editor::render(render::Orders& target) noexcept {
 				std::lock_guard guard{ Main_Mutex };
 
 				game->to_swap_level = (Level)* opt_dyn;
-				game->to_swap_level->save_path = result.filepath;
+				game->to_swap_level->file_path = result.filepath;
 
 				s = result.filepath.string();
 			},
@@ -80,17 +80,21 @@ void Editor::render(render::Orders& target) noexcept {
 		auto opt_dyn = load_from_json_file(save_path);
 		if (!opt_dyn) return;
 		Level new_level = (Level)* opt_dyn;
-		new_level.save_path = save_path;
+		new_level.file_path = save_path;
 
 		game->to_swap_level = std::move(new_level);
 		game->current_level.markers = std::move(old_markers);
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Next level") && game->current_level.next_zones.size() > 0) {
-		auto opt_dyn = load_from_json_file(game->current_level.next_zones[0].next_level);
+		auto next_level_path =
+			game->current_level.file_path.parent_path() /
+			game->current_level.next_zones[0].next_level;
+
+		auto opt_dyn = load_from_json_file(next_level_path);
 		if (!opt_dyn) return;
 		Level new_level = (Level)* opt_dyn;
-		new_level.save_path = game->current_level.next_zones[0].next_level;
+		new_level.file_path = game->current_level.next_zones[0].next_level;
 
 		game->to_swap_level = std::move(new_level);
 	}
@@ -423,6 +427,12 @@ void Editor::render(render::Orders& target) noexcept {
 			for (auto& x : game->current_level.decor_sprites) if (pred(x)) x.opacity = opacity;
 	}
 
+	n_selected = std::count_if(BEG_END(game->current_level.camera_fixed_points), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Camera fixed points");
+	}
+
 	n_selected = std::count_if(BEG_END(game->current_level.dispensers), pred);
 	if (n_selected) {
 		ImGui::Separator();
@@ -480,6 +490,9 @@ void Editor::render(render::Orders& target) noexcept {
 					case Creating_Element::Block:
 						*out = "Block";
 						break;
+					case Creating_Element::Camera_Fixed_Point:
+						*out = "Camera_Fixed_Point";
+						break;
 					case Creating_Element::Kill_Zone:
 						*out = "Kill_Zone";
 						break;
@@ -535,7 +548,26 @@ void Editor::render(render::Orders& target) noexcept {
 			element_to_create != Creating_Element::Rock &&
 			element_to_create != Creating_Element::Torch;
 	}
-    
+
+	if (ImGui::Button("Resave every levels in dir")) {
+		file::open_dir_async([](std::optional<std::filesystem::path> opt_path) {
+			if (!opt_path) return;
+			auto& path = *opt_path;
+
+			for (auto& p : std::filesystem::recursive_directory_iterator(path)) {
+				if (!std::filesystem::is_regular_file(p)) continue;
+				auto ext = p.path().extension();
+				if (ext != ".json") continue;
+
+				printf("Resaving: %ws... ", p.path().c_str());
+				if (auto l = load_from_json_file(p); l) {
+					save_to_json_file((Level)(*l), p);
+				}
+				printf("Done.\n");
+			}
+		});
+	}
+
 	if (ImGui::BeginPopup("Sure ?")) {
 		defer{ ImGui::EndPopup(); };
 
@@ -792,6 +824,9 @@ void Editor::update(float dt) noexcept {
 		iter(game->current_level.friction_zones);
 		iter(game->current_level.auto_binding_zones);
 
+		// The collision detection for the camera fixed point is different.
+		// >TODO(Tackwin)
+
 		drag_offset.clear();
 		if (edit_texture) {
 			for (auto& b : game->current_level.decor_sprites) {
@@ -913,12 +948,22 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			game->current_level.auto_binding_zones.emplace_back(std::move(new_block));
 			break;
 		}
+		case Creating_Element::Camera_Fixed_Point: {
+			RETURN_IF_AREA_0;
+			Camera_Fixed_Point new_block;
+			new_block.camera = rec;
+
+			game->current_level.camera_fixed_points.emplace_back(std::move(new_block));
+			break;
+		}
 		default: assert("Logic Error");
 	}
 }
 
 void Editor::set_camera_bound() noexcept {
-	game->current_level.camera_bound = game->current_level.camera;
+	Camera_Fixed_Point new_cam_point;
+	new_cam_point.camera = game->current_level.camera;
+	game->current_level.camera_fixed_points.push_back(new_cam_point);
 }
 
 void Editor::delete_all_selected() noexcept {
@@ -945,6 +990,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(game->current_level.decor_sprites);
 	iter(game->current_level.friction_zones);
 	iter(game->current_level.auto_binding_zones);
+	iter(game->current_level.camera_fixed_points);
 
 #define S(x) game->current_level.x.size()
 	auto n_elements =
@@ -962,6 +1008,7 @@ void Editor::delete_all_selected() noexcept {
 		S(decor_sprites) +
 		S(friction_zones) +
 		S(auto_binding_zones) +
+		S(camera_fixed_points) +
 		S(dispensers);
 #undef S
     

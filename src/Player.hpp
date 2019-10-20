@@ -140,7 +140,7 @@ private:
 	static constexpr float Controller_Clear_Time = { 0.2f };
 	float controller_clear_timer{ 0.f };
 
-	static constexpr float Jump_Cant_Grap_Time = { .1f };
+	static constexpr float Jump_Cant_Grap_Time = { .5f };
 	float jump_cant_grap_timer{ 0.f };
 
 	float particle_foot_timer{ 0.f };

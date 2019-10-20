@@ -98,6 +98,11 @@ void Player::input(Input_Iterator this_record) noexcept {
 		dragging = false;
 	}
 
+	if (cant_grap && this_record->is_just_pressed(Keyboard::LCTRL)) {
+		jump_cant_grap_timer = 0.f;
+		cant_grap = false;
+	}
+
 	grappling  = this_record->is_pressed(Joystick::LB);
 	grappling |= this_record->is_pressed(Keyboard::LCTRL);
 	grappling &= !cant_grap;

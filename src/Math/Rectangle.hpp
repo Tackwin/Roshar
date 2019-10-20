@@ -224,6 +224,8 @@ struct Rectangle_t {
 	Rectangle_t<T> restrict_in(Rectangle_t<T> area) const noexcept {
 		Rectangle_t<T> result = *this;
 
+		if (!area.intersect(*this)) return *this;
+
 		if (w > area.w) {
 			result.x = area.center().x - result.size.x / 2;
 		}

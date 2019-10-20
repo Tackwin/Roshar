@@ -65,7 +65,7 @@ void Game::input() noexcept {
 	}
 
 	if (in_replay && IM::isKeyJustPressed(Keyboard::F11)) {
-		auto test_file_save = current_level.save_path.replace_extension(".test");
+		auto test_file_save = current_level.file_path.replace_extension(".test");
 		IM::save_range(test_file_save, *begin_record, std::next(*end_record));
 	}
 
@@ -123,7 +123,7 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 		start_record = IM::get_iterator();
 		timeshots = 0;
 
-		editor.save_path = current_level.save_path.string();
+		editor.save_path = current_level.file_path.string();
 
 		if (in_full_test) return go_in_test();
 		if (in_replay) current_level.feed_phantom_path(phantom_paths);
@@ -183,7 +183,10 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 void Game::render(render::Orders& target) noexcept {
 	current_level.render(target);
-	if (in_editor) editor.render(target);
+	if (in_editor) {
+		current_level.render_debug(target);
+		editor.render(target);
+	}
 
 	ui_view = {
 		{0, 0},
@@ -288,7 +291,7 @@ void Game::go_in_replay() noexcept {
 }
 
 void Game::go_in_test() noexcept {
-	auto test_file = current_level.save_path.replace_extension(".test");
+	auto test_file = current_level.file_path.replace_extension(".test");
 	if (!IM::load_record_at(test_file, RECORD_LEVEL_TEST_ID)) return;
 
 	end_record = --IM::end(RECORD_LEVEL_TEST_ID);
@@ -311,6 +314,6 @@ std::optional<Level> Game::load_level(std::filesystem::path path) noexcept {
 	}
 
 	Level new_level = (Level)*opt_dyn;
-	new_level.save_path = path;
+	new_level.file_path = path;
 	return new_level;
 }

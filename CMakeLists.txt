@@ -1,9 +1,22 @@
 cmake_minimum_required(VERSION 3.15)
 project(Roshar)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 include_directories(src)
+
+if(MSVC)
+    add_definitions(/FI"global.hpp")
+    add_definitions(/FI"xstd.hpp")
+    add_definitions(/FI"constexpr.hpp")
+    add_definitions(/FI"macros.hpp")
+else()
+    # GCC or Clang
+    add_definitions(-include global.hpp)
+    add_definitions(-include xstd.hpp)
+    add_definitions(-include constexpr.hpp)
+    add_definitions(-include macros.hpp)
+endif()
 
 add_executable(Roshar
         src/Entry/win32_main.cpp

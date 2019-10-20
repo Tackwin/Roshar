@@ -15,6 +15,14 @@
 
 #include "Player.hpp"
 
+struct Camera_Fixed_Point {
+	bool editor_selected{ false };
+
+	Rectanglef camera;
+
+	void render(render::Orders& target) const noexcept;
+};
+
 struct Block {
 	bool editor_selected{ false };
 
@@ -243,6 +251,7 @@ struct Level {
 	std::vector<Prest_Source>       prest_sources;
 	std::vector<Friction_Zone>      friction_zones;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones;
+	std::vector<Camera_Fixed_Point> camera_fixed_points;
 
 	std::vector<Particle> particles;
 
@@ -250,7 +259,7 @@ struct Level {
 
 	std::vector<Vector2f> markers;
 
-	std::filesystem::path save_path;
+	std::filesystem::path file_path;
 	
 	std::optional<size_t> focused_rock;
 
@@ -262,8 +271,8 @@ struct Level {
 	float camera_speed{ 10 };
 	float camera_idle_radius{ 0.3f };
 	Rectanglef camera{ { -64, -36 }, { 128, 72 } };
-	Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
-	Rectanglef camera_start;
+	//Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
+	//Rectanglef camera_start;
 
 	Vector4d ambient_color{ 1, 1, 1, 1 };
 	float ambient_intensity{ 1 };
@@ -272,6 +281,7 @@ struct Level {
 
 	void input(IM::Input_Iterator record) noexcept;
 	void update(float dt) noexcept;
+	void render_debug(render::Orders& target) const noexcept;
 	void render(render::Orders& target) const noexcept;
 
 	void update_camera(float dt) noexcept;
@@ -292,6 +302,8 @@ private:
 	void update_player(float dt) noexcept;
 };
 
+extern void from_dyn_struct(const dyn_struct& str, Camera_Fixed_Point& x) noexcept;
+extern void to_dyn_struct(dyn_struct& str, const Camera_Fixed_Point& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Moving_Block& block) noexcept;
