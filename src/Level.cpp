@@ -15,10 +15,6 @@
 
 void match_and_destroy_keys(Player& p, Door& d) noexcept;
 
-void Camera_Fixed_Point::render(render::Orders& target) const noexcept {
-	target.push_rec(camera, { .1f, .1f, .1f, .1f }, 0.1f, { 1, 1, 1, 1 });
-}
-
 void Block::render(render::Orders& target) const noexcept {
 	Vector4d color = { 1, 1, 1, 1 };
 	if (back) color = { .2, .8, .2, 1 };
@@ -402,9 +398,6 @@ void Level::render(render::Orders& target) const noexcept {
 }
 
 void Level::render_debug(render::Orders& target) const noexcept {
-	for (auto& x : camera_fixed_points) {
-		x.render(target);
-	}
 }
 
 
@@ -791,28 +784,16 @@ void Level::update_player(float dt) noexcept {
 
 
 void Level::update_camera(float dt) noexcept {
-	Rectanglef* camera_bounds = nullptr;
-	for (auto& x : camera_fixed_points) if (x.camera.intersect(player.hitbox))
-		camera_bounds = &x.camera;
-
-	if (!camera_bounds) return;
-
 	auto camera_target = player.hitbox.center();
 	auto camera_center = camera.center();
 	auto dist = (camera_target - camera_center).length();
 
 	if (dist > camera_idle_radius) {
+		auto prev = camera;
 		Vector2f dt_pos = camera_target - camera_center;
 		Vector2f to_move =
 			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
-		camera.pos += to_move;
-	}
 
-	if (camera_bounds && camera_bounds->area() > 0) {
-		auto rec_target = camera.restrict_in(*camera_bounds);
-		Vector2f dt_pos = rec_target.pos - camera.pos;
-		Vector2f to_move =
-			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
 		camera.pos += to_move;
 	}
 }
@@ -836,7 +817,6 @@ void Level::resume() noexcept {
 	iter(prest_sources);
 	iter(friction_zones);
 	iter(auto_binding_zones);
-	iter(camera_fixed_points);
 }
 
 void Level::bind_rock(std::uint64_t x, Vector2f bind) noexcept {
@@ -989,7 +969,6 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(dispensers);
 	X(kill_zones);
 	X(next_zones);
-	X(camera_fixed_points);
 	X(prest_sources);
 	X(key_items);
 	X(decor_sprites);
@@ -1032,7 +1011,6 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["trigger_zones"]       = level.trigger_zones;
 	str["torches"]             = level.torches;
 	str["moving_blocks"]       = level.moving_blocks;
-	str["camera_fixed_points"] = level.camera_fixed_points;
 
 	auto& player = str["player"] = dyn_struct::structure_t{};
     
@@ -1116,12 +1094,4 @@ void to_dyn_struct(dyn_struct& str, const Decor_Sprite& x) noexcept {
 	str = dyn_struct::structure_t{};
 	str["rec"] = x.rec;
 	str["texture_path"] = relative_path.generic_string();
-}
-
-void from_dyn_struct(const dyn_struct& str, Camera_Fixed_Point& x) noexcept {
-	x.camera = (Rectanglef)str["camera"];
-}
-void to_dyn_struct(dyn_struct& str, const Camera_Fixed_Point& x) noexcept {
-	str = dyn_struct::structure_t{};
-	str["camera"] = x.camera;
 }

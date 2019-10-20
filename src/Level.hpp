@@ -15,14 +15,6 @@
 
 #include "Player.hpp"
 
-struct Camera_Fixed_Point {
-	bool editor_selected{ false };
-
-	Rectanglef camera;
-
-	void render(render::Orders& target) const noexcept;
-};
-
 struct Block {
 	bool editor_selected{ false };
 
@@ -251,7 +243,6 @@ struct Level {
 	std::vector<Prest_Source>       prest_sources;
 	std::vector<Friction_Zone>      friction_zones;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones;
-	std::vector<Camera_Fixed_Point> camera_fixed_points;
 
 	std::vector<Particle> particles;
 
@@ -302,8 +293,6 @@ private:
 	void update_player(float dt) noexcept;
 };
 
-extern void from_dyn_struct(const dyn_struct& str, Camera_Fixed_Point& x) noexcept;
-extern void to_dyn_struct(dyn_struct& str, const Camera_Fixed_Point& x) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Dispenser& block) noexcept;
 extern void to_dyn_struct(dyn_struct& str, const Dispenser& block) noexcept;
 extern void from_dyn_struct(const dyn_struct& str, Moving_Block& block) noexcept;

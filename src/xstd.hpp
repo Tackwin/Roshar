@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <functional>
 #include "Time.hpp"
 
 namespace xstd {
@@ -145,5 +146,15 @@ namespace xstd {
 		}
 
 		return result;
+	}
+
+	template<typename T, typename U>
+	std::vector<U> vec_map(const std::vector<T>& vec, std::function<U(const T&)> f) noexcept {
+		std::vector<U> us;
+		us.reserve(vec.size());
+
+		for (const auto& x : vec) us.push_back(f(x));
+
+		return us;
 	}
 }

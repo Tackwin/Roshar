@@ -3,6 +3,8 @@
 
 template<typename T>
 struct Rectangle_t {
+	using my_type_t = Rectangle_t<T>;
+	
 	enum class Side {
 		Left = 0,
 		Right,
@@ -113,6 +115,21 @@ struct Rectangle_t {
 				pos.x + size.x < other.pos.x || pos.x > other.pos.x + other.size.x ||
 				pos.y + size.y < other.pos.y || pos.y > other.pos.y + other.size.y
 			);
+	}
+
+	constexpr my_type_t exclude(const my_type_t& base) const noexcept {
+		my_type_t result;
+		result.x = std::max(this->x, base.x);
+		result.y = std::max(this->y, base.y);
+		result.w = std::max((T)0, this->x + this->w - (base.x + base.w));
+		result.h = std::max((T)0, this->y + this->h - (base.y + base.h));
+		return result;
+	}
+
+	constexpr bool is_fully_inside(const std::vector<my_type_t>& vec) const noexcept {
+		my_type_t result = *this;
+		for (auto& x : vec) result = result.exclude(x);
+		return result.area() == 0;
 	}
 
 	constexpr Side intersect_side(const Rectangle_t<T>& other) const noexcept {
@@ -277,6 +294,14 @@ struct Rectangle_t {
 		return hull;
 	}
 
+	T get_intersection_area(const Rectangle_t<T>& other) const noexcept {
+		Rectangle_t<T> big;
+		big.x = std::min(this->x, other.x);
+		big.y = std::min(this->y, other.y);
+		big.w = std::max(this->w + this->x, other.x + other.w) big.x;
+		big.h = std::max(this->y + this->h, other.y + other.h) big.y;
+		return std::max(this->area() + other.area() - big.area(), static_cast<T>(0));
+	}
 };
 
 using Rectanglef = Rectangle_t<float>;
@@ -331,4 +356,16 @@ double dist_to2(const Vector<2, T>& vec, const Rectangle_t<T> & rec) noexcept {
 
 inline void printf(const Rectanglef& rec) noexcept {
 	printf("%3.3f, %3.3f, %3.3f, %3.3f\n", rec.x, rec.y, rec.w, rec.h);
+}
+
+template<typename T> bool check_not_fully_inside(
+	const Rectangle_t<T>& to_check, std::vector<Rectangle_t<T>> vec
+) noexcept {
+	if (vec.empty()) return false;
+
+	auto area = 0;
+
+	for (auto& x : vec) area += x.get_intersection_area(to_check);
+
+	return to_check.area() ;
 }

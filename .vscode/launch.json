@@ -2,8 +2,8 @@
 	"version": "0.2.0",
     "configurations": [
 		{
-			"name": "C++ Launch",
-			"type": "cppdbg",
+			"name": "C++ Debug",
+			"type": "cppvsdbg",
 			"request": "launch",
 			"program": "${workspaceRoot}/Build/Cmake/Roshar.exe",
 			"args": [],

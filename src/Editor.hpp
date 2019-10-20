@@ -16,7 +16,6 @@ class Editor {
 		Next_Zone,
 		Dry_Zone,
 		Trigger_Zone,
-		Camera_Fixed_Point,
 		Door,
 		Rock,
 		Auto_Binding_Zone,
