@@ -7,11 +7,12 @@
 
 void Particle::render(render::Orders& orders) const noexcept {
 	if (t <= 0) return;
-
 	Rectanglef rec;
 	rec.size = V2F(size);
 	rec.setCenter(pos);
-	orders.push_rec(rec, color);
+
+	if (texture) orders.push_sprite(rec, texture, texture_rect, {.0f, .0f}, 0.f, color);
+	else         orders.push_rec(rec, color);
 }
 
 void Particle::update(float dt) noexcept {
@@ -47,6 +48,12 @@ void Particle_Spot::update(float dt, std::vector<Particle>& particles) noexcept 
 
 		return (decltype(t))(t * unit(eng));
 	};
+	constexpr auto rand1 = [](auto t) noexcept {
+		thread_local std::default_random_engine eng{ SEED };
+		std::uniform_real_distribution<double> unit{ 0.0, 1.0 };
+
+		return (decltype(t))(t * unit(eng));
+	};
 
 	timers.resize(system.emitters.size());
 
@@ -71,6 +78,16 @@ void Particle_Spot::update(float dt, std::vector<Particle>& particles) noexcept 
 			p.t = emitter.life_time + rand(emitter.life_time_range);
 			p.gravity = rand(1) + 0.5f < emitter.gravity_probability;
 
+			p.texture = emitter.texture;
+			p.texture_rect.pos = {
+				(float)rand1(emitter.texture_rects.x) / emitter.texture_rects.x,
+				(float)rand1(emitter.texture_rects.y) / emitter.texture_rects.y
+			};
+			p.texture_rect.size = {
+				1.f / emitter.texture_rects.x,
+				1.f / emitter.texture_rects.y
+			};
+
 			particles.push_back(p);
 
 			timer.dt_t += emitter.dt_time + rand(emitter.dt_time_range);
@@ -86,6 +103,12 @@ void from_dyn_struct(const dyn_struct& str, Particle_System& system) noexcept {
 	Particle_System::Emitter e;
 	for (const auto& x : iterate_array(str["emitters"])) {
 		e = {};
+		if (has(x, "angle_range"))
+			e.angle_range     = (float)x["angle_range"];
+		if (has(x, "texture"))
+			e.texture         = asset::Store.texture_string_map.at((std::string)x["texture"]);
+		if (has(x, "texture_rects"))
+			e.texture_rects   = (Vector2u)x["texture_rects"];
 		e.offset              = (Vector2f)x["offset"];
 		e.spawn_zone          = (Rectanglef)x["spawn_zone"];
 		e.color_hsva          = (Vector4d)x["color_hsva"];

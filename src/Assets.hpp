@@ -10,6 +10,7 @@ namespace asset {
 		inline static Key Basic_Binding_Indicator_Head{ 4 };
 		inline static Key Indicator{ 5 };
 		inline static Key Guy_Sheet{ 6 };
+		inline static Key Dust_Sheet{ 7 };
 	};
 	struct Shader_Id {
 		inline static Key Default{ 1 };

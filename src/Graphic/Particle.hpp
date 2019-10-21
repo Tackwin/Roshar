@@ -16,6 +16,10 @@ struct Particle {
 	Vector2f speed;
 	bool gravity;
 
+	float angle;
+	asset::Key texture;
+	Rectanglef texture_rect;
+
 	float t;
 
 	void update(float dt) noexcept;
@@ -68,6 +72,10 @@ struct Particle_System {
 
 		float life_time;
 		float life_time_range;
+
+		float angle_range;
+		asset::Key texture;
+		Vector2u texture_rects;
 
 		bool once;
 

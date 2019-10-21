@@ -655,7 +655,7 @@ is there.",
 		while (row.x < cam.x + cam.w) {
 			target.late_push_line(
 				row,
-				row + Vector2f{ 0, cam.h + snap_grid * 2 },
+				row + Vector2f{ 0, cam.h * 2 },
 				color,
 				cam.w / Environment.window_width
 			);
@@ -665,7 +665,7 @@ is there.",
 		while (col.y < cam.y + cam.h) {
 			target.late_push_line(
 				col,
-				col + Vector2f{ cam.w + snap_grid * 2, 0},
+				col + Vector2f{ cam.w * 2, 0},
 				color,
 				cam.h / Environment.window_height
 			);

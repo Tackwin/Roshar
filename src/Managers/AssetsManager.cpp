@@ -208,6 +208,7 @@ void Store_t::load_known_textures() noexcept {
 
 	X("assets/textures/basic_binding_indicator_head.png", Basic_Binding_Indicator_Head);
 	X("assets/textures/basic_binding_indicator_body.png", Basic_Binding_Indicator_Body);
+	X("assets/textures/dust_sheet.png",                   Dust_Sheet                  );
 	X("assets/textures/indicator.png",                    Indicator                   );
 	X("assets/textures/guy_sheet.png",                    Guy_Sheet                   );
 	X("assets/textures/rock.png",                         Rock                        );
@@ -258,6 +259,12 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 				animations[Animation_Id::Guy].asset = (Animation_Sheet)anim["Guy"];
 			}
 		}
+		if (has(config, "textures")){
+			for (auto& [key, value] : iterate_structure(config["textures"])) {
+				auto id = load_texture((std::string)value);
+				if (id) texture_string_map.insert({(std::string)key, *id});
+			}
+		}
 		if (has(config, "particles")) {
 			const auto& part = config["particles"];
 
@@ -267,6 +274,7 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 					(Particle_System)part["Player_Foot"];
 			}
 		}
+
 	};
 #ifndef WEB
 	file::monitor_file(std::filesystem::canonical(Exe_Path / config_path), f);

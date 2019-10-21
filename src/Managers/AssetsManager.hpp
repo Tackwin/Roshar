@@ -43,6 +43,8 @@ namespace asset {
 		std::unordered_map<std::uint64_t, Asset_t<Animation_Sheet>> animations;
 		std::unordered_map<std::uint64_t, Asset_t<Particle_System>> particle_systems;
 
+		std::unordered_map<std::string, std::uint64_t> texture_string_map;
+
 		[[nodiscard]] Texture* get_normal(Key k) const noexcept;
 		[[nodiscard]] Texture& get_albedo(Key k) noexcept;
 		[[nodiscard]] Key make_texture() noexcept;
