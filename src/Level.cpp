@@ -318,12 +318,12 @@ void Moving_Block::update(float dt) noexcept {
 	if (reverse) {
 		t -= speed * dt;
 		if (t < 0) {
-			colliding_player = false;
 			if (looping) {
 				t = -t;
 				reverse = false;
 			}
 			else {
+				moving_player = false;
 				t += max_t;
 			}
 		}
@@ -331,12 +331,12 @@ void Moving_Block::update(float dt) noexcept {
 	else {
 		t += speed * dt;
 		if (t > max_t) {
-			colliding_player = false;
 			if (looping) {
 				t = 2 * max_t - t;
 				reverse = true;
 			}
 			else {
+				moving_player = false;
 				t -= max_t;
 			}
 		}
@@ -526,8 +526,9 @@ void Level::update(float dt) noexcept {
 		x.update(dt);
 		x.rec.pos += x.to_move;
 
-		if (test(player, x.rec)) x.colliding_player = true;
-		if (x.colliding_player) player.hitbox.pos += x.to_move;
+		// After moving it might be the first time that we collide with the player.
+		if (test(x, player.hitbox)) x.moving_player = true;
+		if (x.moving_player) player.hitbox.pos += x.to_move;
 	}
 
 	if (focused_rock) {
@@ -542,6 +543,12 @@ void Level::update(float dt) noexcept {
 
 	for (auto& d : doors) if (dist_to2(player.hitbox.center(), d.rec) < 1)
 		match_and_destroy_keys(player, d);
+
+	if (player.grappled){
+		debug_vectors.push_back({
+			player.hitbox.center(), player.grappling_normal
+		});
+	}
 }
 
 void Level::test_collisions(float dt) noexcept {
@@ -628,10 +635,15 @@ void Level::update_player(float dt) noexcept {
 	bool hard_border{ false };
 
 	struct Player_Response {
+		struct Holding_Block {
+			bool back;
+			Rectanglef rec;
+		};
+
 		bool collided{ false };
 		float auto_climbed{ 0.f };
 		bool touched_saturated{ false };
-		Block* holded{ nullptr };
+		std::optional<Holding_Block> holded{ std::nullopt };
 		Moving_Block* moving_block_collided{ nullptr };
 	};
 
@@ -642,23 +654,35 @@ void Level::update_player(float dt) noexcept {
 
 	auto simulate = [&](Player_Capabilities capabilities) -> Player_Response {
 		Player_Response response = {};
+		
+		auto grap_box = player.hitbox;
+		grap_box.size += .1f;
+		grap_box.pos -= .05f;
 
 		for (auto& x : doors) if (test(x, player)) response.collided = true;
 		for (auto& x : moving_blocks) {
-			x.colliding_player = false;
+			x.moving_player = false;
+			
+			if (capabilities.holding && x.rec.intersect(grap_box)){
+				response.holded = Player_Response::Holding_Block{};
+				response.holded->back = false;
+				response.holded->rec = x.rec;
+				x.moving_player = true;
+			}
+
 			if (!test(player, x.rec)) continue;
 
-			x.colliding_player = true;
+
+			x.moving_player = true;
 			response.collided = true;
 		}
 
 		for (auto& x : blocks) {
-
-			auto grap_box = player.hitbox;
-			grap_box.size += .1f;
-			grap_box.pos -= .05f;
-
-			response.holded = capabilities.holding && test(x, grap_box) ? &x : response.holded;
+			if (capabilities.holding && test(x, grap_box)){
+				response.holded = Player_Response::Holding_Block{};
+				response.holded->back = x.back;
+				response.holded->rec = {x.pos, x.size};
+			}
 
 			if (!test(x, player)) continue;
 
@@ -687,7 +711,7 @@ void Level::update_player(float dt) noexcept {
 
 	bool new_floored = false;
 	bool touched_saturated = false;
-	Block* grappled = nullptr;
+	std::optional<Player_Response::Holding_Block> grappled = std::nullopt;
 
 
 
@@ -701,7 +725,7 @@ void Level::update_player(float dt) noexcept {
 	response_x = simulate(capabilities);
 
 	touched_saturated |= response_x.touched_saturated;
-	grappled = response_x.holded ? response_x.holded : grappled;
+	grappled = response_x.holded;
 
 	if (response_x.auto_climbed) {
 		// if we detected an opportunity to auto climb
@@ -749,8 +773,8 @@ void Level::update_player(float dt) noexcept {
 			player.grappling_normal = { 0, 1 };
 		}
 		else {
-			Rectanglef rec = { grappled->pos, grappled->size };
-			player.grappling_normal = rec.get_normal_to(player.hitbox.pos);
+			Rectanglef rec = { grappled->rec.pos, grappled->rec.size };
+			player.grappling_normal = rec.get_normal_to(player.hitbox);
 		}
 	}
 

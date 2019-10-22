@@ -1,6 +1,8 @@
 #pragma once
 #include "Vector.hpp"
 
+#include <algorithm>
+
 template<typename T>
 struct Rectangle_t {
 	using my_type_t = Rectangle_t<T>;
@@ -89,18 +91,37 @@ struct Rectangle_t {
 	Rectangle_t(Rectangle_t&&) = default;
 	Rectangle_t& operator=(Rectangle_t&&) = default;
 
+	constexpr Vector2f get_normal_to(Rectangle_t<T> r) noexcept {
+		std::array<std::tuple<float, Vector2f>, 4> arr;
+		arr[0] = {std::abs(x + w - r.x),     { +1,  0 }};
+		arr[1] = {std::abs(x - (r.x + r.w)), { -1,  0 }};
+		arr[2] = {std::abs(y + h - r.y),     {  0, +1 }};
+		arr[3] = {std::abs(y - (r.y + r.h)), {  0, -1 }};
+
+		std::sort(BEG_END(arr), [](auto a, auto b) { return std::get<0>(a) < std::get<0>(b); });
+
+		return std::get<1>(arr[0]);
+	}
+
 	constexpr Vector2f get_normal_to(Vector2<T> p) noexcept {
-		if (p.y < y + 0 && x < p.x && p.x < x + w) return { 0, -1 };
-		if (p.y > y + h && x < p.x && p.x < x + w) return { 0, +1 };
-		if (p.x < x + 0 && y < p.y && p.y < y + h) return { -1, 0 };
-		if (p.x > x + w && y < p.y && p.y < y + h) return { +1, 0 };
-
-		if (p.x < x + 0 && p.y < y + 0) return Vector2f{ -1, -1 }.normalize();
-		if (p.x > x + w && p.y < y + 0) return Vector2f{ +1, -1 }.normalize();
-		if (p.x < x + 0 && p.y > y + h) return Vector2f{ -1, +1 }.normalize();
-		if (p.x > x + w && p.y > y + h) return Vector2f{ +1, +1 }.normalize();
-
+		if (p.y < y + 0) return {0, -1};
+		if (p.y > y + h) return {0, +1};
+		if (p.x < x + 0) return {-1, 0};
+		if (p.x > x + w) return {+1, 0};
+		
 		return {};
+		
+//		if (p.y < y + 0 && x < p.x && p.x < x + w) return { 0, -1 };
+//		if (p.y > y + h && x < p.x && p.x < x + w) return { 0, +1 };
+//		if (p.x < x + 0 && y < p.y && p.y < y + h) return { -1, 0 };
+//		if (p.x > x + w && y < p.y && p.y < y + h) return { +1, 0 };
+//
+//		if (p.x < x + 0 && p.y < y + 0) return Vector2f{ -1, -1 }.normalize();
+//		if (p.x > x + w && p.y < y + 0) return Vector2f{ +1, -1 }.normalize();
+//		if (p.x < x + 0 && p.y > y + h) return Vector2f{ -1, +1 }.normalize();
+//		if (p.x > x + w && p.y > y + h) return Vector2f{ +1, +1 }.normalize();
+//
+//		return {};
 	}
 
 	template<typename U> explicit operator Rectangle_t<U>() const noexcept {
@@ -119,6 +140,7 @@ struct Rectangle_t {
 
 	constexpr my_type_t exclude(const my_type_t& base) const noexcept {
 		my_type_t result;
+		
 		result.x = std::max(this->x, base.x);
 		result.y = std::max(this->y, base.y);
 		result.w = std::max((T)0, this->x + this->w - (base.x + base.w));
@@ -367,5 +389,5 @@ template<typename T> bool check_not_fully_inside(
 
 	for (auto& x : vec) area += x.get_intersection_area(to_check);
 
-	return to_check.area() ;
+	return to_check.area() >= 0;
 }

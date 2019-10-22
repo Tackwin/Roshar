@@ -26,8 +26,6 @@ struct Environment_t {
 
 	bool show_sprite{ false };
 
-	float offset{ .5f };
-
 	std::uint64_t physics_step{ 5'000/*us*/ }; // 200 ups
 	float speed_up_step{ 1 }; // 200 ups
 

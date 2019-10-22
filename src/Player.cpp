@@ -225,7 +225,7 @@ void Player::update(float dt) noexcept {
 		forces.y -= Environment.gravity;
 
 		velocity += forces * dt;
-		velocity *= std::powf(Environment.drag * (floored ? 0.1f : 1.f), dt);
+		apply_friction(std::powf(Environment.drag * (floored ? 0.1f : 1.f), dt));
 	}
 
 	if (moving && !floored) {
@@ -240,7 +240,7 @@ void Player::update(float dt) noexcept {
 		auto mass = 1;
 		prest -= dt * mass / 2;
 	}
-	grappling &= prest > 0;
+	grappling &= (prest > 0 || saturated_touch_last_time >= 0);
 	grappled &= grappling;
 	grappled &= want_to_go == Dir::None;
 }
@@ -256,7 +256,7 @@ void Player::render(render::Orders& target, Graphic_State state) const noexcept 
 		);
 	}
 	else {
-		target.push_rectangle(state.world_rec, { 0.2, 0.1, 1, 1 });
+		target.push_rectangle(state.world_rec, { grappled ? 0.2 : 0.7, 0.1, 1, 1 });
 	}
 
 	render_bindings(target);

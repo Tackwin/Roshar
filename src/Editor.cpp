@@ -581,18 +581,14 @@ is there.",
 		Vector2f end = get_mouse_pos();
 
 		Rectangle_t<float> rec{ start, end - start };
-		auto c = rec.center();
 		rec.size += snap_grid;
-		rec.setCenter(c);
 
 		target.push_rectangle(rec, { 0.2, 0.5, 0.2, 0.5 });
 	}
 
 	if (start_selection) {
 		auto rec = Rectanglef{ *start_selection, get_mouse_pos() - *start_selection };
-		auto c = rec.center();
 		rec.size += snap_grid;
-		rec.setCenter(c);
 
 		target.push_rec(rec, { 0, 1, 0, .5 });
 	}
@@ -648,8 +644,8 @@ is there.",
 		target.late_push_view(cam);
 		defer{ target.late_pop_view(); };
 
-		Vector2f row = snap_grid * (Vector2i)(cam.pos / snap_grid);
-		Vector2f col = snap_grid * (Vector2i)(cam.pos / snap_grid);
+		Vector2f row = snap_grid * (Vector2i)((cam.pos / snap_grid).apply(std::roundf));
+		Vector2f col = snap_grid * (Vector2i)((cam.pos / snap_grid).apply(std::roundf));
 		Vector4d color = { .6, .6, .6, .6 };
 
 		while (row.x < cam.x + cam.w) {
@@ -673,7 +669,7 @@ is there.",
 			col.y += snap_grid;
 		}
 
-		target.late_push_rec(Rectanglef::centered(get_mouse_pos(), V2F(snap_grid)), color);
+		target.late_push_rec({get_mouse_pos(), V2F(snap_grid)}, color);
 	}
 }
 
@@ -837,14 +833,16 @@ Vector2f Editor::get_mouse_pos() const noexcept {
 	auto pos = IM::getMousePosInView(game->current_level.camera);
 	if (snap_grid == 0) return pos;
 
-	return snap_grid * (1.f * (Vector2i)(pos / snap_grid) + Environment.offset);
+	Vector2f result;
+	result.x = snap_grid * (std::floor(pos.x / snap_grid));
+	result.y = snap_grid * (std::floor(pos.y / snap_grid));
+
+	return result;
 }
 
 void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 	Rectangle_t<float> rec = { start, end - start };
-	auto c = rec.center();
 	rec.size += snap_grid;
-	rec.setCenter(c);
 
 	if (!element_to_create) return;
 #define RETURN_IF_AREA_0 if (start == end) return

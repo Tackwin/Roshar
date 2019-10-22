@@ -216,7 +216,7 @@ struct Moving_Block {
 	float max_t{ 0 };
 	bool reverse{ false };
 
-	bool colliding_player{ false };
+	bool moving_player{false};
 };
 
 struct Level {
