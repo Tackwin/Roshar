@@ -279,14 +279,15 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 
 	Rectanglef sprite_sheet_rect = { .0f, 0.2f * std::roundf(drag_indicator_t / 0.2f), 1.f, .2f };
 
-	auto f = [&](auto a, auto x) {
+	auto f = [&](auto a, auto x, Vector4d color = {1, 1, 1, 1}) {
 		orders.push_sprite(
 			a,
 			{ x.length() * .9f, x.length() * .1f },
 			body_texture,
 			sprite_sheet_rect,
 			{ .0f, .5f },
-			(float)x.angleX()
+			(float)x.angleX(),
+			color
 		);
 		orders.push_sprite(
 			a + x,
@@ -294,7 +295,8 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 			head_texture,
 			sprite_sheet_rect,
 			{ 1.f, .5f },
-			(float)x.angleX()
+			(float)x.angleX(),
+			color
 		);
 	};
 
@@ -329,6 +331,9 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 
 		prest_gathered *= .1f;
 		orders.push_circle(prest_gathered, hitbox.center(), { 0, 1, 0, 1 });
+	}
+	if (wanted_drag.length2() > .5f) {
+		f(center, wanted_drag.normale(), {0.5, 0.4, 0.4, 0.5});
 	}
 
 }

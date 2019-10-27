@@ -18,6 +18,7 @@ void match_and_destroy_keys(Player& p, Door& d) noexcept;
 void Block::render(render::Orders& target) const noexcept {
 	Vector4d color = { 1, 1, 1, 1 };
 	if (back) color = { .2, .8, .2, 1 };
+	if (destroy_on_step) color.a = std::clamp(destroy_timer / destroy_time, 0.f, 1.f);
 
 	target.push_rectangle(pos, size, color);
 
@@ -522,6 +523,14 @@ void Level::update(float dt) noexcept {
 		}
 	}
 
+	for (size_t i = blocks.size() - 1; i + 1 > 0; --i) {
+		auto& x = blocks[i];
+		if (!x.stepped_on) continue;
+
+		x.destroy_timer -= dt;
+		if (x.destroy_on_step && x.destroy_timer < 0.f) blocks.erase(BEG(blocks) + i);
+	}
+
 	for (auto& x : moving_blocks) {
 		x.update(dt);
 		x.rec.pos += x.to_move;
@@ -686,6 +695,7 @@ void Level::update_player(float dt) noexcept {
 
 			if (!test(x, player)) continue;
 
+			x.stepped_on = true;
 			response.touched_saturated |= x.prest_kind == Block::Prest_Kind::Saturated;
 
 			auto dt_y = player.hitbox.y - (x.pos.y + x.size.y);
@@ -890,6 +900,13 @@ void to_dyn_struct(dyn_struct& str, const Moving_Block& block) noexcept {
 void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
 	if (has(str, "kind")) block.prest_kind = (Block::Prest_Kind)((int)str["kind"]);
 	if (has(str, "back")) block.back = (bool)str["back"];
+	if (has(str, "destroy_on_step")) {
+		block.destroy_on_step = (bool)str["destroy_on_step"];
+		if (has(str, "destroy_time")) {
+			block.destroy_time = (float)str["destroy_time"];
+			block.destroy_timer = block.destroy_time;
+		}
+	}
 	block.pos = (Vector2f)str["pos"];
 	block.size = (Vector2f)str["size"];
 }
@@ -899,7 +916,8 @@ void to_dyn_struct(dyn_struct& str, const Block& block) noexcept {
 	str["size"] = block.size;
 	str["kind"] = (int)block.prest_kind;
 	str["back"] = block.back;
-
+	str["destroy_on_step"] = block.destroy_on_step;
+	str["destroy_time"] = block.destroy_time;
 }
 void from_dyn_struct(const dyn_struct& str, Auto_Binding_Zone& zone) noexcept {
 	zone.rec = (Rectanglef)str["rec"];

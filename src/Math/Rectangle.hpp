@@ -320,8 +320,8 @@ struct Rectangle_t {
 		Rectangle_t<T> big;
 		big.x = std::min(this->x, other.x);
 		big.y = std::min(this->y, other.y);
-		big.w = std::max(this->w + this->x, other.x + other.w) big.x;
-		big.h = std::max(this->y + this->h, other.y + other.h) big.y;
+		big.w = std::max(this->w + this->x, other.x + other.w) - big.x;
+		big.h = std::max(this->y + this->h, other.y + other.h) - big.y;
 		return std::max(this->area() + other.area() - big.area(), static_cast<T>(0));
 	}
 };

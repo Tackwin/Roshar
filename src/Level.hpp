@@ -29,6 +29,12 @@ struct Block {
 
 	Vector2f pos;
 	Vector2f size;
+
+	bool destroy_on_step{false};
+	bool stepped_on{false};
+	float destroy_timer{ 0.f };
+	float destroy_time{ 0.f };
+
 	void render(render::Orders& target) const noexcept;
 };
 

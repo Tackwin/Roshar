@@ -260,7 +260,7 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 			}
 		}
 		if (has(config, "textures")){
-			for (auto& [key, value] : iterate_structure(config["textures"])) {
+			for (const auto& [key, value] : iterate_structure(config["textures"])) {
 				auto id = load_texture((std::string)value);
 				if (id) texture_string_map.insert({(std::string)key, *id});
 			}

@@ -316,6 +316,17 @@ struct Vector : public __vec_member<D, T> {
 		return *this;
 	}
 
+	constexpr Vector<D, T> normale() const noexcept {
+		const auto& l = length();
+		auto result = *this;
+		
+		if (l == 0) return result;
+		for (size_t i = 0u; i < D; ++i) {
+			result[i] /= l;
+		}
+		return result;
+	}
+
 	constexpr Vector<D, T> projectTo(const Vector<D, T>& other) const noexcept {
 		return other * dot(other) / other.length2();
 	}

@@ -242,11 +242,15 @@ void Editor::render(render::Orders& target) noexcept {
 
 		Block::Prest_Kind kind = { Block::Prest_Kind::Normal };
 		bool back{ false };
+		bool destroy_on_step{false};
+		float destroy_time{0.f};
 
 		if (n_selected == 1) {
 			auto it = std::find_if(BEG_END(game->current_level.blocks), pred);
 			kind = it->prest_kind;
 			back = it->back;
+			destroy_on_step = it->destroy_on_step;
+			destroy_time = it->destroy_time;
 		}
 		
 		ImGui::Text("kind");
@@ -257,7 +261,7 @@ void Editor::render(render::Orders& target) noexcept {
 					case Block::Prest_Kind::Normal:       *out = "Normal";    break;
 					case Block::Prest_Kind::Saturated:    *out = "Saturated"; break;
 					case Block::Prest_Kind::Eponge:       *out = "Eponge";    break;
-					default: assert("Logic error"); *out = "";          break;
+					default: assert("Logic error");       *out = "";          break;
 				}
 				return true;
 			},
@@ -266,6 +270,19 @@ void Editor::render(render::Orders& target) noexcept {
 		);
 		if (act) for (auto& x : game->current_level.blocks) if (pred(x))
 			x.prest_kind = (Block::Prest_Kind)k;
+		if (ImGui::Checkbox("Destroy on step", &destroy_on_step)) {
+			for (auto& x : game->current_level.blocks) if (pred(x))
+				x.destroy_on_step = destroy_on_step;
+		}
+		if (destroy_on_step) {
+			ImGui::SameLine();
+			if (ImGui::SliderFloat("Time", &destroy_time, 0, 5)) {
+				for (auto& x : game->current_level.blocks) if (pred(x)) {
+					x.destroy_time  = destroy_time;
+					x.destroy_timer = destroy_time;
+				}
+			}
+		}
 
 
 		if (ImGui::Checkbox("back", &back))
@@ -479,54 +496,26 @@ void Editor::render(render::Orders& target) noexcept {
 			"Element to create",
 			&x,
 			[](void*, int idx, const char** out) {
-				switch ((Creating_Element)idx)
-					{
-					case Creating_Element::Block:
-						*out = "Block";
-						break;
-					case Creating_Element::Kill_Zone:
-						*out = "Kill_Zone";
-						break;
-					case Creating_Element::Prest:
-						*out = "Prest";
-						break;
-					case Creating_Element::Dispenser:
-						*out = "Dispenser";
-						break;
-					case Creating_Element::Next_Zone:
-						*out = "Next_Zone";
-						break;
-					case Creating_Element::Dry_Zone:
-						*out = "Dry_Zone";
-						break;
-					case Creating_Element::Rock:
-						*out = "Rock";
-						break;
-					case Creating_Element::Door:
-						*out = "Door";
-						break;
-					case Creating_Element::Trigger_Zone:
-						*out = "Trigger_Zone";
-						break;
-					case Creating_Element::Auto_Binding_Zone:
-						*out = "Auto_Binding_Zone";
-						break;
-					case Creating_Element::Friction_Zone:
-						*out = "Friction_Zone";
-						break;
-					case Creating_Element::Key_Item:
-						*out = "Key_Item";
-						break;
-					case Creating_Element::Torch:
-						*out = "Torch";
-						break;
-					case Creating_Element::Moving_Block:
-						*out = "Moving_Block";
-						break;
-					default:
-					assert(false);
+				#define X(x) case Creating_Element::x: *out = #x; break
+				switch ((Creating_Element)idx) {
+					X(Block);
+					X(Kill_Zone);
+					X(Prest);
+					X(Dispenser);
+					X(Next_Zone);
+					X(Dry_Zone);
+					X(Rock);
+					X(Door);
+					X(Trigger_Zone);
+					X(Auto_Binding_Zone);
+					X(Friction_Zone);
+					X(Key_Item);
+					X(Torch);
+					X(Moving_Block);
+					default: assert(false);
 					break;
 				}
+				#undef X
 				return true;
 			},
 			nullptr,
