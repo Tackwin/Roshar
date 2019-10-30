@@ -392,8 +392,6 @@ void Editor::render(render::Orders& target) noexcept {
 			y = it->binding.y;
 		}
 
-		ImGui::Text("X");
-		ImGui::SameLine();
 		ImGui::PushItemWidth(0.7f * ImGui::GetWindowWidth());
 		defer{ ImGui::PopItemWidth(); };
 		if (ImGui::InputFloat("X", &x, 0.05f))
