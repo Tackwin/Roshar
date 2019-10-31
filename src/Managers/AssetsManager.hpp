@@ -6,6 +6,7 @@
 #include <optional>
 #include <memory>
 
+#include "Graphic/Font.hpp"
 #include "Graphic/Shader.hpp"
 #include "Graphic/Texture.hpp"
 #include "Graphic/Particle.hpp"
@@ -38,6 +39,7 @@ namespace asset {
 
 		std::unordered_map<std::string, std::uint64_t> textures_loaded;
 
+		std::unordered_map<std::uint64_t, Asset_t<Font>> fonts;
 		std::unordered_map<std::uint64_t, Asset_t<Shader>> shaders;
 		std::unordered_map<std::uint64_t, Asset_t<Texture>> textures;
 		std::unordered_map<std::uint64_t, Asset_t<Animation_Sheet>> animations;
@@ -67,10 +69,15 @@ namespace asset {
 		[[nodiscard]] std::optional<Key> load_particle(std::filesystem::path path) noexcept;
 		[[nodiscard]] bool load_particle(Key k, std::filesystem::path path) noexcept;
 
+		[[nodiscard]] Font& get_font(Key k) noexcept;
+		[[nodiscard]] bool load_font(Key k, std::filesystem::path path) noexcept;
+		[[nodiscard]] std::optional<Key> load_font(std::filesystem::path path) noexcept;
+
 		void monitor_path(std::filesystem::path dir) noexcept;
 
 		void load_known_textures() noexcept;
 		void load_known_shaders() noexcept;
+		void load_known_fonts() noexcept;
 		void load_from_config(std::filesystem::path config_path) noexcept;
 	};
 	extern Store_t Store;

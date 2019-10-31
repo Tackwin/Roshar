@@ -217,6 +217,25 @@ void Store_t::load_known_textures() noexcept {
 #undef X
 }
 
+void Store_t::load_known_fonts() noexcept {
+	std::optional<Key> opt;
+
+#define X(str, x)\
+	printf("Loading " str " ... ");\
+	opt = load_font(str);\
+	if (opt) {\
+		Font_Id::x = *opt;\
+		printf("sucess :) !\n");\
+	}\
+	else {\
+		printf("failed :( !\n");\
+	}
+
+	X("assets/fonts/consolas_regular_100.json", Consolas);
+
+#undef X
+}
+
 void Store_t::load_known_shaders() noexcept {
 
 	std::optional<Key> opt;
@@ -283,3 +302,42 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 }
 
 
+[[nodiscard]] Font& Store_t::get_font(Key k) noexcept {
+	return fonts.at(k).asset;
+}
+
+[[nodiscard]] bool Store_t::load_font(Key k, std::filesystem::path path) noexcept {
+	Asset_t<Font> font;
+	font.path = path;
+
+	auto opt = load_from_json_file(path);
+	if (!opt) return false;
+	font.asset.info = (Font::Font_Info)*opt;
+
+	auto it = std::find_if(
+		BEG_END(textures),
+		[p = font.asset.info.texture_path](const std::pair<const asset::Key, Asset_t<Texture>>& x) {
+			return x.second.path == p;
+		}
+	);
+
+	if (it == END(textures)) {
+		auto opt_key = load_texture(font.asset.info.texture_path);
+		if (!opt_key) return false;
+		font.asset.texture_key = *opt_key;
+	} else {
+		font.asset.texture_key = it->first;
+	}
+	
+
+	
+	fonts.emplace(k, std::move(font));
+	
+	return true;
+}
+
+[[nodiscard]] std::optional<Key> Store_t::load_font(std::filesystem::path path) noexcept{
+	asset::Key k = xstd::uuid();
+	if (auto opt = load_font(k, path)) return k;
+	return std::nullopt;
+}

@@ -23,4 +23,7 @@ namespace asset {
 	struct Particle_Id {
 		inline static Key Player_Foot{ 1 };
 	};
+	struct Font_Id {
+		inline static Key Consolas{1};
+	};
 }

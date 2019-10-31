@@ -40,6 +40,7 @@ add_executable(Roshar
         src/Graphic/Shader.hpp
         src/Graphic/Texture.cpp
         src/Graphic/Texture.hpp
+        src/Graphic/Font.cpp
         src/Managers/AssetsManager.cpp
         src/Managers/AssetsManager.hpp
         src/Managers/InputsManager.cpp
