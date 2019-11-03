@@ -8,6 +8,7 @@
 			"program": "${workspaceRoot}/Build/Cmake/Roshar.exe",
 			"args": [],
 			"environment": [],
+			"externalConsole": true,
 			"cwd": "${workspaceRoot}"
 		  }
     ]
