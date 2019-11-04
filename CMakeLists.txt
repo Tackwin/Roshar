@@ -24,6 +24,7 @@ add_compile_definitions(CONSOLE)
 
 add_executable(Roshar
         src/Entry/win32_main.cpp
+        src/Entry/main.cpp
         src/Graphic/Animation.cpp
         src/Graphic/Animation.hpp
         src/Graphic/FrameBuffer.cpp

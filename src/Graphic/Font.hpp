@@ -25,9 +25,11 @@ struct Font {
 			std::uint8_t code;
 		};
 		std::vector<Char> chars;
+
+		std::optional<Char> map(std::uint8_t code) const noexcept;
 	} info;
 
-	asset::Key texture_key;
+	asset::Key texture_id;
 };
 
 extern void from_dyn_struct(const dyn_struct& str, Font::Font_Info& font) noexcept;

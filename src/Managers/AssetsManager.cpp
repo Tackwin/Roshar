@@ -322,11 +322,11 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 	);
 
 	if (it == END(textures)) {
-		auto opt_key = load_texture(font.asset.info.texture_path);
+		auto opt_key = load_texture(path.parent_path() / font.asset.info.texture_path);
 		if (!opt_key) return false;
-		font.asset.texture_key = *opt_key;
+		font.asset.texture_id = *opt_key;
 	} else {
-		font.asset.texture_key = it->first;
+		font.asset.texture_id = it->first;
 	}
 	
 

@@ -17,6 +17,7 @@
 	"build/dyn_struct.bc"`
 	"build/Editor.bc"`
 	"build/Game.bc"`
+	"build/Font.bc"`
 	"build/global.bc"`
 	"build/Level.bc"`
 	"build/Player.bc"`

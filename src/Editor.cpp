@@ -99,7 +99,7 @@ void Editor::render(render::Orders& target) noexcept {
 		game->to_swap_level = std::move(new_level);
 	}
 	char buffer[512];
-	strcpy_s(buffer, save_path.data());
+	strcpy(buffer, save_path.data());
 	ImGui::PushItemWidth(ImGui::GetWindowWidth());
 	ImGui::InputText("", buffer, 512);
 	save_path = buffer;
@@ -631,8 +631,8 @@ is there.",
 		target.late_push_view(cam);
 		defer{ target.late_pop_view(); };
 
-		Vector2f row = snap_grid * (Vector2i)((cam.pos / snap_grid).apply(std::roundf));
-		Vector2f col = snap_grid * (Vector2i)((cam.pos / snap_grid).apply(std::roundf));
+		Vector2f row = snap_grid * (Vector2i)((cam.pos / snap_grid).apply([](auto x) { return std::roundf(x); }));
+		Vector2f col = snap_grid * (Vector2i)((cam.pos / snap_grid).apply([](auto x) { return std::roundf(x); }));
 		Vector4d color = { .6, .6, .6, .6 };
 
 		while (row.x < cam.x + cam.w) {

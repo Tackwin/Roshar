@@ -15,6 +15,7 @@ void render::Orders::clear() noexcept {
 	objects.clear();
 	lights.clear();
 	late.clear();
+	data.clear();
 }
 
 render::View_Info render::current_view;
@@ -81,6 +82,20 @@ render::Order render::push_view(Vector2f pos, Vector2f size) noexcept {
 render::Order render::pop_view() noexcept {
 	Order order;
 	order.kind = Order::Kind::View_Pop;
+	return order;
+}
+
+render::Order render::text(
+	Vector2f pos, asset::Key font_id, char* text, size_t text_size, float height, Vector2f origin
+) noexcept {
+	Order order;
+	order.kind = Order::Kind::Text;
+	order.text.pos = pos;
+	order.text.font_id = font_id;
+	order.text.text_size = text_size;
+	order.text.text = text;
+	order.text.height = height;
+	order.text.origin = origin;
 	return order;
 }
 
@@ -486,4 +501,45 @@ void render::immediate(Point_Light_Info info) noexcept {
 	shader.set_uniform(pre + "position", info.pos);
 	shader.set_uniform(pre + "color", info.color);
 	shader.set_uniform(pre + "intensity", info.intensity);
+}
+
+void render::immediate(Text_Info info) noexcept {
+	auto& font = asset::Store.get_font(info.font_id);
+	auto& texture_size = asset::Store.get_albedo(font.texture_id).get_size();
+	Vector2f pos = info.pos;
+
+	for (size_t i = 0; i < info.text_size; ++i) {
+		auto& c = info.text[i];
+
+		auto opt_glyph = font.info.map(c);
+		if (!opt_glyph) continue;
+		auto& glyph = *opt_glyph;
+		
+		Sprite_Info sprite;
+		sprite.color           = {1, 1, 1, 1};
+		sprite.origin.x        = -1.f * glyph.offset.x / glyph.rect.w;
+		sprite.origin.y        = 1 + 1.f * glyph.offset.y / glyph.rect.h;
+		sprite.pos             = pos;
+		sprite.pos.y          += font.info.height * 1.f * info.height / font.info.char_size;
+		sprite.rotation        = 0;
+		sprite.shader          = asset::Shader_Id::Default;
+		sprite.size            = (Vector2f)glyph.rect.size;
+		sprite.size *= 1.f * info.height / font.info.char_size;
+		sprite.texture         = font.texture_id;
+		sprite.texture_rect    = (Rectanglef)glyph.rect;
+		
+		// transformation from top left to bottom left.
+		sprite.texture_rect.y  = texture_size.y - sprite.texture_rect.y;
+		sprite.texture_rect.y -= sprite.texture_rect.h;
+
+		sprite.texture_rect.x /= texture_size.x;
+		sprite.texture_rect.w /= texture_size.x;
+		sprite.texture_rect.y /= texture_size.y;
+		sprite.texture_rect.h /= texture_size.y;
+
+		immediate(sprite);
+
+		pos.x += glyph.width * 1.f * info.height / font.info.char_size;
+	}
+
 }

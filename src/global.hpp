@@ -33,6 +33,10 @@ struct Environment_t {
 	std::uint32_t window_height{ 0 };
 
 	Debug_Framebuffer debug_framebuffer{ Debug_Framebuffer::Default };
+
+	float a{1};
+	float b{1};
+	float c{-1};
 };
 
 extern std::filesystem::path Exe_Path;

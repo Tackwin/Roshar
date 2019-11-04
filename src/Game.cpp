@@ -3,13 +3,6 @@
 #include "dyn_struct.hpp"
 #include "Graphic/Graphics.hpp"
 
-void render_game(render::Orders& o) noexcept {
-	game->render(o);
-}
-void update_game(std::uint64_t dt) noexcept {
-	game->update(dt);
-}
-
 Game* game = nullptr;
 
 void Game::load_start_config() noexcept {
@@ -217,6 +210,13 @@ void Game::render(render::Orders& target) noexcept {
 		{ (float)Environment.window_width, (float)Environment.window_height },
 		color
 	);
+
+	char buffer[1024];
+	sprintf(buffer, "Level: %s.", current_level.file_path.generic_string().c_str());
+
+	std::string str{buffer};
+
+	target.late_push_text({0, 0}, asset::Font_Id::Consolas, str, 10, {0, 0});
 }
 
 void Game::render_debug_controller(render::Orders& orders, IM::Input_Iterator it) noexcept {

@@ -67,6 +67,15 @@ namespace render {
 		float intensity;
 	};
 
+	struct Text_Info {
+		asset::Key font_id;
+		char* text;
+		size_t text_size;
+		float height;
+		Vector2f origin;
+		Vector2f pos;
+	};
+
 	struct Order {
 		union {
 			Point_Light_Info point_light;
@@ -77,6 +86,7 @@ namespace render {
 			Arrow_Info arrow;
 			Line_Info line;
 			View_Info view;
+			Text_Info text;
 		};
 
 		Order() noexcept {
@@ -95,11 +105,19 @@ namespace render {
 			Circle,
 			Arrow,
 			Line,
+			Text,
 			Count
 		} kind;
 	};
 
-
+	Order text(
+		Vector2f pos,
+		asset::Key font_id,
+		char* text,
+		size_t text_size,
+		float size,
+		Vector2f origin={0, 0}
+	) noexcept;
 	Order arrow(
 		Vector2f a,
 		Vector2f b,
@@ -152,19 +170,21 @@ namespace render {
 		std::vector<Order> late;
 		std::vector<Order> lights;
 
+		std::vector<std::uint8_t> data;
+
 		void clear() noexcept;
 
 		void push_ambient_light(Vector4d color, float intensity) noexcept;
 		void pop_ambient_light() noexcept;
 
 		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
-			objects.push_back(arrow(a, b, color));
+			objects.emplace_back(arrow(a, b, color));
 		}
 		void push_line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
-			objects.push_back(line(a, b, color, thickness));
+			objects.emplace_back(line(a, b, color, thickness));
 		}
 		void late_push_line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
-			late.push_back(line(a, b, color, thickness));
+			late.emplace_back(line(a, b, color, thickness));
 		}
 
 		void push_point_light(
@@ -176,7 +196,22 @@ namespace render {
 		) noexcept {
 			auto info = point_light(pos, color, intensity, angle, spread);
 			info.point_light.idx = lights.size();
-			lights.push_back(info);
+			lights.emplace_back(std::move(info));
+		}
+
+		void push_text(
+			Vector2f pos,
+			asset::Key font_id,
+			std::string str_text,
+			float height,
+			Vector2f origin
+		) noexcept {
+			size_t idx = data.size();
+			for (auto& c : str_text) {
+				data.push_back(c);
+			}
+
+			objects.emplace_back(text(pos, font_id, (char*)idx, str_text.size(), height, origin));
 		}
 
 		void push_rectangle(
@@ -186,7 +221,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			objects.push_back(rectangle(pos, size, color, outline, outline_color));
+			objects.emplace_back(rectangle(pos, size, color, outline, outline_color));
 		}
 		void push_rec(
 			Rectanglef rec,
@@ -194,8 +229,24 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			objects.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
+			objects.emplace_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
 		}
+
+		void late_push_text(
+			Vector2f pos,
+			asset::Key font_id,
+			std::string str_text,
+			float height,
+			Vector2f origin
+		) noexcept {
+			size_t idx = data.size();
+			for (auto& c : str_text) {
+				data.push_back(c);
+			}
+
+			late.emplace_back(text(pos, font_id, (char*)idx, str_text.size(), height, origin));
+		}
+
 
 		void late_push_rectangle(
 			Vector2f pos,
@@ -204,7 +255,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			late.push_back(rectangle(pos, size, color, outline, outline_color));
+			late.emplace_back(rectangle(pos, size, color, outline, outline_color));
 		}
 
 		void late_push_rec(
@@ -213,7 +264,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			late.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
+			late.emplace_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
 		}
 
 
@@ -223,7 +274,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0, 0, 0, 0 }
 		) noexcept {
-			objects.push_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
+			objects.emplace_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
 		}
 
 		void push_circle(
@@ -233,7 +284,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0., 0., 0., 0. }
 		) noexcept {
-			objects.push_back(circle(r, pos, color, outline, outline_color));
+			objects.emplace_back(circle(r, pos, color, outline, outline_color));
 		}
 		void late_push_circle(
 			float r,
@@ -242,7 +293,7 @@ namespace render {
 			float outline = 0.f,
 			Vector4d outline_color = { 0., 0., 0., 0. }
 		) noexcept {
-			late.push_back(circle(r, pos, color, outline, outline_color));
+			late.emplace_back(circle(r, pos, color, outline, outline_color));
 		}
 
 		void push_sprite(
@@ -270,25 +321,26 @@ namespace render {
 			push_view({ pos, size });
 		}
 		void push_view(Rectanglef bounds) noexcept {
-			objects.push_back(render::push_view(bounds));
+			objects.emplace_back(render::push_view(bounds));
 		}
 		void pop_view() noexcept {
-			objects.push_back(render::pop_view());
+			objects.emplace_back(render::pop_view());
 		}
 
 		void late_push_view(Vector2f pos, Vector2f size) noexcept {
 			late_push_view({ pos, size });
 		}
 		void late_push_view(Rectanglef bounds) noexcept {
-			late.push_back(render::push_view(bounds));
+			late.emplace_back(render::push_view(bounds));
 		}
 		void late_pop_view() noexcept {
-			late.push_back(render::pop_view());
+			late.emplace_back(render::pop_view());
 		}
 	};
 
 	extern View_Info current_view;
 
+	void immediate(Text_Info           info) noexcept;
 	void immediate(Point_Light_Info    info) noexcept;
 	void immediate(Sprite_Info         info) noexcept;
 	void immediate(Circle_Info         info) noexcept;
