@@ -203,6 +203,7 @@ public:
 	using Input_Iterator = decltype(records)::iterator;
 
 	static decltype(records)::iterator get_iterator() noexcept;
+	static bool iterator_is_valid() noexcept;
 
 	static void update(float dt);
 

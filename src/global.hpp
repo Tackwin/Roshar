@@ -39,6 +39,7 @@ struct Environment_t {
 	float c{-1};
 };
 
+extern bool application_running;
 extern std::filesystem::path Exe_Path;
 extern std::mutex Main_Mutex;
 extern Environment_t Environment;

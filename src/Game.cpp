@@ -21,6 +21,11 @@ void Game::input() noexcept {
 	this_record = IM::get_iterator();
 	if (!IM::isWindowFocused()) return;
 
+	if (current_screen == Screen::Start) {
+		start_screen.input(this_record);
+		return;
+	}
+
 	if (IM::isKeyJustPressed(Keyboard::E)) {
 		in_editor = !in_editor;
 		if (!in_editor) {
@@ -107,6 +112,14 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 	input();
 
+	if (current_screen == Screen::Start) {
+		start_screen.update(fixed_dt);
+
+		if (start_screen.exit) application_running = false;
+		if (start_screen.goto_levels) current_screen = Screen::None;
+		return;
+	}
+
 	if (!in_editor) current_level.input(this_record);
 
 	if (to_swap_level) {
@@ -175,6 +188,11 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 }
 
 void Game::render(render::Orders& target) noexcept {
+	if (current_screen == Screen::Start) {
+		start_screen.render(target);
+		return;
+	}
+	
 	current_level.render(target);
 	if (in_editor) {
 		current_level.render_debug(target);

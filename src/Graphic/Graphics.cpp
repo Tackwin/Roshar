@@ -508,6 +508,10 @@ void render::immediate(Text_Info info) noexcept {
 	auto& texture_size = asset::Store.get_albedo(font.texture_id).get_size();
 	Vector2f pos = info.pos;
 
+	auto size = font.compute_size(std::string_view{info.text, info.text_size}, info.height);
+	pos.x -= size.x * info.origin.x;
+	pos.y -= size.y * info.origin.y;
+
 	for (size_t i = 0; i < info.text_size; ++i) {
 		auto& c = info.text[i];
 

@@ -37,3 +37,17 @@ void from_dyn_struct(const dyn_struct& str, Font::Font_Info& font) noexcept {
 void to_dyn_struct(dyn_struct& str, const Font::Font_Info& font) noexcept {
 	assert(false);
 }
+
+Vector2f Font::compute_size(std::string_view str, float size) noexcept {
+	Vector2f result = { 0, 0 };
+	
+	for (auto& x : str) {
+		auto opt_c = info.map(x);
+		if (!opt_c) continue;
+
+		result.y = xstd::max(result.y, 1.f * opt_c->offset.y + opt_c->rect.h);
+		result.x += opt_c->width;
+	}
+
+	return result * size / 100;
+}

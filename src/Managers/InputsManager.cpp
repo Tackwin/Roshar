@@ -519,3 +519,8 @@ size_t IM::size(std::uint64_t id) noexcept {
 void IM::forget_record(std::uint64_t id) noexcept {
 	if (loaded_record.count(id)) loaded_record.erase(id);
 }
+
+bool IM::iterator_is_valid() noexcept{
+	return get_iterator() != std::end(records);
+}
+

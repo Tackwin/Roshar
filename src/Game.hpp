@@ -7,6 +7,8 @@
 #include "Managers/InputsManager.hpp"
 #include "Graphic/Graphics.hpp"
 
+#include "StartScreen.hpp"
+
 struct Game {
 	Editor editor;
 
@@ -63,6 +65,14 @@ private:
 	void go_in_full_test() noexcept;
 
 	std::optional<Level> load_level(std::filesystem::path path) noexcept;
+
+	enum class Screen {
+		Start = 0,
+		None,
+		Count
+	} current_screen = Screen::Start;
+
+	Start_Screen start_screen;
 };
 
 extern Game* game;

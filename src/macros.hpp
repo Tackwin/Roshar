@@ -32,3 +32,4 @@ namespace details {
 #define IM_BOOL(x)  ImGui::Checkbox(#x, &x)
 #define IM_TEXT(x)  ImGui::Text(x)
 
+#define unreachable 1.f/0.f;

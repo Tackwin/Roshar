@@ -30,6 +30,8 @@ struct Font {
 	} info;
 
 	asset::Key texture_id;
+
+	Vector2f compute_size(std::string_view str, float size) noexcept;
 };
 
 extern void from_dyn_struct(const dyn_struct& str, Font::Font_Info& font) noexcept;

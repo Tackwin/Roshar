@@ -7,6 +7,8 @@ std::mutex Main_Mutex;
 
 float wheel_scroll;
 
+bool application_running{true};
+
 void* platform::handle_window{ nullptr };
 void* platform::handle_dc_window{ nullptr };
 void* platform::main_opengl_context{ nullptr };

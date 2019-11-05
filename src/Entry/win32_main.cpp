@@ -181,7 +181,7 @@ int WINAPI WinMain(
 	ShowWindow(window_handle, SW_SHOWDEFAULT);
 
 	auto last_time_frame = microseconds();
-	while (msg.message != WM_QUIT) {
+	while (msg.message != WM_QUIT && application_running) {
 		std::uint64_t dt = microseconds() - last_time_frame;
 		last_time_frame = microseconds();
 
