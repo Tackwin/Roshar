@@ -13,6 +13,13 @@ void Game::load_start_config() noexcept {
 	if (has(start, "start_level")) {
 		to_swap_level = load_level((std::string)start["start_level"]);
 	}
+	if (has(start, "current_screen")) {
+		#define X(x) if ((std::string)start["current_screen"] == #x) current_screen = Screen::x;
+		X(Start);
+		X(Settings);
+		X(None);
+		#undef X
+	}
 }
 
 void Game::input() noexcept {
@@ -23,6 +30,10 @@ void Game::input() noexcept {
 
 	if (current_screen == Screen::Start) {
 		start_screen.input(this_record);
+		return;
+	}
+	if (current_screen == Screen::Settings) {
+		settings_screen.input(this_record);
 		return;
 	}
 
@@ -113,10 +124,16 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 	input();
 
 	if (current_screen == Screen::Start) {
-		start_screen.update(fixed_dt);
+		start_screen.update(dt);
 
 		if (start_screen.exit) application_running = false;
 		if (start_screen.goto_levels) current_screen = Screen::None;
+		if (start_screen.goto_settings) current_screen = Screen::Settings;
+		return;
+	} if (current_screen == Screen::Settings) {
+		settings_screen.update(dt);
+
+		if (settings_screen.go_back) current_screen = Screen::Start;
 		return;
 	}
 
@@ -190,6 +207,10 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 void Game::render(render::Orders& target) noexcept {
 	if (current_screen == Screen::Start) {
 		start_screen.render(target);
+		return;
+	}
+	if (current_screen == Screen::Settings) {
+		settings_screen.render(target);
 		return;
 	}
 	

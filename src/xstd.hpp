@@ -166,4 +166,9 @@ namespace xstd {
 	constexpr T min(T a, T b) noexcept {
 		return a < b ? a : b;
 	}
+
+	template<typename T>
+	constexpr T map_rp_to_01(T x) noexcept {
+		return 1 - 1 / (1 + x);
+	}
 }

@@ -9,6 +9,8 @@
 
 #include "Game.hpp"
 
+#include "Profiler/Tracer.hpp"
+
 constexpr Vector2u Gl_Buffer_Size = { 1920, 1080 };
 
 void startup() noexcept;
@@ -18,17 +20,21 @@ void render_orders(render::Orders& orders) noexcept;
 
 
 void startup() noexcept {
-
+	PROFILER_BEGIN_SEQ("monitor");
 	asset::Store.monitor_path("assets/");
-
+	PROFILER_SEQ("load_config");
 	asset::Store.load_from_config("assets/config.json");
+	PROFILER_SEQ("load_shaders");
 	asset::Store.load_known_shaders();
+	PROFILER_SEQ("load_textures");
 	asset::Store.load_known_textures();
+	PROFILER_SEQ("load_font");
 	asset::Store.load_known_fonts();
-
+	PROFILER_SEQ("init");
 	static Game local_game;
 	game = &local_game;
 	game->load_start_config();
+	PROFILER_END_SEQ();
 }
 
 void update_game(std::uint64_t dt) noexcept {

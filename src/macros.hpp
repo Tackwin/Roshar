@@ -1,5 +1,8 @@
 #pragma once
+
+#ifndef _MSC_VER
 #pragma clang diagnostic ignored "-Wnonportable-include-path"
+#endif
 
 namespace details {
 	template<typename Callable>

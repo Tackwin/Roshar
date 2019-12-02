@@ -151,6 +151,9 @@ struct Joystick {
 	};
 };
 
+extern std::string to_string(Keyboard::Key k) noexcept;
+extern std::string to_string(Joystick::Button b) noexcept;
+
 struct Inputs_Info {
 	constexpr static std::uint8_t Version{ 2 };
 
@@ -193,6 +196,8 @@ struct Inputs_Info {
 	[[nodiscard]] bool is_pressed(Keyboard::Key    k) const noexcept;
 	[[nodiscard]] bool is_pressed(Mouse::Button    b) const noexcept;
 	[[nodiscard]] bool is_pressed(Joystick::Button x) const noexcept;
+	[[nodiscard]] std::optional<Keyboard::Key> last_key_pressed() const noexcept;
+	[[nodiscard]] std::optional<Joystick::Button> last_contoller_pressed() const noexcept;
 };
 
 class InputsManager {
@@ -203,7 +208,9 @@ public:
 	using Input_Iterator = decltype(records)::iterator;
 
 	static decltype(records)::iterator get_iterator() noexcept;
+	static Input_Iterator end() noexcept;
 	static bool iterator_is_valid() noexcept;
+	static bool iterator_is_valid(Input_Iterator it) noexcept;
 
 	static void update(float dt);
 

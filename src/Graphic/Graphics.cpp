@@ -86,7 +86,13 @@ render::Order render::pop_view() noexcept {
 }
 
 render::Order render::text(
-	Vector2f pos, asset::Key font_id, char* text, size_t text_size, float height, Vector2f origin
+	Vector2f pos,
+	asset::Key font_id,
+	char* text,
+	size_t text_size,
+	float height,
+	Vector2f origin,
+	std::uint32_t style
 ) noexcept {
 	Order order;
 	order.kind = Order::Kind::Text;
@@ -96,6 +102,7 @@ render::Order render::text(
 	order.text.text = text;
 	order.text.height = height;
 	order.text.origin = origin;
+	order.text.style_mask = style;
 	return order;
 }
 
@@ -512,6 +519,17 @@ void render::immediate(Text_Info info) noexcept {
 	pos.x -= size.x * info.origin.x;
 	pos.y -= size.y * info.origin.y;
 
+	if (info.style_mask & Text_Info::Style::Underline) {
+		Rectangle_Info underline;
+		underline.size.x = size.x;
+		underline.size.y = info.height * 0.1;
+		underline.pos = pos;
+		underline.outline = 0;
+		underline.color = {1, 1, 1, 1};
+		underline.outline_color = {1, 1, 1, 1};
+		immediate(underline);
+	}
+
 	for (size_t i = 0; i < info.text_size; ++i) {
 		auto& c = info.text[i];
 
@@ -541,7 +559,17 @@ void render::immediate(Text_Info info) noexcept {
 		sprite.texture_rect.y /= texture_size.y;
 		sprite.texture_rect.h /= texture_size.y;
 
+		Rectangle_Info rec;
+		rec.color = {0, 0, 0, 1};
+		rec.pos = pos;
+		rec.size = sprite.size;
+		rec.pos.x -= sprite.origin.x * rec.size.x;
+		rec.pos.y -= rec.size.y + (sprite.origin.y - 1) * rec.size.y;
+		rec.pos.y += font.info.height * info.height / font.info.char_size;
+
+		// immediate(rec);
 		immediate(sprite);
+
 
 		pos.x += glyph.width * 1.f * info.height / font.info.char_size;
 	}

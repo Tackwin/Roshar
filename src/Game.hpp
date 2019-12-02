@@ -7,9 +7,12 @@
 #include "Managers/InputsManager.hpp"
 #include "Graphic/Graphics.hpp"
 
-#include "StartScreen.hpp"
+#include "Screens/Start.hpp"
+#include "Screens/Settings.hpp"
 
 struct Game {
+	Control_Bindings control_bindings;
+
 	Editor editor;
 
 	Level copy_level;
@@ -68,11 +71,13 @@ private:
 
 	enum class Screen {
 		Start = 0,
+		Settings,
 		None,
 		Count
 	} current_screen = Screen::Start;
 
 	Start_Screen start_screen;
+	Settings_Screen settings_screen;
 };
 
 extern Game* game;

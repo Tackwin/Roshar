@@ -1,4 +1,5 @@
 {
+	"current_screen": "Settings",
 	"start_level": "assets/levels/1-1.json",
 	"animations": {
 		"Guy": [

@@ -74,6 +74,14 @@ namespace render {
 		float height;
 		Vector2f origin;
 		Vector2f pos;
+
+		enum Style {
+			Normal = 0,
+			Underline = 1,
+			Count = 2
+		};
+
+		std::uint32_t style_mask;
 	};
 
 	struct Order {
@@ -116,7 +124,8 @@ namespace render {
 		char* text,
 		size_t text_size,
 		float size,
-		Vector2f origin={0, 0}
+		Vector2f origin={0, 0},
+		std::uint32_t style = Text_Info::Style::Normal
 	) noexcept;
 	Order arrow(
 		Vector2f a,
@@ -204,14 +213,17 @@ namespace render {
 			asset::Key font_id,
 			std::string str_text,
 			float height,
-			Vector2f origin
+			Vector2f origin,
+			std::uint32_t style = Text_Info::Style::Normal
 		) noexcept {
 			size_t idx = data.size();
 			for (auto& c : str_text) {
 				data.push_back(c);
 			}
 
-			objects.emplace_back(text(pos, font_id, (char*)idx, str_text.size(), height, origin));
+			objects.emplace_back(text(
+				pos, font_id, (char*)idx, str_text.size(), height, origin, style
+			));
 		}
 
 		void push_rectangle(
@@ -237,14 +249,17 @@ namespace render {
 			asset::Key font_id,
 			std::string str_text,
 			float height,
-			Vector2f origin
+			Vector2f origin,
+			std::uint32_t style = Text_Info::Style::Normal
 		) noexcept {
 			size_t idx = data.size();
 			for (auto& c : str_text) {
 				data.push_back(c);
 			}
 
-			late.emplace_back(text(pos, font_id, (char*)idx, str_text.size(), height, origin));
+			late.emplace_back(text(
+				pos, font_id, (char*)idx, str_text.size(), height, origin, style
+			));
 		}
 
 

@@ -267,3 +267,11 @@ paket-files/
 /Debug_Web
 /.vscode
 /cmake-build-debug
+.vscode/c_cpp_properties.json
+imgui.ini
+Roshar.srctrlbm
+Roshar.srctrldb
+Roshar.srctrldb_tmp
+Roshar.srctrlprj
+imgui.ini
+.vscode/c_cpp_properties.json

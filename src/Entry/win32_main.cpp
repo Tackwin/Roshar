@@ -15,6 +15,8 @@
 #include "Graphic/imgui_impl_opengl3.hpp"
 #include "Graphic/Graphics.hpp"
 
+#include "Profiler/Tracer.hpp"
+
 static int attribs[] = {
 #ifndef NDEBUG
 	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
@@ -76,6 +78,10 @@ int WINAPI WinMain(
 	int       nShowCmd
 #endif
 ) {
+
+	PROFILER_SESSION_BEGIN("Startup");
+
+	PROFILER_BEGIN("Windows");
 	constexpr auto Class_Name = TEXT("Roshar Class");
 	constexpr auto Window_Title = TEXT("Roshar");
 
@@ -123,8 +129,10 @@ int WINAPI WinMain(
 	}
 	Environment.window_width = (size_t)(window_rect.right - window_rect.left);
 	Environment.window_height = (size_t)(window_rect.bottom - window_rect.top);
+	PROFILER_END();
 
 
+	PROFILER_BEGIN("OpenGL");
 	auto gl_context = *create_gl_context(window_handle);
 	defer{ destroy_gl_context(gl_context); };
 
@@ -141,11 +149,13 @@ int WINAPI WinMain(
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	PROFILER_END();
 
 	printf("Opengl ");
 	printf("%s", (char*)glGetString(GL_VERSION));
 	printf("\n");
 
+	PROFILER_BEGIN("Imgui");
 	// Setup Dear ImGui context
 	//IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -161,6 +171,7 @@ int WINAPI WinMain(
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(window_handle);
 	ImGui_ImplOpenGL3_Init(glsl_version);
+	PROFILER_END();
 
 	auto dc_window = GetDC(window_handle);
 	if (!dc_window) {
@@ -171,7 +182,9 @@ int WINAPI WinMain(
 
 	platform::handle_dc_window = dc_window;
 
+	PROFILER_BEGIN("Game");
 	startup();
+	PROFILER_END();
 
 	wglSwapIntervalEXT(0);
 
@@ -179,6 +192,8 @@ int WINAPI WinMain(
 
 	render::Orders orders;
 	ShowWindow(window_handle, SW_SHOWDEFAULT);
+
+	PROFILER_SESSION_END("output/trace/");
 
 	auto last_time_frame = microseconds();
 	while (msg.message != WM_QUIT && application_running) {
@@ -235,6 +250,7 @@ std::optional<std::string> get_last_error_message() noexcept {
 
 
 std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
+	PROFILER_BEGIN_SEQ("DC");
 	auto dc = GetDC(handle_window);
 	if (!dc) {
 		// >TODO error handling
@@ -243,6 +259,7 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	}
 	defer{ ReleaseDC(handle_window, dc); };
 
+	PROFILER_SEQ("Pixel");
 	PIXELFORMATDESCRIPTOR pixel_format{};
 	pixel_format.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pixel_format.nVersion = 1;
@@ -251,12 +268,14 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	pixel_format.cAlphaBits = 8;
 	pixel_format.iLayerType = PFD_MAIN_PLANE;
 
+	PROFILER_BEGIN_SEQ("choose");
 	auto suggested_pixel_format = ChoosePixelFormat(dc, &pixel_format);
 	if (!suggested_pixel_format) {
 		// >TODO error handling
 		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
+	PROFILER_SEQ("describe");
 	auto result = DescribePixelFormat(
 		dc, suggested_pixel_format, sizeof(PIXELFORMATDESCRIPTOR), &pixel_format
 	);
@@ -266,13 +285,15 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 		return std::nullopt;
 	}
 
+	PROFILER_SEQ("set");
 	if (!SetPixelFormat(dc, suggested_pixel_format, &pixel_format)) {
 		// >TODO error handling
 		printf("%s", get_last_error_message()->c_str());
 		return std::nullopt;
 	}
+	PROFILER_END_SEQ();
 
-
+	PROFILER_SEQ("first context");
 	auto gl_context = wglCreateContext(dc);
 	if (!gl_context) {
 		// >TODO error handling
@@ -287,12 +308,14 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 		return std::nullopt;
 	}
 
+	PROFILER_SEQ("glew");
 	glewExperimental = true; // Needed for core profile
 	if (glewInit() != GLEW_OK) {
 		printf("Can't init glew\n");
 		return gl_context;
 	}
 
+	PROFILER_SEQ("second context");
 	auto gl = wglCreateContextAttribsARB(dc, nullptr, attribs);
 	if (!gl) {
 		auto err = glGetError();
@@ -308,7 +331,9 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 	}
 
 
+	PROFILER_SEQ("destroy");
 	wglDeleteContext(gl_context);
+	PROFILER_END_SEQ();
 	return (HGLRC)platform::main_opengl_context;
 }
 void destroy_gl_context(HGLRC gl_context) noexcept {
