@@ -8,6 +8,15 @@
 #include <filesystem>
 
 namespace file {
+	enum Error {
+		Win_Create_File = 0,
+		Win_File_Size,
+		Win_File_Read,
+		Win_File_Write,
+		Win_File_Incomplete_Write,
+		No_Error
+	};
+
 	[[nodiscard]] extern xstd::std_expected<std::string>
 		read_whole_text(const std::filesystem::path& path) noexcept;
 	[[nodiscard]] extern xstd::std_expected<std::vector<std::uint8_t>>

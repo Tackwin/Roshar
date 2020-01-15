@@ -20,20 +20,6 @@ namespace math {
 	}
 }
 
-namespace Error {
-	constexpr auto No_Error = 0;
-#define X(x) constexpr auto x = 1 + __COUNTER__
-	X(Shader_Fragment_Load);
-	X(Shader_Vertex_Load);
-	X(Win_Create_File);
-	X(Win_File_Size);
-	X(Win_File_Read);
-	X(Web_File_Read);
-	X(Win_File_Write);
-	X(Win_File_Incomplete_Write);
-	X(Unsupported_Operation);
-#undef X
-}
 
 constexpr size_t operator""_id(const char* user, size_t size) {
 	size_t seed = 0;

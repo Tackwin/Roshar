@@ -20,6 +20,9 @@ void Game::load_start_config() noexcept {
 		X(None);
 		#undef X
 	}
+	if (has(start, "controller_idx")) {
+		IM::controller_idx = (size_t)start["controller_idx"];
+	}
 }
 
 void Game::input() noexcept {
@@ -355,4 +358,13 @@ std::optional<Level> Game::load_level(std::filesystem::path path) noexcept {
 	Level new_level = (Level)*opt_dyn;
 	new_level.file_path = path;
 	return new_level;
+}
+
+void Game::new_time(float time) noexcept {
+	if (profile.best_time.count(current_level.name) == 0)
+		profile.best_time[current_level.name].best = time;
+	profile.best_time[current_level.name].last = time;
+	auto& it = profile.best_time[current_level.name].best;
+
+	it = std::min(time, it);
 }

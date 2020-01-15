@@ -231,4 +231,16 @@ to_dyn_struct(dyn_struct& str, const std::vector<T>& v) noexcept {
 	str = dyn_struct::array_t{};
 	for (const auto& x : v) str.push_back(x);
 }
+template<typename V> void
+from_dyn_struct(const dyn_struct& to_save, std::unordered_map<std::string, V>& m) noexcept {
+	for (auto& [k, v] : m) {
+		str[k] = v;
+	}
+}
+template<typename V> void
+to_dyn_struct(dyn_struct& to_save, const std::unordered_map<std::string, V>& m) noexcept {
+	for (auto& [k, v] : m) {
+		str[k] = v;
+	}
+}
 #endif

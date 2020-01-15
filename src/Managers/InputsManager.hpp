@@ -207,6 +207,8 @@ private:
 public:
 	using Input_Iterator = decltype(records)::iterator;
 
+	inline static size_t controller_idx = 0;
+
 	static decltype(records)::iterator get_iterator() noexcept;
 	static Input_Iterator end() noexcept;
 	static bool iterator_is_valid() noexcept;

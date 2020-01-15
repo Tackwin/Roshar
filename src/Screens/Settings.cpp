@@ -31,6 +31,8 @@ void Settings_Screen::render(render::Orders& target) noexcept {
 	key_prompt(target, pos, "Jump", 21, &bindings.jump); pos.y += 100;
 	key_prompt(target, pos, "Up", 21, &bindings.up); pos.y += 100;
 	key_prompt(target, pos, "Left", 21, &bindings.left); pos.y += 100;
+	key_prompt(target, pos, "Down", 21, &bindings.down); pos.y += 100;
+	key_prompt(target, pos, "Right", 21, &bindings.right); pos.y += 100;
 }
 
 bool Settings_Screen::button(

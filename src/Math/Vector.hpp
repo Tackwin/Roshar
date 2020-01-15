@@ -177,6 +177,17 @@ struct Vector : public __vec_member<D, T> {
 		}
 		return result;
 	}
+	static Vector<D, T> rand_unit(
+		std::default_random_engine& rng = std::default_random_engine()
+	) {
+		double r[D - 1];
+
+		for (size_t i = 0u; i < D - 1; ++i) {
+			r[i] = std::uniform_real_distribution<double>(0, 2 * 3.1415926)(rng);
+		}
+
+		return createUnitVector(r);
+	}
 	static Vector<D, T> rand(
 		const Vector<D, T>& min,
 		const Vector<D, T>& max,

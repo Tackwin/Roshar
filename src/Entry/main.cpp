@@ -38,7 +38,12 @@ void startup() noexcept {
 }
 
 void update_game(std::uint64_t dt) noexcept {
+	Environment.window_ratio = Environment.window_height / (1.f * Environment.window_width);
+	
 	ImGui::Begin("Environment");
+	int x = IM::controller_idx;
+	ImGui::InputInt("Controller #", &x);
+	IM::controller_idx = (size_t)std::clamp(x, 0, 4);
 	ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
 	ImGui::InputFloat("Gather speed", &Environment.gather_speed);
 	ImGui::InputFloat("Gather step", &Environment.gather_step);
@@ -52,8 +57,9 @@ void update_game(std::uint64_t dt) noexcept {
 	ImGui::InputFloat("C", &Environment.c);
 	ImGui::Checkbox("Debug Input", &Environment.debug_input);
 	ImGui::Checkbox("Show Sprite", &Environment.show_sprite);
+	ImGui::Checkbox("Show Camera Target", &Environment.show_camera_target);
 
-	int x = (int)Environment.debug_framebuffer;
+	x = (int)Environment.debug_framebuffer;
 
 	ImGui::ListBox(
 		"Debug Framebuffer",

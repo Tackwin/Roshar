@@ -293,7 +293,7 @@ void InputsManager::update(float dt) {
 		new_record.mouse_infos[i].pressed = pressed;
 	}
 
-	auto state = io::get_controller_state();
+	auto state = io::get_controller_state(controller_idx);
 	auto Max_Range = .5f + (1 << (8 * sizeof(state.left_thumb_x) - 1));
 
 	new_record.left_trigger = state.left_trigger / 255.f;
@@ -414,7 +414,7 @@ std::filesystem::path path, Input_Iterator begin, Input_Iterator end
 		}
 	}
 
-	return file::overwrite_file_byte(path, bytes) == Error::No_Error;
+	return file::overwrite_file_byte(path, bytes) == file::Error::No_Error;
 }
 
 std::uint64_t IM::load_record(std::filesystem::path path) noexcept {

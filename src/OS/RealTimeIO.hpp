@@ -162,7 +162,7 @@ namespace io {
 	};
 
 	extern Keyboard_State get_keyboard_state() noexcept;
-	extern Controller_State get_controller_state() noexcept;
+	extern Controller_State get_controller_state(size_t i = 0) noexcept;
 	extern Vector2f get_mouse_pos() noexcept;
 	extern size_t map_key(size_t x) noexcept;
 	extern size_t map_mouse(size_t x) noexcept;

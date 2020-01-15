@@ -1,6 +1,7 @@
 {
-	"current_screen": "Settings",
-	"start_level": "assets/levels/1-1.json",
+	"current_screen": "None",
+	"start_level": "assets/levels/1-5.json",
+	"controller_idx": 0,
 	"animations": {
 		"Guy": [
 			{ "start": [0, 0], "count": 2, "time": 0.50 },

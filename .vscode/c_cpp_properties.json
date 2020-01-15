@@ -34,7 +34,8 @@
                 "NDEBUG",
                 "NOMINMAX",
                 "NATIVE",
-                "CONSOLE"
+                "CONSOLE",
+                "PROFILER"
             ],
             "windowsSdkVersion": "10.0.17763.0",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.23.28105/bin/Hostx64/x64/cl.exe",

@@ -101,7 +101,7 @@ void Editor::render(render::Orders& target) noexcept {
 	char buffer[512];
 	strcpy(buffer, save_path.data());
 	ImGui::PushItemWidth(ImGui::GetWindowWidth());
-	ImGui::InputText("", buffer, 512);
+	ImGui::InputText("Save path: ", buffer, 512);
 	save_path = buffer;
 	ImGui::Separator();
 	if (ImGui::Button("Import a texture")) {
@@ -135,6 +135,11 @@ void Editor::render(render::Orders& target) noexcept {
 		element_creating = false;
 		require_dragging = false;
 	}
+
+	ImGui::Separator();
+	strcpy(buffer, save_path.data());
+	ImGui::PushItemWidth(ImGui::GetWindowWidth());
+	ImGui::InputText("Name:", buffer, 512);
 
 	ImGui::Separator();
 	ImGui::Text("Selected");

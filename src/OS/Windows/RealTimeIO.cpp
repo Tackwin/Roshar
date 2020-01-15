@@ -22,9 +22,9 @@ Keyboard_State io::get_keyboard_state() noexcept {
 	return state;
 }
 
-Controller_State io::get_controller_state() noexcept {
+Controller_State io::get_controller_state(size_t i) noexcept {
 	XINPUT_STATE windows_state = {};
-	XInputGetState(0, &windows_state);
+	XInputGetState(i, &windows_state);
 
 	Controller_State state = {};
 	state.buttons_mask = (size_t)windows_state.Gamepad.wButtons;

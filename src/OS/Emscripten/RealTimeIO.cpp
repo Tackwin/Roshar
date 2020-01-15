@@ -23,7 +23,7 @@ Vector2f io::get_mouse_pos() noexcept {
 io::Keyboard_State io::get_keyboard_state() noexcept {
 	return emscripten_keyboard_state;
 }
-io::Controller_State io::get_controller_state() noexcept {
+io::Controller_State io::get_controller_state(size_t i) noexcept {
 	return emscripten_controller_state;
 }
 size_t io::map_key(size_t x) noexcept {

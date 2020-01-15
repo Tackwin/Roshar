@@ -23,7 +23,7 @@ struct Environment_t {
 	float binding_range{ 1 };
 
 	bool debug_input{ false };
-
+	bool show_camera_target{ false };
 	bool show_sprite{ false };
 
 	std::uint64_t physics_step{ 5'000/*us*/ }; // 200 ups
@@ -31,6 +31,7 @@ struct Environment_t {
 
 	std::uint32_t window_width{ 0 };
 	std::uint32_t window_height{ 0 };
+	float window_ratio{ 0.f };
 
 	Debug_Framebuffer debug_framebuffer{ Debug_Framebuffer::Default };
 

@@ -234,6 +234,8 @@ struct Level {
 	};
 	std::vector<Debug_Vector> debug_vectors;
 
+	std::string name;
+
 	std::vector<Rock>               rocks;
 	std::vector<Door>               doors;
 	std::vector<Block>              blocks;
@@ -265,14 +267,26 @@ struct Level {
 
 	Player player;
 
+	float shake_factor = 0;
+	float shake_treshold = 0.5f;
+	std::optional<Vector2f> unit_shake;
+	Vector2f camera_shake_target;
+	float camera_shake_idle_radius{ 0.03f };
+	
+	Vector2f camera_target;
 	float camera_speed{ 10 };
 	float camera_idle_radius{ 0.3f };
 	Rectanglef camera{ { -64, -36 }, { 128, 72 } };
+	Rectanglef ui_camera{
+		{ 0.f, 0.f }, { 1.f, Environment.window_height / 1.f * Environment.window_width }
+	};
 	//Rectanglef camera_bound{ { 0, 0 }, { 0, 0 } };
 	//Rectanglef camera_start;
 
 	Vector4d ambient_color{ 1, 1, 1, 1 };
 	float ambient_intensity{ 1 };
+
+	float score_timer{ 0.f };
 
 	std::vector<Decor_Sprite> decor_sprites;
 

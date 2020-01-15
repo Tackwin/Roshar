@@ -265,16 +265,16 @@ void Torch::render(render::Orders& target) const noexcept {
 	Vector4d rand_color;
 	float rand_intensity;
 
-#define rand_unit (rand() / (float)RAND_MAX)
+#define RAND_UNIT (rand() / (float)RAND_MAX)
 #define PI 3.1415926
 
 	double angles[] = {
-		2 * PI * rand_unit, 2 * PI * rand_unit, 2 * PI * rand_unit
+		2 * PI * RAND_UNIT, 2 * PI * RAND_UNIT, 2 * PI * RAND_UNIT
 	};
 
-	rand_pos = pos + random_factor * rand_unit * Vector2f::createUnitVector(2 * PI * rand_unit);
-	rand_color = color + random_factor * rand_unit * Vector4d::createUnitVector(angles);
-	rand_intensity = intensity + random_factor * rand_unit;
+	rand_pos = pos + random_factor * RAND_UNIT * Vector2f::createUnitVector(2 * PI * RAND_UNIT);
+	rand_color = color + random_factor * RAND_UNIT * Vector4d::createUnitVector(angles);
+	rand_intensity = intensity + random_factor * RAND_UNIT;
 
 	target.push_point_light(rand_pos, rand_color, rand_intensity);
 	target.late_push_circle(std::sqrtf(rand_intensity) / 10, rand_pos, rand_color);
@@ -396,11 +396,46 @@ void Level::render(render::Orders& target) const noexcept {
 			{.5f , .5f}
 		);
 	}
+	if (Environment.show_camera_target) {
+		target.push_circle(0.05f, camera_target, {1, 0, 0, 1});
+		target.push_circle(0.025f, camera_shake_target, {1, 1, 1, 1});
+	}
+
+	target.late_push_view({ { 0, 0 }, { 1, Environment.window_ratio } });
+	defer { target.late_pop_view(); };
+
+	char buffer[100];
+
+	sprintf(buffer, "%7.2f", score_timer);
+
+	if (game->in_replay) {
+		char max_score_buffer[512];
+		sprintf(
+			max_score_buffer,
+			"%7.2f/%7.2f",
+			game->profile.best_time[name].last,
+			game->profile.best_time[name].best
+		);
+		
+		target.late_push_text(
+			{ 0.5f , Environment.window_ratio - 0.01f },
+			asset::Font_Id::Consolas,
+			std::string(max_score_buffer),
+			0.03f,
+			{ 0.5, 1 }
+		);
+	}
+	target.late_push_text(
+		{ 0.005f , Environment.window_ratio - 0.005f },
+		asset::Font_Id::Consolas,
+		std::string(buffer),
+		0.01f,
+		{ 0, 1 }
+	);
 }
 
 void Level::render_debug(render::Orders& target) const noexcept {
 }
-
 
 void Level::input(IM::Input_Iterator record) noexcept {
 	mouse_screen_pos = record->mouse_screen_pos;
@@ -442,6 +477,8 @@ void Level::input(IM::Input_Iterator record) noexcept {
 }
 
 void Level::update(float dt) noexcept {
+	score_timer += dt;
+
 	update_camera(dt);
 
 	phantom_path_idx++;
@@ -548,6 +585,10 @@ void Level::update(float dt) noexcept {
 	}
 
 	update_player(dt);
+
+	shake_factor = player.get_final_velocity().length() / Environment.dead_velocity;
+	shake_factor = shake_factor * shake_factor - shake_treshold;
+
 	test_collisions(dt);
 
 	for (auto& d : doors) if (dist_to2(player.hitbox.center(), d.rec) < 1)
@@ -608,6 +649,7 @@ void Level::test_collisions(float dt) noexcept {
 
 		game->next_level_path = Exe_Path / LEVEL_PATH / x.next_level;
 		game->succeed = true;
+		game->new_time(score_timer);
 	}
 
 	for (auto& x : auto_binding_zones) {
@@ -788,8 +830,6 @@ void Level::update_player(float dt) noexcept {
 		}
 	}
 
-
-
 	if (player.floored && !new_floored && !player.just_jumped) {
 		player.coyotee_timer = Player::Coyotee_Time;
 	}
@@ -818,17 +858,44 @@ void Level::update_player(float dt) noexcept {
 
 
 void Level::update_camera(float dt) noexcept {
-	auto camera_target = player.hitbox.center();
+	static std::default_random_engine eng(SEED);
+
+#define RAND_UNIT (rand() / (float)RAND_MAX)
+	bool shaking = shake_factor > 0;
+	camera_target = player.hitbox.center();
+	
+	
+	if (shaking && !unit_shake) {
+		unit_shake = Vector2f::rand_unit(eng);
+	}
+	if (unit_shake) {
+		auto mult = shake_factor * camera_idle_radius * (RAND_UNIT * 1.5 - .5);
+		camera_shake_target = camera_target + *unit_shake * mult;
+	}
+
 	auto camera_center = camera.center();
 	auto dist = (camera_target - camera_center).length();
+	auto dist_shake = (camera_shake_target - camera_target).length();
 
 	if (dist > camera_idle_radius) {
-		auto prev = camera;
+		auto speed = (shaking ? shake_factor : 1) * dt * camera_speed;
 		Vector2f dt_pos = camera_target - camera_center;
 		Vector2f to_move =
 			std::min(dist - camera_idle_radius, dt * camera_speed) * dt_pos.normalize();
 
 		camera.pos += to_move;
+	}
+
+	if (shaking && dist_shake > camera_shake_idle_radius) {
+		Vector2f dt_pos = camera_shake_target - camera_target;
+		Vector2f to_move = std::min(
+			dist - camera_shake_idle_radius, dt * camera_speed * shake_factor
+		) * dt_pos.normalize();
+
+		camera.pos += to_move;
+		
+	} else {
+		unit_shake.reset();
 	}
 }
 
@@ -1034,6 +1101,8 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	level.ambient_intensity = (float)(str["ambient"]["intensity"]);
 	level.ambient_color = (Vector4d)(str["ambient"]["color"]);
 	level.camera = (Rectanglef)str["camera"];
+
+	if (has(str, "name")) level.name = (std::string)str["name"];
 }
 void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str = dyn_struct::structure_t{};
@@ -1065,6 +1134,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	};
 
 	str["camera"] = level.camera;
+	str["name"] = level.name;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {
 	x.pos = (Vector2f)str["pos"];

@@ -3,6 +3,7 @@
 
 #include "Level.hpp"
 #include "Editor.hpp"
+#include "Profil/Profile.hpp"
 
 #include "Managers/InputsManager.hpp"
 #include "Graphic/Graphics.hpp"
@@ -11,6 +12,8 @@
 #include "Screens/Settings.hpp"
 
 struct Game {
+	Profile profile;
+
 	Control_Bindings control_bindings;
 
 	Editor editor;
@@ -50,6 +53,8 @@ struct Game {
 	double timeshots{ 0 };
 	
 	void load_start_config() noexcept;
+
+	void new_time(float time) noexcept;
 
 	void input() noexcept;
 	void update(std::uint64_t dt) noexcept;
