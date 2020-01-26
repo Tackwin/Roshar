@@ -275,3 +275,4 @@ Roshar.srctrldb_tmp
 Roshar.srctrlprj
 imgui.ini
 .vscode/c_cpp_properties.json
+output/trace/Startup.json

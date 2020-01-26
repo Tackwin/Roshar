@@ -13,6 +13,8 @@
 
 #include "Assets.hpp"
 
+#include "Math/Random.hpp"
+
 void match_and_destroy_keys(Player& p, Door& d) noexcept;
 
 void Block::render(render::Orders& target) const noexcept {
@@ -265,16 +267,13 @@ void Torch::render(render::Orders& target) const noexcept {
 	Vector4d rand_color;
 	float rand_intensity;
 
-#define RAND_UNIT (rand() / (float)RAND_MAX)
-#define PI 3.1415926
-
 	double angles[] = {
-		2 * PI * RAND_UNIT, 2 * PI * RAND_UNIT, 2 * PI * RAND_UNIT
+		2 * PI * randomf(), 2 * PI * randomf(), 2 * PI * randomf()
 	};
 
-	rand_pos = pos + random_factor * RAND_UNIT * Vector2f::createUnitVector(2 * PI * RAND_UNIT);
-	rand_color = color + random_factor * RAND_UNIT * Vector4d::createUnitVector(angles);
-	rand_intensity = intensity + random_factor * RAND_UNIT;
+	rand_pos = pos + random_factor * randomf() * Vector2f::createUnitVector(2 * PI * randomf());
+	rand_color = color + random_factor * randomf() * Vector4d::createUnitVector(angles);
+	rand_intensity = intensity + random_factor * randomf();
 
 	target.push_point_light(rand_pos, rand_color, rand_intensity);
 	target.late_push_circle(std::sqrtf(rand_intensity) / 10, rand_pos, rand_color);
@@ -599,6 +598,8 @@ void Level::update(float dt) noexcept {
 			player.hitbox.center(), player.grappling_normal
 		});
 	}
+
+	ImGui::Text("Shake_factor: %f", shake_factor);
 }
 
 void Level::test_collisions(float dt) noexcept {
@@ -858,18 +859,16 @@ void Level::update_player(float dt) noexcept {
 
 
 void Level::update_camera(float dt) noexcept {
-	static std::default_random_engine eng(SEED);
 
-#define RAND_UNIT (rand() / (float)RAND_MAX)
 	bool shaking = shake_factor > 0;
 	camera_target = player.hitbox.center();
 	
 	
 	if (shaking && !unit_shake) {
-		unit_shake = Vector2f::rand_unit(eng);
+		unit_shake = Vector2f::rand_unit([]() -> double { return randomf(); });
 	}
 	if (unit_shake) {
-		auto mult = shake_factor * camera_idle_radius * (RAND_UNIT * 1.5 - .5);
+		auto mult = shake_factor * camera_idle_radius * (randomf() * 1.5 - .5);
 		camera_shake_target = camera_target + *unit_shake * mult;
 	}
 

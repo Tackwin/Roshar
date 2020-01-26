@@ -2,7 +2,7 @@
 
 #include "Managers/AssetsManager.hpp"
 
-#include <random>
+#include "Math/Random.hpp"
 #include <algorithm>
 
 void Particle::render(render::Orders& orders) const noexcept {
@@ -24,12 +24,7 @@ void Particle::update(float dt) noexcept {
 Particle_Spot::Particle_Spot(asset::Key key) noexcept {
 	system_key = key;
 	auto& system = asset::Store.get_particle(system_key);
-	constexpr auto rand = [](auto t) noexcept {
-		thread_local std::default_random_engine eng{ SEED };
-		std::uniform_real_distribution<double> unit{ -0.5, +0.5 };
-
-		return (decltype(t))(t * unit(eng));
-	};
+	constexpr auto rand = [](auto t) noexcept { return (decltype(t))(t * randomf(-.5, +.5)); };
 	timers.resize(system.emitters.size());
 	for (size_t i = 0; i < timers.size(); ++i) {
 		timers[i].t = system.emitters[i].time + rand(system.emitters[i].time_range);
@@ -42,18 +37,8 @@ bool Particle_Spot::is_valid() const noexcept {
 
 void Particle_Spot::update(float dt, std::vector<Particle>& particles) noexcept {
 	const auto& system = asset::Store.get_particle(system_key);
-	constexpr auto rand = [](auto t) noexcept {
-		thread_local std::default_random_engine eng{ SEED };
-		std::uniform_real_distribution<double> unit{ -0.5, +0.5 };
-
-		return (decltype(t))(t * unit(eng));
-	};
-	constexpr auto rand1 = [](auto t) noexcept {
-		thread_local std::default_random_engine eng{ SEED };
-		std::uniform_real_distribution<double> unit{ 0.0, 1.0 };
-
-		return (decltype(t))(t * unit(eng));
-	};
+	constexpr auto rand = [](auto t) noexcept { return (decltype(t))(t * randomf(-.5, +.5)); };
+	constexpr auto rand1 = [](auto t) noexcept { return (decltype(t))randomf(t); };
 
 	timers.resize(system.emitters.size());
 

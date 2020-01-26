@@ -17,13 +17,14 @@ constexpr size_t Jump_Idle_Animation = 3;
 Animation_Sheet& get_animation() noexcept;
 
 void Player::input(Input_Iterator this_record) noexcept {
+	auto& bindings = game->control_bindings;
 	auto prev_motion = wanted_motion;
 	wanted_drag = this_record->right_joystick;
 	wanted_motion = this_record->left_joystick;
 	mouse_screen_pos = this_record->mouse_screen_pos;
 	mouse_world_pos = this_record->mouse_world_pos(game->current_level.camera);
 
-	want_slow = this_record->is_pressed(Keyboard::LSHIFT);
+	want_slow = this_record->is_pressed(bindings.slow);
 	want_slow |= this_record->left_trigger == 1;
 	want_to_go = Dir::None;
 
@@ -67,24 +68,24 @@ void Player::input(Input_Iterator this_record) noexcept {
 		move_sideway(dir_to_go);
 	}
 	else {
-		if (this_record->is_pressed(Keyboard::Q)) {
-			if (this_record->is_just_pressed(Keyboard::Q)) start_move_sideway();
+		if (this_record->is_pressed(*bindings.left.key)) {
+			if (this_record->is_just_pressed(*bindings.left.key)) start_move_sideway();
 			move_sideway(Player::Left);
 		}
-		else if (this_record->is_just_released(Keyboard::Q)) {
+		else if (this_record->is_just_released(*bindings.left.key)) {
 			stop_move_sideway();
 		}
-		if (this_record->is_pressed(Keyboard::D)) {
-			if (this_record->is_just_pressed(Keyboard::D)) start_move_sideway();
+		if (this_record->is_pressed(*bindings.right.key)) {
+			if (this_record->is_just_pressed(*bindings.right.key)) start_move_sideway();
 			move_sideway(Player::Right);
 		}
-		else if (this_record->is_just_released(Keyboard::D)) {
+		else if (this_record->is_just_released(*bindings.right.key)) {
 			stop_move_sideway();
 		}
 	}
 
 
-	if (this_record->is_pressed(Keyboard::S) || wanted_motion.y <= -.5) {
+	if (this_record->is_pressed(*bindings.down.key) || wanted_motion.y <= -.5) {
 		want_to_go = Dir::Down;
 		fall_back();
 	}
@@ -98,21 +99,20 @@ void Player::input(Input_Iterator this_record) noexcept {
 		dragging = false;
 	}
 
-	if (cant_grap && this_record->is_just_pressed(Keyboard::LCTRL)) {
+	if (cant_grap && this_record->is_just_pressed(*bindings.grap.key)) {
 		jump_cant_grap_timer = 0.f;
 		cant_grap = false;
 	}
 
-	grappling  = this_record->is_pressed(Joystick::LB);
-	grappling |= this_record->is_pressed(Keyboard::LCTRL);
+	grappling  = this_record->is_pressed(*bindings.grap.controller);
+	grappling |= this_record->is_pressed(*bindings.grap.key);
 	grappling &= !cant_grap;
 	
-	if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5) want_to_go = Dir::Up;
+	if (this_record->is_pressed(*bindings.up.key) || wanted_motion.y >= .5) want_to_go = Dir::Up;
 
 	if (
-		this_record->is_just_pressed(Keyboard::Space) ||
-		this_record->is_just_pressed(Joystick::A) ||
-		this_record->is_just_pressed(Joystick::RB)
+		this_record->is_just_pressed(*bindings.jump.key) ||
+		this_record->is_just_pressed(*bindings.jump.controller)
 	) {
 		if (floored || coyotee_timer > 0 || grappled) {
 			jump();
@@ -123,20 +123,19 @@ void Player::input(Input_Iterator this_record) noexcept {
 	}
 	if (jump_strength_modifier_timer > 0) {
 		if (
-			this_record->is_pressed(Keyboard::Space) ||
-			this_record->is_pressed(Joystick::A) ||
-			this_record->is_pressed(Joystick::RB)
+			this_record->is_pressed(*bindings.jump.key) ||
+			this_record->is_pressed(*bindings.jump.controller)
 		) maintain_jump();
 
-		if (this_record->is_pressed(Keyboard::Z) || wanted_motion.y >= .5) directional_up();
+		if (this_record->is_pressed(*bindings.up.key) || wanted_motion.y >= .5) directional_up();
 	}
 
-	if (this_record->is_just_pressed(Joystick::B)) {
+	if (this_record->is_just_pressed(*bindings.clear.controller)) {
 		controller_clear_timer = Controller_Clear_Time;
 	}
 	if (
-		this_record->is_just_pressed(Mouse::Right) ||
-		(this_record->is_pressed(Joystick::B) && controller_clear_timer < .0f)
+		this_record->is_just_pressed(*bindings.clear.button) ||
+		(this_record->is_pressed(*bindings.clear.controller) && controller_clear_timer < .0f)
 	) {
 		own.basic_bindings.clear();
 		for (size_t i = binding_origin_history.size() - 1; i + 1 > 0; --i) {
@@ -146,8 +145,9 @@ void Player::input(Input_Iterator this_record) noexcept {
 		}
 	}
 	auto keyboard_cancel =
-		this_record->is_pressed(Keyboard::LCTRL) && this_record->is_just_pressed(Keyboard::Z);
-	auto controller_cancel = this_record->is_just_pressed(Joystick::B);
+		this_record->is_pressed(Keyboard::LCTRL) &&
+		this_record->is_just_pressed(*bindings.cancel.key);
+	auto controller_cancel = this_record->is_just_pressed(*bindings.cancel.controller);
 	bool back_not_empty = false;
 	if (!binding_origin_history.empty()) {
 		back_not_empty = !binding_origin_history.back()->empty();
@@ -505,14 +505,14 @@ void Player::clear_movement_y() noexcept {
 	forces.y = 0;
 }
 
-Vector2f Player::get_final_velocity() noexcept {
+Vector2f Player::get_final_velocity() const noexcept {
 	return velocity + velocity_from_jump + get_direct_control_velocity();
 }
 void Player::apply_friction(float factor) noexcept {
 	velocity *= factor;
 	velocity_from_jump *= factor;
 }
-Vector2f Player::get_direct_control_velocity() noexcept {
+Vector2f Player::get_direct_control_velocity() const noexcept {
 	Vector2f flat_sum = { 0, 0 };
 	for (const auto& x : flat_velocities) flat_sum += x;
 	return flat_sum;

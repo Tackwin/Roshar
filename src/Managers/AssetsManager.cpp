@@ -329,7 +329,7 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 		font.asset.texture_id = it->first;
 	}
 	
-
+	get_albedo(font.asset.texture_id).set_resize_filter(Texture::Filter::Linear);
 	
 	fonts.emplace(k, std::move(font));
 	

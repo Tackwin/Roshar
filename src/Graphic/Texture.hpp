@@ -12,6 +12,12 @@ struct TextureInfo {
 
 class Texture {
 public:
+	enum class Filter {
+		Linear = 0,
+		Nearest,
+		Count
+	};
+
 	Texture() noexcept;
 	~Texture() noexcept;
 
@@ -27,6 +33,8 @@ public:
 
 	void set_parameteri(int parameter, int value) const;
 	void set_parameterfv(int parameter, float* value) const;
+
+	void set_resize_filter(Filter filter) noexcept;
 
 	void bind(size_t unit = 0u) const;
 

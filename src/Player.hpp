@@ -107,8 +107,8 @@ struct Player {
 	void clear_movement_x() noexcept;
 	void clear_movement_y() noexcept;
 
-	Vector2f get_final_velocity() noexcept;
-	Vector2f get_direct_control_velocity() noexcept;
+	Vector2f get_final_velocity() const noexcept;
+	Vector2f get_direct_control_velocity() const noexcept;
 	void apply_friction(float factor) noexcept;
 
 	Graphic_State get_graphic_state() const noexcept;

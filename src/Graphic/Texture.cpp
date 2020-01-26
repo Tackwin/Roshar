@@ -122,3 +122,18 @@ std::uint32_t Texture::get_texture_id() const {
 Vector2u Texture::get_size() noexcept {
 	return { info.width, info.height };
 }
+
+void Texture::set_resize_filter(Texture::Filter filter) noexcept{
+	switch (filter)
+	{
+		case Filter::Linear:
+			set_parameteri(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			set_parameteri(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		break;
+		case Filter::Nearest:
+			set_parameteri(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			set_parameteri(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		break;
+	}
+}
+

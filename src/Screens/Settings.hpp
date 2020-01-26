@@ -19,8 +19,11 @@ struct Control_Bindings {
 	Action left = { Keyboard::Key::Q };
 	Action down = { Keyboard::Key::S };
 	Action right = { Keyboard::Key::D };
-	
-	Keyboard::Key slow;
+	Action grap = { Keyboard::Key::LCTRL, std::nullopt, Joystick::Button::LB };
+	Action clear = { std::nullopt, Mouse::Button::Right, Joystick::Button::B };
+	Action cancel = { Keyboard::Key::Z, std::nullopt, Joystick::Button::B };
+
+	Keyboard::Key slow = Keyboard::Key::LSHIFT;
 
 	Mouse::Button start_drag;
 	Mouse::Button clear_bindings;
@@ -60,5 +63,13 @@ private:
 		std::string label,
 		float size,
 		Control_Bindings::Action* binded
+	) noexcept;
+
+	Keyboard::Key key_prompt(
+		render::Orders& target,
+		Vector2f pos,
+		std::string label,
+		float size,
+		Keyboard::Key* binded
 	) noexcept;
 };
