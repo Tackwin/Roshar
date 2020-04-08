@@ -280,15 +280,15 @@ std::optional<std::filesystem::path> file::open_dir() noexcept {
 	return result;
 }
 
-void file::monitor_file(std::filesystem::path path, std::function<void()> f) noexcept {
+void file::monitor_file(std::filesystem::path path, std::function<bool()> f) noexcept {
 	file::monitor_dir(path.parent_path(), [path, f](std::filesystem::path changed) {
-		if (changed.filename() != path.filename()) return;
-		f();
+		if (changed.filename() != path.filename()) return false;
+		return f();
 	});
 }
 
 void file::monitor_dir(
-	std::filesystem::path dir, std::function<void(std::filesystem::path)> f
+	std::filesystem::path dir, std::function<bool(std::filesystem::path)> f
 ) noexcept {
 	monitor_dir([] {}, dir, f);
 }
@@ -296,7 +296,7 @@ void file::monitor_dir(
 void file::monitor_dir(
 	std::function<void()> init_thread,
 	std::filesystem::path dir,
-	std::function<void(std::filesystem::path)> f
+	std::function<bool(std::filesystem::path)> f
 ) noexcept {
 	std::thread{ [f, dir, init_thread] {
 			init_thread();
@@ -339,7 +339,8 @@ void file::monitor_dir(
 						// to this file so it's highly probable that the handle is not free
 						// We wait 5ms in the hope to be able to CreateFile.
 						std::this_thread::sleep_for(5ms);
-						f(std::wstring(info->FileName, info->FileNameLength / sizeof(WCHAR)));
+						if (f(std::wstring(info->FileName, info->FileNameLength / sizeof(WCHAR))))
+							return;
 					}
 
 					i += info->NextEntryOffset;

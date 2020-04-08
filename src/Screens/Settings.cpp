@@ -8,16 +8,7 @@
 
 void Settings_Screen::input(IM::Input_Iterator it) noexcept {
 	last_input = it;
-}
-
-void Settings_Screen::update(float dt) noexcept {
-	for (auto& [_, x] : button_states){
-		if (x.hovering) x.time_since_hover += dt;
-		else x.time_since_hover = 0;
-	}
-	for (auto& [_, x] : key_prompts){
-	}
-	auto& bindings = game->profile.bindings;
+	auto& bindings = game->profile->bindings;
 	
 	kit::get_state().current_pos = {50, 50};
 	kit::get_state().current_origin = {0, 0};
@@ -35,6 +26,9 @@ void Settings_Screen::update(float dt) noexcept {
 	kit::key_prompt("Grap  : ", 21, bindings.grap);
 	kit::key_prompt("Cancel: ", 21, bindings.cancel);
 	kit::key_prompt("Clear : ", 21, bindings.clear);
+}
+
+void Settings_Screen::update(float dt) noexcept {
 }
 
 void Settings_Screen::render(render::Orders& target) noexcept {

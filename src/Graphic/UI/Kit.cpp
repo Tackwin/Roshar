@@ -92,9 +92,16 @@ bool kit::button(std::string label, float size) noexcept {
 	return hovering && clicking;
 }
 
-void kit::update(float dt, IM::Input_Iterator input) noexcept {
+void kit::input(IM::Input_Iterator it) noexcept {
+	state.last_input = it;
+	state.orders.clear();
+	state.orders.late_push_view(
+		{ 0.f, 0.f, (float)Environment.window_width, (float)Environment.window_height }
+	);
+}
+
+void kit::update(float dt) noexcept {
 	State::Card_State::Card_Id = 0;
-	state.last_input = input;
 	for (auto& [_, x] : state.button_states) {
 		if (x.hovering) x.time_hovered += dt;
 		else x.time_hovered = 0;
@@ -107,10 +114,6 @@ void kit::update(float dt, IM::Input_Iterator input) noexcept {
 		if (x.hovering) x.time_hovered += dt;
 		else x.time_hovered = 0;
 	}
-	state.orders.clear();
-	state.orders.late_push_view(
-		{ 0.f, 0.f, (float)Environment.window_width, (float)Environment.window_height }
-	);
 }
 
 void kit::render(render::Orders& target) noexcept {
@@ -118,6 +121,8 @@ void kit::render(render::Orders& target) noexcept {
 }
 
 bool kit::card(Profile& profile) noexcept {
+	auto& card_state = state.card_states[State::Card_State::Card_Id++];
+
 	auto pos = state.current_pos;
 	auto& font = asset::Store.get_font(asset::Font_Id::Consolas);
 	auto name = profile.name;
@@ -125,11 +130,11 @@ bool kit::card(Profile& profile) noexcept {
 
 	pos.x += state.card_margin;
 
+	size.y += 2 * state.card_padding;
 	size.x = std::max(state.card_min_size.x, size.x);
 	size.y = std::max(state.card_min_size.y, size.y);
-	size.y += 2 * state.card_padding;
-	size.x += 2 * state.card_padding;
 
+	pos.y += 0.25f * pos.y * xstd::map_rp_to_01(10 * card_state.time_hovered);
 	Rectanglef rec = { pos, size };
 
 	state.orders.late_push_rec(rec, state.card_color);
@@ -142,7 +147,14 @@ bool kit::card(Profile& profile) noexcept {
 	);
 
 	pos.x += size.x + state.card_margin;
+	state.current_pos.x = pos.x;
 
+	if (IM::iterator_is_valid(state.last_input)) {
+		card_state.hovering = rec.in(state.last_input->mouse_screen_pos);
+		if (state.last_input->is_just_pressed(Mouse::Left))
+			card_state.selected = card_state.hovering; 
+	}
+	
 	return IM::iterator_is_valid(state.last_input) &&
 		rec.in(state.last_input->mouse_screen_pos) &&
 		state.last_input->is_just_pressed(Mouse::Left);
@@ -155,6 +167,8 @@ std::optional<kit::State::Card_State> kit::card_plus() noexcept {
 	auto& font = asset::Store.get_font(asset::Font_Id::Consolas);
 	auto name = "New";
 	auto size = font.compute_size(name, state.card_title_size);
+
+	if (state.last_input->is_just_pressed(Mouse::Left)) printf("Bite\n");
 
 	pos.x += state.card_margin;
 
@@ -199,6 +213,8 @@ std::optional<kit::State::Card_State> kit::card_plus() noexcept {
 	);
 
 	pos.x += size.x + state.card_margin;
+
+	state.current_pos.x = pos.x;
 
 	if (IM::iterator_is_valid(state.last_input)) {
 		card_state.hovering = rec.in(state.last_input->mouse_screen_pos);

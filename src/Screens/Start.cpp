@@ -6,9 +6,6 @@
 #include "Graphic/UI/Kit.hpp"
 
 void Start_Screen::input(IM::Input_Iterator it) noexcept {
-}
-
-void Start_Screen::update(float dt) noexcept {
 	Vector2f s = { (float)Environment.window_width, (float)Environment.window_height };
 	
 	kit::get_state().current_origin = { 0.5f, 0.5f };
@@ -18,6 +15,9 @@ void Start_Screen::update(float dt) noexcept {
 	goto_settings = kit::button("Config", 42);
 	kit::get_state().current_pos = { s.x / 2.f, 3 * s.y / 4.f };
 	goto_levels = kit::button("Play", 42);
+}
+
+void Start_Screen::update(float dt) noexcept {
 }
 
 void Start_Screen::render(render::Orders& target) noexcept {

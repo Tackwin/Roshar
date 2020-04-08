@@ -17,12 +17,12 @@ constexpr size_t Jump_Idle_Animation = 3;
 Animation_Sheet& get_animation() noexcept;
 
 void Player::input(Input_Iterator this_record) noexcept {
-	auto& bindings = game->profile.bindings;
+	auto& bindings = game->profile->bindings;
 	auto prev_motion = wanted_motion;
 	wanted_drag = this_record->right_joystick;
 	wanted_motion = this_record->left_joystick;
 	mouse_screen_pos = this_record->mouse_screen_pos;
-	mouse_world_pos = this_record->mouse_world_pos(game->current_level.camera);
+	mouse_world_pos = this_record->mouse_world_pos(game->play_screen.current_level.camera);
 
 	want_slow = this_record->is_pressed(bindings.slow);
 	want_slow |= this_record->left_trigger == 1;
@@ -192,7 +192,7 @@ void Player::update(float dt) noexcept {
 		Particle_Spot new_spot = { asset::Particle_Id::Player_Foot };
 		new_spot.pos = hitbox.pos;
 		new_spot.pos.x += hitbox.w / 2;
-		game->current_level.particle_spots.push_back(new_spot);
+		game->play_screen.current_level.particle_spots.push_back(new_spot);
 
 		auto vel = get_final_velocity().length();
 		particle_foot_timer = (vel == 0 ? 1 : vel) / 20;
@@ -316,8 +316,10 @@ void Player::render_bindings(render::Orders& orders) const noexcept {
 
 		orders.push_circle(prest_gathered, mouse_world_pos, { 0, 1, 0, 1 });
 		f(
-			IM::applyInverseView(game->current_level.camera, start_drag_pos),
-			mouse_world_pos - IM::applyInverseView(game->current_level.camera, start_drag_pos)
+			IM::applyInverseView(game->play_screen.current_level.camera, start_drag_pos),
+			mouse_world_pos - IM::applyInverseView(
+				game->play_screen.current_level.camera, start_drag_pos
+			)
 		);
 	}
 	if (started_joystick_drag) {
@@ -442,7 +444,7 @@ void Player::start_drag() noexcept {
 	start_drag_pos = mouse_screen_pos;
 	start_drag_time = game->timeshots;
 
-	for (const auto& x : game->current_level.rocks) {
+	for (const auto& x : game->play_screen.current_level.rocks) {
 		auto range = Environment.binding_range * Environment.binding_range;
 		if (
 			is_in(mouse_world_pos, { x.pos, x.r }) &&
@@ -485,10 +487,12 @@ void Player::end_drag(double angle) noexcept{
 
 	auto amount = unit * prest_gathered;
 
-	if (dragged_rock) return game->current_level.bind_rock(dragged_rock, amount);
-	if (game->current_level.focused_rock) {
-		auto id = game->current_level.rocks[*game->current_level.focused_rock].running_id;
-		return game->current_level.bind_rock(id, amount);
+	auto& curr_level = game->play_screen.current_level;
+
+	if (dragged_rock) return game->play_screen.current_level.bind_rock(dragged_rock, amount);
+	if (curr_level.focused_rock) {
+		auto id = curr_level.rocks[*curr_level.focused_rock].running_id;
+		return curr_level.bind_rock(id, amount);
 	}
 
 	add_own_binding(unit * prest_gathered);

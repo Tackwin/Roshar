@@ -28,10 +28,12 @@ void Editor::render(render::Orders& target) noexcept {
 	}
 
 	if (ImGui::CollapsingHeader("Level parameter")) {
-		Vector4f x = (Vector4f)game->current_level.ambient_color;
+		Vector4f x = (Vector4f)game->play_screen.current_level.ambient_color;
 		ImGui::ColorPicker4("Ambient Color", &x.x);
-		ImGui::SliderFloat("Ambient Intensity", &game->current_level.ambient_intensity, 0, 1);
-		game->current_level.ambient_color = (Vector4d)x;
+		ImGui::SliderFloat(
+			"Ambient Intensity", &game->play_screen.current_level.ambient_intensity, 0, 1
+			);
+		game->play_screen.current_level.ambient_color = (Vector4d)x;
 	}
 
 	if (ImGui::CollapsingHeader("Operations")) {
@@ -84,8 +86,8 @@ void Editor::render(render::Orders& target) noexcept {
 
 				std::lock_guard guard{ Main_Mutex };
 
-				game->to_swap_level = (Level)* opt_dyn;
-				game->to_swap_level->file_path = result.filepath;
+				game->play_screen.to_swap_level = (Level)* opt_dyn;
+				game->play_screen.to_swap_level->file_path = result.filepath;
 
 				s = result.filepath.string();
 			},
@@ -95,27 +97,27 @@ void Editor::render(render::Orders& target) noexcept {
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
 	if (ImGui::Button("Reload")) {
-		auto old_markers = std::move(game->current_level.markers);
+		auto old_markers = std::move(game->play_screen.current_level.markers);
 		auto opt_dyn = load_from_json_file(save_path);
 		if (!opt_dyn) return;
 		Level new_level = (Level)* opt_dyn;
 		new_level.file_path = save_path;
 
-		game->to_swap_level = std::move(new_level);
-		game->current_level.markers = std::move(old_markers);
+		game->play_screen.to_swap_level = std::move(new_level);
+		game->play_screen.current_level.markers = std::move(old_markers);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Next level") && game->current_level.next_zones.size() > 0) {
+	if (ImGui::Button("Next level") && game->play_screen.current_level.next_zones.size() > 0) {
 		auto next_level_path =
-			game->current_level.file_path.parent_path() /
-			game->current_level.next_zones[0].next_level;
+			game->play_screen.current_level.file_path.parent_path() /
+			game->play_screen.current_level.next_zones[0].next_level;
 
 		auto opt_dyn = load_from_json_file(next_level_path);
 		if (!opt_dyn) return;
 		Level new_level = (Level)* opt_dyn;
 		new_level.file_path = next_level_path;
 
-		game->to_swap_level = std::move(new_level);
+		game->play_screen.to_swap_level = std::move(new_level);
 	}
 	char buffer[512];
 	strcpy(buffer, save_path.data());
@@ -141,12 +143,12 @@ void Editor::render(render::Orders& target) noexcept {
 		decor.texture_key = *key;
 		decor.texture_loaded = true;
 		decor.texture_path = std::filesystem::canonical(result.filepath);
-		decor.rec.pos = game->current_level.camera.center();
+		decor.rec.pos = game->play_screen.current_level.camera.center();
 		decor.rec.size = {
 			(float)texture.albedo.get_size().x, (float)texture.albedo.get_size().y
 		};
 		decor.rec.pos -= decor.rec.size / 2;
-		game->current_level.decor_sprites.push_back(decor);
+		game->play_screen.current_level.decor_sprites.push_back(decor);
 	}
 
 	if (ImGui::Checkbox("Edit texture", &edit_texture) && edit_texture) {
@@ -156,12 +158,12 @@ void Editor::render(render::Orders& target) noexcept {
 	}
 
 	ImGui::Separator();
-	if (game->current_level.name.empty()) {
-		game->current_level.name = save_path;
+	if (game->play_screen.current_level.name.empty()) {
+		game->play_screen.current_level.name = save_path;
 	}
-	strcpy(buffer, game->current_level.name.data());
+	strcpy(buffer, game->play_screen.current_level.name.data());
 	if (ImGui::InputText("Name:", buffer, 512)) {
-		game->current_level.name = buffer;
+		game->play_screen.current_level.name = buffer;
 	}
 
 	ImGui::Separator();
@@ -176,35 +178,37 @@ void Editor::render(render::Orders& target) noexcept {
 	require_dragging |= edit_texture;
 
 	auto pred = [](auto& x) { return x.editor_selected; };
-	auto n_selected = std::count_if(BEG_END(game->current_level.prest_sources), pred);
+	auto n_selected = std::count_if(BEG_END(game->play_screen.current_level.prest_sources), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Prest sources");
 		float x = { 0 };
 		if (n_selected == 1)
-			x = std::find_if(BEG_END(game->current_level.prest_sources), pred)->prest;
+			x = std::find_if(BEG_END(game->play_screen.current_level.prest_sources), pred)->prest;
 
 		ImGui::Text("Prest");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Prest", &x))
-			for (auto& y : game->current_level.prest_sources) if (pred(y)) y.prest = x;
+			for (auto& y : game->play_screen.current_level.prest_sources) if (pred(y)) y.prest = x;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.friction_zones), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.friction_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Friction zones");
 		float friction = { 0 };
-		if (n_selected == 1)
-			friction = std::find_if(BEG_END(game->current_level.friction_zones), pred)->friction;
+		if (n_selected == 1) friction = std::find_if(
+			BEG_END(game->play_screen.current_level.friction_zones), pred
+		)->friction;
 
 		ImGui::Text("Friction");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Friction", &friction))
-			for (auto& y : game->current_level.friction_zones) if (pred(y)) y.friction = friction;
+			for (auto& y : game->play_screen.current_level.friction_zones) if (pred(y))
+				y.friction = friction;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.moving_blocks), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.moving_blocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Moving blocks");
@@ -213,7 +217,7 @@ void Editor::render(render::Orders& target) noexcept {
 		bool looping{ false };
 		bool reverse{ false };
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.moving_blocks), pred);
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.moving_blocks), pred);
 			t = it->t / it->max_t;
 			looping = it->looping;
 			reverse = it->reverse;
@@ -221,17 +225,21 @@ void Editor::render(render::Orders& target) noexcept {
 		}
 
 		if (ImGui::SliderFloat("t", &t, 0, 1)) 
-			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.t = t * y.max_t;
+			for (auto& y : game->play_screen.current_level.moving_blocks) if (pred(y))
+				y.t = t * y.max_t;
 		if (ImGui::InputFloat("Speed", &speed))
-			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.speed = speed;
+			for (auto& y : game->play_screen.current_level.moving_blocks) if (pred(y))
+				y.speed = speed;
 		if (ImGui::Checkbox("Looping", &looping))
-			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.looping = looping;
+			for (auto& y : game->play_screen.current_level.moving_blocks) if (pred(y))
+				y.looping = looping;
 		if (ImGui::Checkbox("Reverse", &reverse))
-			for (auto& y : game->current_level.moving_blocks) if (pred(y)) y.reverse = reverse;
+			for (auto& y : game->play_screen.current_level.moving_blocks) if (pred(y))
+				y.reverse = reverse;
 		ImGui::Text("To add a way point press A");
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.torches), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.torches), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Point light");
@@ -239,31 +247,35 @@ void Editor::render(render::Orders& target) noexcept {
 		float random_factor = { 0 };
 		Vector4f color;
 		if (n_selected == 1) {
-			intensity = std::find_if(BEG_END(game->current_level.torches), pred)->intensity;
+			intensity =
+				std::find_if(BEG_END(game->play_screen.current_level.torches), pred)->intensity;
 			random_factor =
-				std::find_if(BEG_END(game->current_level.torches), pred)->random_factor;
-			color = (Vector4f)std::find_if(BEG_END(game->current_level.torches), pred)->color;
+				std::find_if(BEG_END(game->play_screen.current_level.torches), pred)->random_factor;
+			color = (Vector4f)std::find_if(
+				BEG_END(game->play_screen.current_level.torches), pred
+			)->color;
 		}
 
 		ImGui::Text("Intensity");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("intensity", &intensity))
-			for (auto& y : game->current_level.torches) if (pred(y)) y.intensity = intensity;
+			for (auto& y : game->play_screen.current_level.torches) if (pred(y))
+				y.intensity = intensity;
 
 		ImGui::Text("Random Factor");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Random Factor", &random_factor))
-			for (auto& y : game->current_level.torches)
+			for (auto& y : game->play_screen.current_level.torches)
 				if (pred(y)) y.random_factor = random_factor;
 
 		if (ImGui::ColorEdit4("color", &color.x))
-			for (auto& y : game->current_level.torches)
+			for (auto& y : game->play_screen.current_level.torches)
 				if (pred(y)) y.color = (Vector4d)color;
 
 
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.blocks), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.blocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Blocks");
@@ -274,7 +286,7 @@ void Editor::render(render::Orders& target) noexcept {
 		float destroy_time{0.f};
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.blocks), pred);
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.blocks), pred);
 			kind = it->prest_kind;
 			back = it->back;
 			destroy_on_step = it->destroy_on_step;
@@ -296,16 +308,16 @@ void Editor::render(render::Orders& target) noexcept {
 			nullptr,
 			(int)Block::Prest_Kind::Count
 		);
-		if (act) for (auto& x : game->current_level.blocks) if (pred(x))
+		if (act) for (auto& x : game->play_screen.current_level.blocks) if (pred(x))
 			x.prest_kind = (Block::Prest_Kind)k;
 		if (ImGui::Checkbox("Destroy on step", &destroy_on_step)) {
-			for (auto& x : game->current_level.blocks) if (pred(x))
+			for (auto& x : game->play_screen.current_level.blocks) if (pred(x))
 				x.destroy_on_step = destroy_on_step;
 		}
 		if (destroy_on_step) {
 			ImGui::SameLine();
 			if (ImGui::SliderFloat("Time", &destroy_time, 0, 5)) {
-				for (auto& x : game->current_level.blocks) if (pred(x)) {
+				for (auto& x : game->play_screen.current_level.blocks) if (pred(x)) {
 					x.destroy_time  = destroy_time;
 					x.destroy_timer = destroy_time;
 				}
@@ -314,52 +326,52 @@ void Editor::render(render::Orders& target) noexcept {
 
 
 		if (ImGui::Checkbox("back", &back))
-			for (auto& x : game->current_level.blocks) if (pred(x)) x.back = back;
+			for (auto& x : game->play_screen.current_level.blocks) if (pred(x)) x.back = back;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.key_items), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.key_items), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Key items");
 		std::uint64_t id = { 0 };
 		if (n_selected == 1)
-			id = std::find_if(BEG_END(game->current_level.key_items), pred)->id;
+			id = std::find_if(BEG_END(game->play_screen.current_level.key_items), pred)->id;
 
 		ImGui::Text("Id");
 		ImGui::SameLine();
 		int x = (int)id;
 		if (ImGui::InputInt("Id", &x))
-			for (auto& y : game->current_level.key_items) if (pred(y)) y.id = x;
+			for (auto& y : game->play_screen.current_level.key_items) if (pred(y)) y.id = x;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.doors), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.doors), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Doors");
 		bool closed = { true };
 		if (n_selected == 1)
-			closed = std::find_if(BEG_END(game->current_level.doors), pred)->closed;
+			closed = std::find_if(BEG_END(game->play_screen.current_level.doors), pred)->closed;
 
 		ImGui::Text("Closed");
 		ImGui::SameLine();
 		if (ImGui::Checkbox("Closed", &closed))
-			for (auto& y : game->current_level.doors) if (pred(y)) y.closed = closed;
+			for (auto& y : game->play_screen.current_level.doors) if (pred(y)) y.closed = closed;
 
 		thread_local bool must_list{ false };
 		ImGui::Checkbox(must_list ? "must list" : "mustnt_list", &must_list);
 
 		if (ImGui::Button("Add Selection to list")) {
-			for (auto& y : game->current_level.doors) {
+			for (auto& y : game->play_screen.current_level.doors) {
 				if (!pred(y)) continue;
 				auto& list = must_list ? y.must_triggered : y.mustnt_triggered;
 
-				for (const auto& z : game->current_level.trigger_zones) {
+				for (const auto& z : game->play_screen.current_level.trigger_zones) {
 					if (pred(z)) list.push_back(z.id);
 				}
 
 				auto& key_list = y.must_have_keys;
 
-				for (const auto& z : game->current_level.key_items) {
+				for (const auto& z : game->play_screen.current_level.key_items) {
 					if (pred(z)) key_list.push_back(z.id);
 				}
 
@@ -369,17 +381,17 @@ void Editor::render(render::Orders& target) noexcept {
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Remove selection from list")) {
-			for (auto& y : game->current_level.doors) {
+			for (auto& y : game->play_screen.current_level.doors) {
 				if (!pred(y)) continue;
 				auto& list = must_list ? y.must_triggered : y.mustnt_triggered;
 				auto& key_list = y.must_have_keys;
 
-				for (const auto& z : game->current_level.trigger_zones) {
+				for (const auto& z : game->play_screen.current_level.trigger_zones) {
 					if (!pred(z)) continue;
 					if (auto it = std::find(BEG_END(list), z.id); it != END(list)) list.erase(it);
 				}
 				
-				for (const auto& z : game->current_level.key_items) {
+				for (const auto& z : game->play_screen.current_level.key_items) {
 					auto& l = key_list;
 
 					if (!pred(z)) continue;
@@ -389,24 +401,25 @@ void Editor::render(render::Orders& target) noexcept {
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.next_zones), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.next_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Next zones");
 		char next[512];
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.next_zones), pred);
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.next_zones), pred);
 			strcpy(next, it->next_level.c_str());
 		}
 
 		ImGui::Text("Next");
 		ImGui::SameLine();
 		if (ImGui::InputText("Next", next, sizeof(next))) {
-			for (auto& y : game->current_level.next_zones) if (pred(y)) y.next_level = next;
+			for (auto& y : game->play_screen.current_level.next_zones) if (pred(y))
+				y.next_level = next;
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.auto_binding_zones), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.auto_binding_zones), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Auto bindings zones");
@@ -415,7 +428,8 @@ void Editor::render(render::Orders& target) noexcept {
 		float y;
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.auto_binding_zones), pred);
+			auto it =
+				std::find_if(BEG_END(game->play_screen.current_level.auto_binding_zones), pred);
 			x = it->binding.x;
 			y = it->binding.y;
 		}
@@ -423,12 +437,14 @@ void Editor::render(render::Orders& target) noexcept {
 		ImGui::PushItemWidth(0.7f * ImGui::GetWindowWidth());
 		defer{ ImGui::PopItemWidth(); };
 		if (ImGui::InputFloat("X", &x, 0.05f))
-			for (auto& a : game->current_level.auto_binding_zones) if (pred(a)) a.binding.x = x;
+			for (auto& a : game->play_screen.current_level.auto_binding_zones) if (pred(a))
+				a.binding.x = x;
 		if (ImGui::InputFloat("Y", &y, 0.05f))
-			for (auto& a : game->current_level.auto_binding_zones) if (pred(a)) a.binding.y = y;
+			for (auto& a : game->play_screen.current_level.auto_binding_zones) if (pred(a))
+				a.binding.y = y;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.rocks), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.rocks), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Rocks");
@@ -436,7 +452,7 @@ void Editor::render(render::Orders& target) noexcept {
 		float radius;
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.rocks), pred);
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.rocks), pred);
 			mass = it->mass;
 			radius = it->r;
 		}
@@ -444,33 +460,34 @@ void Editor::render(render::Orders& target) noexcept {
 		ImGui::Text("Mass");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Mass", &mass)) {
-			for (auto& y : game->current_level.rocks) if (pred(y)) y.mass = mass;
+			for (auto& y : game->play_screen.current_level.rocks) if (pred(y)) y.mass = mass;
 		}
 		ImGui::Text("Radius");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Radius", &radius)) {
-			for (auto& y : game->current_level.rocks) if (pred(y)) y.r = radius;
+			for (auto& y : game->play_screen.current_level.rocks) if (pred(y)) y.r = radius;
 		}
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.decor_sprites), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.decor_sprites), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("Texture");
 
 		float opacity{ 1 };
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.decor_sprites), pred);
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.decor_sprites), pred);
 			opacity = it->opacity;
 		}
 
 		ImGui::Text("Opacity");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Opacity", &opacity))
-			for (auto& x : game->current_level.decor_sprites) if (pred(x)) x.opacity = opacity;
+			for (auto& x : game->play_screen.current_level.decor_sprites) if (pred(x))
+				x.opacity = opacity;
 	}
 
-	n_selected = std::count_if(BEG_END(game->current_level.dispensers), pred);
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.dispensers), pred);
 	if (n_selected) {
 		ImGui::Separator();
 		ImGui::Text("dispensers");
@@ -480,7 +497,7 @@ void Editor::render(render::Orders& target) noexcept {
 		float offset_timer{ 0.f };
 
 		if (n_selected == 1) {
-			auto it = std::find_if(BEG_END(game->current_level.dispensers), pred);
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.dispensers), pred);
 			r = it->proj_r;
 			speed = it->proj_speed;
 			hz = it->hz;
@@ -490,17 +507,18 @@ void Editor::render(render::Orders& target) noexcept {
 		ImGui::Text("Radius");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Radius", &r))
-			for (auto& y : game->current_level.dispensers) if (pred(y)) y.proj_r = r;
+			for (auto& y : game->play_screen.current_level.dispensers) if (pred(y)) y.proj_r = r;
 
 		ImGui::Text("Speed");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Speed", &speed))
-			for (auto& y : game->current_level.dispensers) if (pred(y)) y.proj_speed = speed;
+			for (auto& y : game->play_screen.current_level.dispensers) if (pred(y))
+				y.proj_speed = speed;
 
 		ImGui::Text("Cadence");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Cadence", &hz))
-			for (auto& y : game->current_level.dispensers) if (pred(y)) {
+			for (auto& y : game->play_screen.current_level.dispensers) if (pred(y)) {
 				y.hz = hz;
 				y.timer = 1.f / hz;
 			}
@@ -508,7 +526,7 @@ void Editor::render(render::Orders& target) noexcept {
 		ImGui::Text("Offset");
 		ImGui::SameLine();
 		if (ImGui::InputFloat("Offset", &offset_timer))
-			for (auto& y : game->current_level.dispensers) if (pred(y)) {
+			for (auto& y : game->play_screen.current_level.dispensers) if (pred(y)) {
 				y.offset_timer = offset_timer;
 			}
 	}
@@ -608,14 +626,15 @@ is there.",
 		target.push_rec(rec, { 0, 1, 0, .5 });
 	}
 
-	for (const auto& d : game->current_level.doors) {
+	for (const auto& d : game->play_screen.current_level.doors) {
 		Vector2f start = d.rec.center();
 
 		for (const auto& x : d.must_triggered) {
 			auto it = std::find_if(
-				BEG_END(game->current_level.trigger_zones), [x](auto& z) { return z.id == x; }
+				BEG_END(game->play_screen.current_level.trigger_zones),
+				[x](auto& z) { return z.id == x; }
 			);
-			if (it == END(game->current_level.trigger_zones)) continue;
+			if (it == END(game->play_screen.current_level.trigger_zones)) continue;
 
 			Vector2f end = it->rec.center();
 
@@ -624,9 +643,10 @@ is there.",
 
 		for (const auto& x : d.mustnt_triggered) {
 			auto it = std::find_if(
-				BEG_END(game->current_level.trigger_zones), [x](auto& z) { return z.id == x; }
+				BEG_END(game->play_screen.current_level.trigger_zones),
+				[x](auto& z) { return z.id == x; }
 			);
-			if (it == END(game->current_level.trigger_zones)) continue;
+			if (it == END(game->play_screen.current_level.trigger_zones)) continue;
 
 			Vector2f end = it->rec.center();
 
@@ -635,9 +655,10 @@ is there.",
 
 		for (const auto& x : d.must_have_keys) {
 			auto it = std::find_if(
-				BEG_END(game->current_level.key_items), [x](auto& z) { return z.id == x; }
+				BEG_END(game->play_screen.current_level.key_items),
+				[x](auto& z) { return z.id == x; }
 			);
-			if (it == END(game->current_level.key_items)) continue;
+			if (it == END(game->play_screen.current_level.key_items)) continue;
 
 			Vector2f end = it->pos;
 
@@ -645,8 +666,8 @@ is there.",
 		}
 	}
 
-	auto& cam = game->current_level.camera;
-	for (const auto& x : game->current_level.moving_blocks) {
+	auto& cam = game->play_screen.current_level.camera;
+	for (const auto& x : game->play_screen.current_level.moving_blocks) {
 		float pixel = cam.w / Environment.window_width;
 		for (size_t i = 1; i < x.waypoints.size(); ++i)
 			target.push_line(x.waypoints[i - 1], x.waypoints[i], { 1, 1, 1, 0.8 }, pixel);
@@ -659,8 +680,12 @@ is there.",
 		target.late_push_view(cam);
 		defer{ target.late_pop_view(); };
 
-		Vector2f row = snap_grid * (Vector2i)((cam.pos / snap_grid).apply([](auto x) { return std::roundf(x); }));
-		Vector2f col = snap_grid * (Vector2i)((cam.pos / snap_grid).apply([](auto x) { return std::roundf(x); }));
+		Vector2f row = snap_grid * (Vector2i)((cam.pos / snap_grid).apply(
+			[](auto x) { return std::roundf(x); })
+		);
+		Vector2f col = snap_grid * (Vector2i)((cam.pos / snap_grid).apply(
+			[](auto x) { return std::roundf(x); })
+		);
 		Vector4d color = { .6, .6, .6, .6 };
 
 		while (row.x < cam.x + cam.w) {
@@ -699,8 +724,9 @@ void Editor::update(float dt) noexcept {
 	if (shift) scale /= 10;
 
 	if (!edit_texture)
-		game->current_level.camera = game->current_level.camera.zoom(math::scale_zoom(-scale + 1));
-	else for (auto& b : game->current_level.decor_sprites) {
+		game->play_screen.current_level.camera =
+			game->play_screen.current_level.camera.zoom(math::scale_zoom(-scale + 1));
+	else for (auto& b : game->play_screen.current_level.decor_sprites) {
 		if (b.editor_selected) {
 			auto center = b.rec.pos + b.rec.size / 2;
 			b.rec.size *= math::scale_zoom(-scale + 1);
@@ -713,7 +739,7 @@ void Editor::update(float dt) noexcept {
 	}
 
 	if (IM::isKeyJustPressed(Keyboard::A)) {
-		for (auto& x : game->current_level.moving_blocks) {
+		for (auto& x : game->play_screen.current_level.moving_blocks) {
 			if (!x.editor_selected) continue;
 
 			x.waypoints.push_back(get_mouse_pos());
@@ -727,12 +753,12 @@ void Editor::update(float dt) noexcept {
 		if (IM::isMouseJustPressed(Mouse::Left) && !pos_start_drag) {
 			pos_start_drag = get_mouse_pos();
 			drag_offset.clear();
-			for (auto& b : game->current_level.decor_sprites)
+			for (auto& b : game->play_screen.current_level.decor_sprites)
 				if (b.editor_selected) drag_offset.push_back(get_mouse_pos() - b.rec.pos);
 		}
 		if (edit_texture && IM::isMousePressed(Mouse::Left)) {
 			size_t i = 0;
-			for (auto& b : game->current_level.decor_sprites) {
+			for (auto& b : game->play_screen.current_level.decor_sprites) {
 				if (b.editor_selected) {
 					b.rec.pos = get_mouse_pos() - drag_offset[i++];
 				}
@@ -750,7 +776,7 @@ void Editor::update(float dt) noexcept {
 				Prest_Source p;
 				p.pos = get_mouse_pos();
 				p.prest = 1;
-				game->current_level.prest_sources.push_back(p);
+				game->play_screen.current_level.prest_sources.push_back(p);
 				break;
 			}
 			case Creating_Element::Rock: {
@@ -758,14 +784,14 @@ void Editor::update(float dt) noexcept {
 				r.pos = get_mouse_pos();
 				r.r = 0.1f;
 				r.mass = 1;
-				game->current_level.rocks.push_back(r);
+				game->play_screen.current_level.rocks.push_back(r);
 				break;
 			}
 			case Creating_Element::Key_Item: {
 				Key_Item r;
 				r.pos = get_mouse_pos();
 				r.id = 0;
-				game->current_level.key_items.push_back(r);
+				game->play_screen.current_level.key_items.push_back(r);
 				break;
 			}
 			case Creating_Element::Torch: {
@@ -774,7 +800,7 @@ void Editor::update(float dt) noexcept {
 				r.intensity = 0.5;
 				r.color = { 1, 1, 1, 1 };
 				r.random_factor = 0;
-				game->current_level.torches.push_back(r);
+				game->play_screen.current_level.torches.push_back(r);
 				break;
 			}
 			default: break;
@@ -782,14 +808,15 @@ void Editor::update(float dt) noexcept {
 	}
 
 	if (IM::isMousePressed(Mouse::Middle) && !IM::isMouseJustPressed(Mouse::Middle)) {
-		game->current_level.camera.pos += -1 * IM::getMouseDeltaInView(game->current_level.camera);
+		game->play_screen.current_level.camera.pos +=
+			-1 * IM::getMouseDeltaInView(game->play_screen.current_level.camera);
 	}
 	if (IM::isMouseJustPressed(Mouse::Left)) {
 		if (placing_player) {
 			placing_player = false;
 
-			game->current_level.player.hitbox.pos = get_mouse_pos();
-			game->current_level.player.velocity = {};
+			game->play_screen.current_level.player.hitbox.pos = get_mouse_pos();
+			game->play_screen.current_level.player.velocity = {};
 		}
 		if (edit_texture) {
 			require_dragging = true;
@@ -811,32 +838,32 @@ void Editor::update(float dt) noexcept {
 			}
 		};
 
-		iter(game->current_level.rocks);
-		iter(game->current_level.doors);
-		iter(game->current_level.blocks);
-		iter(game->current_level.key_items);
-		iter(game->current_level.dry_zones);
-		iter(game->current_level.kill_zones);
-		iter(game->current_level.next_zones);
-		iter(game->current_level.dispensers);
-		iter(game->current_level.torches);
-		iter(game->current_level.trigger_zones);
-		iter(game->current_level.moving_blocks);
-		iter(game->current_level.prest_sources);
-		iter(game->current_level.friction_zones);
-		iter(game->current_level.auto_binding_zones);
+		iter(game->play_screen.current_level.rocks);
+		iter(game->play_screen.current_level.doors);
+		iter(game->play_screen.current_level.blocks);
+		iter(game->play_screen.current_level.key_items);
+		iter(game->play_screen.current_level.dry_zones);
+		iter(game->play_screen.current_level.kill_zones);
+		iter(game->play_screen.current_level.next_zones);
+		iter(game->play_screen.current_level.dispensers);
+		iter(game->play_screen.current_level.torches);
+		iter(game->play_screen.current_level.trigger_zones);
+		iter(game->play_screen.current_level.moving_blocks);
+		iter(game->play_screen.current_level.prest_sources);
+		iter(game->play_screen.current_level.friction_zones);
+		iter(game->play_screen.current_level.auto_binding_zones);
 
 		// The collision detection for the camera fixed point is different.
 		// >TODO(Tackwin)
 
 		drag_offset.clear();
 		if (edit_texture) {
-			for (auto& b : game->current_level.decor_sprites) {
+			for (auto& b : game->play_screen.current_level.decor_sprites) {
 				b.editor_selected = b.rec.intersect(rec);
 			}
 		}
 		else {
-			for (auto& b : game->current_level.decor_sprites) b.editor_selected = false;
+			for (auto& b : game->play_screen.current_level.decor_sprites) b.editor_selected = false;
 		}
 	}
 	if (IM::isKeyJustReleased(Keyboard::DEL)) delete_all_selected();
@@ -845,7 +872,7 @@ void Editor::update(float dt) noexcept {
 }
 
 Vector2f Editor::get_mouse_pos() const noexcept {
-	auto pos = IM::getMousePosInView(game->current_level.camera);
+	auto pos = IM::getMousePosInView(game->play_screen.current_level.camera);
 	if (snap_grid == 0) return pos;
 
 	Vector2f result;
@@ -869,7 +896,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.pos = rec.pos;
 			new_block.size = rec.size;
 
-			game->current_level.blocks.emplace_back(std::move(new_block));
+			game->play_screen.current_level.blocks.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Kill_Zone: {
@@ -878,7 +905,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.pos = rec.pos;
 			new_block.size = rec.size;
 
-			game->current_level.kill_zones.emplace_back(std::move(new_block));
+			game->play_screen.current_level.kill_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Next_Zone: {
@@ -887,7 +914,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.pos = rec.pos;
 			new_block.size = rec.size;
 
-			game->current_level.next_zones.emplace_back(std::move(new_block));
+			game->play_screen.current_level.next_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Dispenser: {
@@ -899,7 +926,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.proj_speed = 1.f;
 			new_block.timer = 1.f / new_block.hz;
 
-			game->current_level.dispensers.emplace_back(std::move(new_block));
+			game->play_screen.current_level.dispensers.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Dry_Zone: {
@@ -907,7 +934,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			Dry_Zone new_block;
 			new_block.rec = rec;
 
-			game->current_level.dry_zones.emplace_back(std::move(new_block));
+			game->play_screen.current_level.dry_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Friction_Zone: {
@@ -915,7 +942,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			Friction_Zone new_block;
 			new_block.rec = rec;
 
-			game->current_level.friction_zones.emplace_back(std::move(new_block));
+			game->play_screen.current_level.friction_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Trigger_Zone: {
@@ -924,7 +951,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.rec = rec;
 			new_block.id = xstd::uuid();
 
-			game->current_level.trigger_zones.emplace_back(std::move(new_block));
+			game->play_screen.current_level.trigger_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Door: {
@@ -932,7 +959,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			Door new_block;
 			new_block.rec = rec;
 
-			game->current_level.doors.emplace_back(std::move(new_block));
+			game->play_screen.current_level.doors.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Moving_Block: {
@@ -940,7 +967,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			Moving_Block new_block;
 			new_block.rec = rec;
 
-			game->current_level.moving_blocks.emplace_back(std::move(new_block));
+			game->play_screen.current_level.moving_blocks.emplace_back(std::move(new_block));
 			break;
 		}
 		case Creating_Element::Auto_Binding_Zone: {
@@ -949,7 +976,7 @@ void Editor::end_drag(Vector2f start, Vector2f end) noexcept {
 			new_block.rec = rec;
 			new_block.uuid = xstd::uuid();
 
-			game->current_level.auto_binding_zones.emplace_back(std::move(new_block));
+			game->play_screen.current_level.auto_binding_zones.emplace_back(std::move(new_block));
 			break;
 		}
 		default: assert("Logic Error");
@@ -967,23 +994,23 @@ void Editor::delete_all_selected() noexcept {
 		}
 	};
 
-	iter(game->current_level.rocks);
-	iter(game->current_level.doors);
-	iter(game->current_level.blocks);
-	iter(game->current_level.torches);
-	iter(game->current_level.key_items);
-	iter(game->current_level.dry_zones);
-	iter(game->current_level.kill_zones);
-	iter(game->current_level.next_zones);
-	iter(game->current_level.dispensers);
-	iter(game->current_level.moving_blocks);
-	iter(game->current_level.trigger_zones);
-	iter(game->current_level.prest_sources);
-	iter(game->current_level.decor_sprites);
-	iter(game->current_level.friction_zones);
-	iter(game->current_level.auto_binding_zones);
+	iter(game->play_screen.current_level.rocks);
+	iter(game->play_screen.current_level.doors);
+	iter(game->play_screen.current_level.blocks);
+	iter(game->play_screen.current_level.torches);
+	iter(game->play_screen.current_level.key_items);
+	iter(game->play_screen.current_level.dry_zones);
+	iter(game->play_screen.current_level.kill_zones);
+	iter(game->play_screen.current_level.next_zones);
+	iter(game->play_screen.current_level.dispensers);
+	iter(game->play_screen.current_level.moving_blocks);
+	iter(game->play_screen.current_level.trigger_zones);
+	iter(game->play_screen.current_level.prest_sources);
+	iter(game->play_screen.current_level.decor_sprites);
+	iter(game->play_screen.current_level.friction_zones);
+	iter(game->play_screen.current_level.auto_binding_zones);
 
-#define S(x) game->current_level.x.size()
+#define S(x) game->play_screen.current_level.x.size()
 	auto n_elements =
 		S(rocks) +
 		S(doors) +
@@ -1006,6 +1033,6 @@ void Editor::delete_all_selected() noexcept {
 }
 
 void Editor::save(const std::filesystem::path& path) noexcept {
-	save_to_json_file((dyn_struct)game->current_level, path);
+	save_to_json_file((dyn_struct)game->play_screen.current_level, path);
 	ask_to_save = false;
 }

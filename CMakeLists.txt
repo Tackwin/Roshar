@@ -49,6 +49,7 @@ add_executable(Roshar
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Managers/InputsManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Managers/InputsManager.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Screens/ProfileSelection.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Screens/PlayScreen.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Screens/Settings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Screens/Start.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Profil/Profile.cpp

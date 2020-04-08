@@ -6,6 +6,8 @@
 #include "OS/OpenGL.hpp"
 #include "Assets.hpp"
 
+#include "Profil/Profile.hpp"
+
 using namespace asset;
 
 namespace asset {
@@ -141,7 +143,8 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 			)) std::abort();
 		},
 		dir,
-		[&, d = dir] (std::filesystem::path path) {
+		[&, d = dir] (std::filesystem::path path) -> bool {
+			if (stop) return true;
 			std::lock_guard guard{ Main_Mutex };
 			
 			path = std::filesystem::canonical(Exe_Path / d / path);
@@ -159,7 +162,7 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 
 					if (suffixes.size() == 1) {
 						asset.albedo.load_file(path.string());
-						return;
+						return false;
 					}
 
 					auto last = suffixes.back();
@@ -186,6 +189,7 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 					else printf("Faield to rebuild shader.\n");
 				}
 			}
+			return false;
 		}
 	);
 #endif
@@ -261,11 +265,12 @@ void Store_t::load_known_shaders() noexcept {
 
 void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 	Animation_Id::Guy = xstd::uuid();
-	auto f = [&, config_path] {
+	auto f = [&, config_path] () -> bool {
+		if (stop) return true;
 		auto opt = load_from_json_file(Exe_Path / config_path);
 		if (!opt) {
 			printf("Erreur.\n");
-			return;
+			return false;
 		}
 
 		dyn_struct config = std::move(*opt);
@@ -295,6 +300,7 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 			}
 		}
 
+		return false;
 	};
 #ifndef WEB
 	file::monitor_file(std::filesystem::canonical(Exe_Path / config_path), f);
@@ -342,3 +348,13 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 	if (auto opt = load_font(k, path)) return k;
 	return std::nullopt;
 }
+
+void Store_t::save_profiles(std::filesystem::path file, std::vector<Profile>& profiles) noexcept {
+	auto opt = load_from_json_file(file);
+	if (!opt) return;
+
+	auto& str = *opt;
+	str["profiles"] = profiles;
+	save_to_json_file(str, file);
+}
+

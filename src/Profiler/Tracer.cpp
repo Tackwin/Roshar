@@ -22,7 +22,9 @@ void Tracer::end_session(std::filesystem::path path) noexcept {
 
 	dyn_struct obj = dyn_struct::structure_t{};
 	obj["traceEvents"] = std::move(current_session);
-	save_to_json_file(obj, path / (current_session_name + ".json"));
+	auto save_path = path / (current_session_name + ".json");
+	save_to_json_file(obj, save_path);
+	printf("Wrote session to %s\n", save_path.generic_string().c_str());
 
 	session_running = false;
 }

@@ -25,6 +25,7 @@ static int attribs[] = {
 };
 
 extern void startup() noexcept;
+extern void shutup() noexcept;
 extern void post_char(std::uint32_t codepoint) noexcept;
 extern void update_game(std::uint64_t dt) noexcept;
 extern void render_game(render::Orders& orders) noexcept;
@@ -82,6 +83,7 @@ int WINAPI WinMain(
 	int       nShowCmd
 #endif
 ) {
+	defer { PROFILER_SESSION_END("output/trace/"); };
 
 	PROFILER_SESSION_BEGIN("Startup");
 
@@ -230,6 +232,8 @@ int WINAPI WinMain(
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
+	PROFILER_SESSION_BEGIN("Shutup");
+	shutup();
 	return 0;
 }
 
@@ -342,7 +346,10 @@ std::optional<HGLRC> create_gl_context(HWND handle_window) noexcept {
 }
 void destroy_gl_context(HGLRC gl_context) noexcept {
 	// >TODO error handling
-	if (!wglDeleteContext(gl_context)) printf("%s", get_last_error_message()->c_str());
+	printf("deleting... ");
+	if (!wglDeleteContext(gl_context)) {
+		printf("%s", get_last_error_message()->c_str());
+	}
 }
 
 

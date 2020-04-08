@@ -407,13 +407,13 @@ void Level::render(render::Orders& target) const noexcept {
 
 	sprintf(buffer, "%7.2f", score_timer);
 
-	if (game->in_replay) {
+	if (game->play_screen.in_replay) {
 		char max_score_buffer[512];
 		sprintf(
 			max_score_buffer,
 			"%7.2f/%7.2f",
-			game->profile.best_time[name].last,
-			game->profile.best_time[name].best
+			game->profile->best_time[name].last,
+			game->profile->best_time[name].best
 		);
 		
 		target.late_push_text(
@@ -648,9 +648,9 @@ void Level::test_collisions(float dt) noexcept {
 	for (auto& x : next_zones) {
 		if (!test(x, player)) continue;
 
-		game->next_level_path = Exe_Path / LEVEL_PATH / x.next_level;
-		game->succeed = true;
-		game->new_time(score_timer);
+		game->play_screen.next_level_path = Exe_Path / LEVEL_PATH / x.next_level;
+		game->play_screen.succeed = true;
+		game->play_screen.new_time(score_timer);
 	}
 
 	for (auto& x : auto_binding_zones) {
@@ -844,16 +844,16 @@ void Level::update_player(float dt) noexcept {
 	}
 
 
-	if (!game->died) {
+	if (!game->play_screen.died) {
 		for (auto& x : kill_zones) if (test(x, player)) {
-			game->died |= true;
+			game->play_screen.died |= true;
 			break;
 		}
 		for (auto& x : projectiles) if (test(x, player)) {
-			game->died |= true;
+			game->play_screen.died |= true;
 			break;
 		}
-		game->died |= std::sqrtf(impact) > Environment.dead_velocity;
+		game->play_screen.died |= std::sqrtf(impact) > Environment.dead_velocity;
 	}
 }
 

@@ -53,7 +53,8 @@ namespace kit {
 		render::Orders orders;
 	};
 
-	extern void update(float dt, IM::Input_Iterator input) noexcept;
+	extern void input(IM::Input_Iterator it) noexcept;
+	extern void update(float dt) noexcept;
 	extern void render(render::Orders& target) noexcept;
 	extern State& get_state() noexcept;
 
@@ -61,6 +62,7 @@ namespace kit {
 	extern void key_prompt(
 		std::string label, float size, Control_Bindings::Action& binded
 	) noexcept;
+	extern bool label(std::string text) noexcept;
 	extern bool button(std::string label, float size) noexcept;
 	extern bool card(Profile& profile) noexcept;
 	extern std::optional<State::Card_State> card_plus() noexcept;

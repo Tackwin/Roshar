@@ -8,6 +8,7 @@ void to_dyn_struct(dyn_struct& str, const Profile& profile) noexcept {
 	str["times"] = dyn_struct::structure_t{};
 
 	for (auto& [k, v] : profile.best_time) {
+		if (!has(str["times"], k)) str["times"][k] = dyn_struct::structure_t{};
 		str["times"][k]["best"] = v.best;
 		str["times"][k]["last"] = v.last;
 	}
@@ -29,7 +30,10 @@ void from_dyn_struct(const dyn_struct& str, Profile& profile) noexcept {
 }
 
 void to_dyn_struct(dyn_struct& str, const Control_Bindings& bindings) noexcept {
+	str = dyn_struct::structure_t{};
 	auto action = [&](const char* name, Control_Bindings::Action act) {
+		if (!has(str, name)) str[name] = dyn_struct::structure_t{};
+
 		if (act.key) str[name]["key"] = (size_t)*act.key;
 		if (act.button) str[name]["button"] = (size_t)*act.button;
 		if (act.controller) str[name]["controller"] = (size_t)*act.controller;

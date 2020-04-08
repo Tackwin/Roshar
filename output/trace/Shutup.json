@@ -1,0 +1,1 @@
+{	"traceEvents": [ {	"cat": "timer",	"name": "shutup",	"tid": 17152,	"dur": 2,	"ts": 296140328869,	"ph": "X",	"pid": 2508}, {	"cat": "timer",	"name": "save_profile",	"tid": 17152,	"dur": 27651,	"ts": 296140329068,	"ph": "X",	"pid": 2508}, {	"cat": "session",	"name": "Shutup",	"tid": 17152,	"dur": 39761,	"ts": 296140328860,	"ph": "X",	"pid": 2508} ]}

@@ -226,6 +226,9 @@ struct Moving_Block {
 };
 
 struct Level {
+	// >TODO: level id system.
+	inline static auto Start_Level = "assets/levels/1-1.json";
+
 	// >SEE:
 	// >DEBUG:
 	struct Debug_Vector {

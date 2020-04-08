@@ -17,6 +17,7 @@
 constexpr Vector2u Gl_Buffer_Size = { 1920, 1080 };
 
 void startup() noexcept;
+void shutup() noexcept;
 void post_char(std::uint32_t arg) noexcept;
 void update_game(std::uint64_t dt) noexcept;
 void render_game(render::Orders& orders) noexcept;
@@ -37,6 +38,14 @@ void startup() noexcept {
 	static Game local_game;
 	game = &local_game;
 	game->load_start_config();
+	PROFILER_END_SEQ();
+}
+
+void shutup() noexcept {
+	PROFILER_BEGIN_SEQ("shutup");
+	asset::Store.stop = true;
+	PROFILER_SEQ("save_profile");
+	asset::Store.save_profiles("assets/config.json", game->profiles);
 	PROFILER_END_SEQ();
 }
 

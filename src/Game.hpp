@@ -10,49 +10,18 @@
 
 #include "Screens/Start.hpp"
 #include "Screens/Settings.hpp"
+#include "Screens/PlayScreen.hpp"
 #include "Screens/ProfileSelection.hpp"
 
 struct Game {
-	Profile profile;
+	Profile* profile{ nullptr };
 	std::vector<Profile> profiles;
 
-	Editor editor;
-
-	Level copy_level;
-	Level current_level;
-	std::optional<Level> to_swap_level;
-
-	bool in_replay{ false };
-	bool in_test{ false };
-	bool in_full_test{ false };
-	bool in_editor{ false };
-
-	bool quit{ false };
-
-	IM::Input_Iterator this_record;
-	IM::Input_Iterator curr_record;
-	IM::Input_Iterator start_record;
-
-	std::optional<IM::Input_Iterator> begin_record;
-	std::optional<IM::Input_Iterator> end_record;
-
-	std::vector<std::vector<Player::Graphic_State>> phantom_paths{ {} };
-
-	bool died{ false };
-	bool succeed{ false };
-	std::filesystem::path next_level_path;
-
-	static constexpr float Input_Active_Time = 0.5f;
-	float input_active_timer = Input_Active_Time;
-
-	static constexpr float Camera_Fade_Time = 0.5f;
-	float camera_fade_out_timer = 0;
-	float camera_fade_in_timer = 0;
-
-
 	Rectanglef ui_view{ {0, 0}, {1280, 720 } };
+	IM::Input_Iterator this_record;
 
 	double timeshots{ 0 };
+	bool quit{ false };
 	
 	void load_start_config() noexcept;
 
@@ -61,21 +30,19 @@ struct Game {
 	void input() noexcept;
 	void update(std::uint64_t dt) noexcept;
 	void render(render::Orders& target) noexcept;
+	void render_debug_controller(render::Orders& orders, IM::Input_Iterator it) noexcept;
 
+	Play_Screen play_screen;
 	Start_Screen start_screen;
 	Settings_Screen settings_screen;
 	Profile_Selection_Screen profile_selection_screen;
+	
 private:
 	std::uint64_t fixed_point_timeshot{ 0 };
 	std::uint64_t to_carry_over{ 0 };
 
-	void render_debug_controller(render::Orders& orders, IM::Input_Iterator it) noexcept;
 
 	void update_step(std::uint64_t dt) noexcept;
-
-	void go_in_test() noexcept;
-	void go_in_replay() noexcept;
-	void go_in_full_test() noexcept;
 
 	std::optional<Level> load_level(std::filesystem::path path) noexcept;
 

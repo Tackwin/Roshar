@@ -12,6 +12,8 @@
 #include "Graphic/Particle.hpp"
 #include "Graphic/Animation.hpp"
 
+class Profile;
+
 namespace asset {
 	using Key = std::uint64_t;
 
@@ -36,6 +38,7 @@ namespace asset {
 	};
 
 	struct Store_t {
+		bool stop{ false };
 
 		std::unordered_map<std::string, std::uint64_t> textures_loaded;
 
@@ -72,6 +75,8 @@ namespace asset {
 		[[nodiscard]] Font& get_font(Key k) noexcept;
 		[[nodiscard]] bool load_font(Key k, std::filesystem::path path) noexcept;
 		[[nodiscard]] std::optional<Key> load_font(std::filesystem::path path) noexcept;
+
+		void save_profiles(std::filesystem::path file, std::vector<Profile>& profiles) noexcept;
 
 		void monitor_path(std::filesystem::path dir) noexcept;
 

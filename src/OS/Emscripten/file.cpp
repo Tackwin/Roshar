@@ -70,18 +70,18 @@ file::OpenFileResult file::open_file(OpenFileOpts opts) noexcept {
 	return result;
 }
 
-void file::monitor_file(std::filesystem::path path, std::function<void()> f) noexcept {
+void file::monitor_file(std::filesystem::path path, std::function<bool()> f) noexcept {
 	printf("Can't use monitor operation in the browser.\n");
 }
 void file::monitor_dir(
-	std::filesystem::path dir, std::function<void(std::filesystem::path)> f
+	std::filesystem::path dir, std::function<bool(std::filesystem::path)> f
 ) noexcept {
 	printf("Can't use monitor operation in the browser.\n");
 }
 void file::monitor_dir(
 	std::function<void()> init_thread,
 	std::filesystem::path dir,
-	std::function<void(std::filesystem::path)> f
+	std::function<bool(std::filesystem::path)> f
 ) noexcept {
 	printf("Can't use monitor operation in the browser.\n");
 }
