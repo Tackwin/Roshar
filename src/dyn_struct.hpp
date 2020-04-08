@@ -83,6 +83,9 @@ struct dyn_struct_const_array_iterator_tag {
 struct dyn_struct_structure_iterator_tag {
 	dyn_struct::structure_t* it;
 };
+struct dyn_struct_const_structure_iterator_tag {
+	const dyn_struct::structure_t* it;
+};
 
 struct dyn_struct_array_iterator {
 	dyn_struct::array_t::iterator iterator;
@@ -117,6 +120,16 @@ struct dyn_struct_structure_iterator {
 	dyn_struct_structure_iterator& operator++() noexcept;
 	bool operator==(const dyn_struct_structure_iterator& other) const noexcept;
 	bool operator!=(const dyn_struct_structure_iterator& other) const noexcept;
+};
+struct dyn_struct_const_structure_iterator {
+	dyn_struct::structure_t::const_iterator iterator;
+
+	std::pair<std::string, const dyn_struct&> operator*() const noexcept;
+	std::pair<std::string, const dyn_struct&> operator->() const noexcept;
+
+	dyn_struct_const_structure_iterator& operator++() noexcept;
+	bool operator==(const dyn_struct_const_structure_iterator& other) const noexcept;
+	bool operator!=(const dyn_struct_const_structure_iterator& other) const noexcept;
 };
 
 namespace std {
@@ -186,18 +199,21 @@ end(const dyn_struct_const_array_iterator_tag& d_struct) noexcept;
 extern dyn_struct_array_iterator
 end(const dyn_struct_array_iterator_tag& d_struct) noexcept;
 
-extern const dyn_struct_structure_iterator
-cbegin(const dyn_struct_structure_iterator_tag& d_struct) noexcept;
+extern const dyn_struct_const_structure_iterator
+begin(const dyn_struct_const_structure_iterator_tag& d_struct) noexcept;
 extern dyn_struct_structure_iterator
 begin(const dyn_struct_structure_iterator_tag& d_struct) noexcept;
-extern const dyn_struct_structure_iterator
-cend(const dyn_struct_structure_iterator_tag& d_struct) noexcept;
+extern const dyn_struct_const_structure_iterator
+end(const dyn_struct_const_structure_iterator_tag& d_struct) noexcept;
 extern dyn_struct_structure_iterator
 end(const dyn_struct_structure_iterator_tag& d_struct) noexcept;
 
 extern dyn_struct_array_iterator_tag iterate_array(dyn_struct& d_struct) noexcept;
 extern dyn_struct_const_array_iterator_tag iterate_array(const dyn_struct& d_struct) noexcept;
 extern dyn_struct_structure_iterator_tag iterate_structure(dyn_struct& d_struct) noexcept;
+extern dyn_struct_const_structure_iterator_tag iterate_structure(
+	const dyn_struct& d_struct
+) noexcept;
 
 extern dyn_struct dyn_struct_array(size_t n = 0) noexcept;
 extern size_t size(const dyn_struct&) noexcept;

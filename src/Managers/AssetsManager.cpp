@@ -211,6 +211,7 @@ void Store_t::load_known_textures() noexcept {
 	X("assets/textures/dust_sheet.png",                   Dust_Sheet                  );
 	X("assets/textures/indicator.png",                    Indicator                   );
 	X("assets/textures/guy_sheet.png",                    Guy_Sheet                   );
+	X("assets/textures/card_plus.png",                    Card_Plus                   );
 	X("assets/textures/rock.png",                         Rock                        );
 	X("assets/textures/key.png",                          Key_Item                    );
 

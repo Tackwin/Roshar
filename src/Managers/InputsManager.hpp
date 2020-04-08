@@ -1,8 +1,9 @@
 #pragma once
-#include <optional>
-#include <vector>
-#include <array>
 #include <list>
+#include <array>
+#include <vector>
+#include <atomic>
+#include <optional>
 
 #include "./../Math/Vector.hpp"
 #include "Graphic/Graphics.hpp"
@@ -155,7 +156,7 @@ extern std::string to_string(Keyboard::Key k) noexcept;
 extern std::string to_string(Joystick::Button b) noexcept;
 
 struct Inputs_Info {
-	constexpr static std::uint8_t Version{ 2 };
+	constexpr static std::uint8_t Version{ 3 };
 
 	struct Action_Info {
 		bool pressed : 1;
@@ -185,6 +186,8 @@ struct Inputs_Info {
 		bool focused : 1;
 	};
 
+	char new_character;
+
 	[[nodiscard]] Vector2f mouse_world_pos(render::View_Info& v) const noexcept;
 	[[nodiscard]] Vector2f mouse_world_pos(Rectanglef& v       ) const noexcept;
 	[[nodiscard]] bool is_just_released(Keyboard::Key    k) const noexcept;
@@ -206,7 +209,7 @@ private:
 	inline static std::unordered_map<std::uint64_t, std::list<Inputs_Info>> loaded_record{};
 public:
 	using Input_Iterator = decltype(records)::iterator;
-
+	inline static std::atomic<char> current_char = '\0';
 	inline static size_t controller_idx = 0;
 
 	static decltype(records)::iterator get_iterator() noexcept;

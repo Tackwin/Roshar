@@ -74,6 +74,7 @@ namespace render {
 		float height;
 		Vector2f origin;
 		Vector2f pos;
+		Vector4d color;
 
 		enum Style {
 			Normal = 0,
@@ -125,7 +126,8 @@ namespace render {
 		size_t text_size,
 		float size,
 		Vector2f origin={0, 0},
-		std::uint32_t style = Text_Info::Style::Normal
+		std::uint32_t style = Text_Info::Style::Normal,
+		Vector4d color = {1, 1, 1, 1}
 	) noexcept;
 	Order arrow(
 		Vector2f a,
@@ -186,6 +188,13 @@ namespace render {
 		void push_ambient_light(Vector4d color, float intensity) noexcept;
 		void pop_ambient_light() noexcept;
 
+		void append(const Orders& orders) noexcept {
+			objects.insert(std::end(objects), BEG_END(orders.objects));
+			late.insert(std::end(late), BEG_END(orders.late));
+			lights.insert(std::end(lights), BEG_END(orders.lights));
+			data.insert(std::end(data), BEG_END(orders.data));
+		}
+
 		void push_arrow(Vector2f a, Vector2f b, Vector4d color) noexcept {
 			objects.emplace_back(arrow(a, b, color));
 		}
@@ -214,7 +223,8 @@ namespace render {
 			std::string str_text,
 			float height,
 			Vector2f origin,
-			std::uint32_t style = Text_Info::Style::Normal
+			std::uint32_t style = Text_Info::Style::Normal,
+			Vector4d color = {1, 1, 1, 1}
 		) noexcept {
 			size_t idx = data.size();
 			for (auto& c : str_text) {
@@ -222,7 +232,7 @@ namespace render {
 			}
 
 			objects.emplace_back(text(
-				pos, font_id, (char*)idx, str_text.size(), height, origin, style
+				pos, font_id, (char*)idx, str_text.size(), height, origin, style, color
 			));
 		}
 
@@ -250,7 +260,8 @@ namespace render {
 			std::string str_text,
 			float height,
 			Vector2f origin,
-			std::uint32_t style = Text_Info::Style::Normal
+			std::uint32_t style = Text_Info::Style::Normal,
+			Vector4d color = {1, 1, 1, 1}
 		) noexcept {
 			size_t idx = data.size();
 			for (auto& c : str_text) {
@@ -258,7 +269,7 @@ namespace render {
 			}
 
 			late.emplace_back(text(
-				pos, font_id, (char*)idx, str_text.size(), height, origin, style
+				pos, font_id, (char*)idx, str_text.size(), height, origin, style, color
 			));
 		}
 
@@ -282,6 +293,19 @@ namespace render {
 			late.emplace_back(rectangle(rec.pos, rec.size, color, outline, outline_color));
 		}
 
+		void late_push_sprite(
+			Rectanglef rec,
+			asset::Key texture,
+			Rectanglef texture_rect = { {0, 0}, {1, 1} },
+			Vector2f origin = { 0, 0 },
+			float rotation = 0.f,
+			Vector4d color = { 1, 1, 1, 1 },
+			asset::Key shader = 0
+		) noexcept {
+			late.emplace_back(sprite(
+				rec.pos, rec.size, texture, texture_rect, origin, rotation, color, shader
+			));
+		}
 
 		void push_rectangle(
 			Rectanglef rec,

@@ -1,23 +1,26 @@
 #include <imgui.h>
+#include <atomic>
 #include <GL/glew.h>
 #include <GL/wglew.h>
 
 #include "Graphic/Graphics.hpp"
 #include "Graphic/Graphics.hpp"
 #include "Graphic/FrameBuffer.hpp"
+#include "Graphic/UI/Kit.hpp"
 #include "Managers/AssetsManager.hpp"
 
 #include "Game.hpp"
 
 #include "Profiler/Tracer.hpp"
 
+
 constexpr Vector2u Gl_Buffer_Size = { 1920, 1080 };
 
 void startup() noexcept;
+void post_char(std::uint32_t arg) noexcept;
 void update_game(std::uint64_t dt) noexcept;
 void render_game(render::Orders& orders) noexcept;
 void render_orders(render::Orders& orders) noexcept;
-
 
 void startup() noexcept {
 	PROFILER_BEGIN_SEQ("monitor");
@@ -35,6 +38,15 @@ void startup() noexcept {
 	game = &local_game;
 	game->load_start_config();
 	PROFILER_END_SEQ();
+}
+
+void post_char(std::uint32_t arg) noexcept {
+	if (arg > 0xFF) {
+		fprintf(stderr, "Fuck it just received a non ascii char not gonna handle it.\n");
+		return;
+	}
+
+	IM::current_char = (char)arg;
 }
 
 void update_game(std::uint64_t dt) noexcept {
@@ -89,6 +101,7 @@ void update_game(std::uint64_t dt) noexcept {
 
 void render_game(render::Orders& orders) noexcept {
 	game->render(orders);
+	kit::render(orders);
 	render_orders(orders);
 	orders.clear();
 }

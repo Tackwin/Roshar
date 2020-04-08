@@ -25,6 +25,7 @@ static int attribs[] = {
 };
 
 extern void startup() noexcept;
+extern void post_char(std::uint32_t codepoint) noexcept;
 extern void update_game(std::uint64_t dt) noexcept;
 extern void render_game(render::Orders& orders) noexcept;
 extern void render_orders(render::Orders& orders) noexcept;
@@ -52,6 +53,9 @@ LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) no
 	ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 
 	switch (msg) {
+	case WM_CHAR:
+		post_char((std::uint32_t)(wchar_t)wParam);
+		break;
 	case WM_MOUSEWHEEL:
 		wheel_scroll = GET_WHEEL_DELTA_WPARAM(wParam) / 120.f;
 		break;

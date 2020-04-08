@@ -34,6 +34,25 @@ void Editor::render(render::Orders& target) noexcept {
 		game->current_level.ambient_color = (Vector4d)x;
 	}
 
+	if (ImGui::CollapsingHeader("Operations")) {
+		if (ImGui::Button("Load/Save every levels")) {
+			file::open_dir_async([](std::optional<std::filesystem::path> path) {
+				if (!path) return;
+				for (auto& f : std::filesystem::recursive_directory_iterator(*path)) {
+					if (!f.is_regular_file() || f.path().extension() != ".json") continue;
+					printf("Loading %s... ", f.path().generic_string().c_str());
+					defer{ printf("\n"); };
+
+					auto opt_dyn = load_from_json_file(f.path());
+					if (!opt_dyn) continue;
+					printf("Saving... ");
+					save_to_json_file((dyn_struct)((Level)*opt_dyn), f.path());
+					printf(" OK !");
+				}
+			});
+		}
+	}
+
 	ImGui::Separator();
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
@@ -137,9 +156,13 @@ void Editor::render(render::Orders& target) noexcept {
 	}
 
 	ImGui::Separator();
-	strcpy(buffer, save_path.data());
-	ImGui::PushItemWidth(ImGui::GetWindowWidth());
-	ImGui::InputText("Name:", buffer, 512);
+	if (game->current_level.name.empty()) {
+		game->current_level.name = save_path;
+	}
+	strcpy(buffer, game->current_level.name.data());
+	if (ImGui::InputText("Name:", buffer, 512)) {
+		game->current_level.name = buffer;
+	}
 
 	ImGui::Separator();
 	ImGui::Text("Selected");

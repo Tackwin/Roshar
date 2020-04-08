@@ -92,7 +92,8 @@ render::Order render::text(
 	size_t text_size,
 	float height,
 	Vector2f origin,
-	std::uint32_t style
+	std::uint32_t style,
+	Vector4d color
 ) noexcept {
 	Order order;
 	order.kind = Order::Kind::Text;
@@ -103,6 +104,7 @@ render::Order render::text(
 	order.text.height = height;
 	order.text.origin = origin;
 	order.text.style_mask = style;
+	order.text.color = color;
 	return order;
 }
 
@@ -525,8 +527,8 @@ void render::immediate(Text_Info info) noexcept {
 		underline.size.y = info.height * 0.1;
 		underline.pos = pos;
 		underline.outline = 0;
-		underline.color = {1, 1, 1, 1};
-		underline.outline_color = {1, 1, 1, 1};
+		underline.color = info.color;
+		underline.outline_color = info.color;
 		immediate(underline);
 	}
 
@@ -538,7 +540,7 @@ void render::immediate(Text_Info info) noexcept {
 		auto& glyph = *opt_glyph;
 		
 		Sprite_Info sprite;
-		sprite.color           = {1, 1, 1, 1};
+		sprite.color           = info.color;
 		sprite.origin.x        = -1.f * glyph.offset.x / glyph.rect.w;
 		sprite.origin.y        = 1 + 1.f * glyph.offset.y / glyph.rect.h;
 		sprite.pos             = pos;

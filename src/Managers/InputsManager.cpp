@@ -346,6 +346,9 @@ void InputsManager::update(float dt) {
 	new_record.key_captured = ImGui::GetIO().WantCaptureKeyboard;
 	new_record.mouse_captured = ImGui::GetIO().WantCaptureMouse;
 
+	new_record.new_character = current_char;
+	current_char = '\0';
+
 	records.push_back(new_record);
 }
 
@@ -454,6 +457,38 @@ struct Inputs_Info_1 {
 	};
 };
 
+struct Inputs_Info_2 {
+	constexpr static std::uint8_t Version{ 2 };
+
+	struct Action_Info {
+		bool pressed : 1;
+		bool just_pressed : 1;
+		bool just_released : 1;
+	};
+
+	std::array<Action_Info, Keyboard::Count>        key_infos;
+	std::array<Action_Info, Mouse::Count>           mouse_infos;
+	std::array<Action_Info, Joystick::Count>        joystick_buttons_infos;
+
+	Vector2f left_joystick;
+	Vector2f right_joystick;
+	float left_trigger;
+	float right_trigger;
+
+	Vector2f mouse_screen_pos;
+	Vector2f mouse_screen_delta;
+	Vector2u window_size;
+
+	float scroll;
+	float dt;
+
+	struct {
+		bool mouse_captured : 1;
+		bool key_captured : 1;
+		bool focused : 1;
+	};
+};
+
 Inputs_Info update(Inputs_Info_1 old) noexcept {
 	Inputs_Info new_info = {};
 	new_info.dt = old.dt;
@@ -492,6 +527,51 @@ Inputs_Info update(Inputs_Info_1 old) noexcept {
 	new_info.window_size = old.window_size;
 	return new_info;
 }
+Inputs_Info update(Inputs_Info_2 old) noexcept {
+	Inputs_Info new_info = {};
+	for (size_t i = 0; i < old.key_infos.size(); ++i) {
+		auto& n = new_info.key_infos[i];
+		const auto& o = old.key_infos[i];
+
+		n.just_pressed = o.just_pressed;
+		n.just_released = o.just_released;
+		n.pressed = o.pressed;
+	}
+	for (size_t i = 0; i < old.mouse_infos.size(); ++i) {
+		auto& n = new_info.mouse_infos[i];
+		const auto& o = old.mouse_infos[i];
+
+		n.just_pressed = o.just_pressed;
+		n.just_released = o.just_released;
+		n.pressed = o.pressed;
+	}
+	for (size_t i = 0; i < old.joystick_buttons_infos.size(); ++i) {
+		auto& n = new_info.joystick_buttons_infos[i];
+		const auto& o = old.joystick_buttons_infos[i];
+
+		n.just_pressed = o.just_pressed;
+		n.just_released = o.just_released;
+		n.pressed = o.pressed;
+	}
+	new_info.left_joystick = old.left_joystick;
+	new_info.right_joystick = old.right_joystick;
+	new_info.left_trigger = old.left_trigger;
+	new_info.right_trigger = old.right_trigger;
+	
+	new_info.mouse_screen_delta = old.mouse_screen_delta;
+	new_info.mouse_screen_pos = old.mouse_screen_pos;
+	new_info.window_size = old.window_size;
+
+	new_info.scroll = old.scroll;
+	new_info.dt = old.dt;
+	
+	new_info.mouse_captured = old.mouse_captured;
+	new_info.key_captured = old.key_captured;
+	new_info.focused = old.focused;
+
+	return new_info;
+}
+Inputs_Info update(Inputs_Info x) { return x; }
 
 bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 	auto expected = file::read_whole_file(path);
@@ -501,26 +581,20 @@ bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
 
 	std::uint8_t version = bytes[0];
 	switch (version) {
-	case Inputs_Info_1::Version: {
-		for (size_t i = 1; i < bytes.size();) {
-			Inputs_Info_1 info;
-			for (size_t j = 0; j < sizeof(info); ++j, ++i) {
-				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
-			}
-			loaded_record[id].push_back(::update(info));
-		}
-		return true;
+	#define X(x) \
+	case x::Version: {\
+		for (size_t i = 1; i < bytes.size();) {\
+			x info;\
+			for (size_t j = 0; j < sizeof(info); ++j, ++i) {\
+				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];\
+			}\
+			loaded_record[id].push_back(::update(info));\
+		}\
+		return true;\
 	}
-	case Inputs_Info::Version: {
-		for (size_t i = 1; i < bytes.size();) {
-			Inputs_Info info;
-			for (size_t j = 0; j < sizeof(Inputs_Info); ++j, ++i) {
-				reinterpret_cast<std::uint8_t*>(&info)[j] = bytes[i];
-			}
-			loaded_record[id].push_back(info);
-		}
-		return true;
-	}
+	X(Inputs_Info_2)
+	X(Inputs_Info_1)
+	X(Inputs_Info)
 	default: assert("Logic error");
 	}
 	return false;

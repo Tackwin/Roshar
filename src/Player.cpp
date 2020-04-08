@@ -17,7 +17,7 @@ constexpr size_t Jump_Idle_Animation = 3;
 Animation_Sheet& get_animation() noexcept;
 
 void Player::input(Input_Iterator this_record) noexcept {
-	auto& bindings = game->control_bindings;
+	auto& bindings = game->profile.bindings;
 	auto prev_motion = wanted_motion;
 	wanted_drag = this_record->right_joystick;
 	wanted_motion = this_record->left_joystick;

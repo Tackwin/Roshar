@@ -3,6 +3,8 @@
 #include "dyn_struct.hpp"
 #include "Graphic/Graphics.hpp"
 
+#include "Graphic/UI/Kit.hpp"
+
 Game* game = nullptr;
 
 void Game::load_start_config() noexcept {
@@ -14,14 +16,31 @@ void Game::load_start_config() noexcept {
 		to_swap_level = load_level((std::string)start["start_level"]);
 	}
 	if (has(start, "current_screen")) {
-		#define X(x) if ((std::string)start["current_screen"] == #x) current_screen = Screen::x;
-		X(Start);
-		X(Settings);
-		X(None);
+		#define X(x, y) if ((std::string)start["current_screen"] == #x) current_screen = y;
+		X(Start, &start_screen);
+		X(Settings, &settings_screen);
+		X(ProfileSelect, &profile_selection_screen);
+		X(None, nullptr);
 		#undef X
 	}
 	if (has(start, "controller_idx")) {
 		IM::controller_idx = (size_t)start["controller_idx"];
+	}
+	if (has(start, "profiles")) {
+		for (auto& raw_path : iterate_array(start["profiles"])) {
+			auto p = (std::string)raw_path;
+			printf("Loading profile: %s...", p.c_str());
+			defer { printf("\n"); };
+
+			auto opt = load_from_json_file(p);
+			if (!opt) {
+				printf(" Failed :(");
+				continue;
+			}
+
+			profiles.push_back((Profile)*opt);
+			printf(" Ok    :)");
+		}
 	}
 }
 
@@ -31,12 +50,8 @@ void Game::input() noexcept {
 	this_record = IM::get_iterator();
 	if (!IM::isWindowFocused()) return;
 
-	if (current_screen == Screen::Start) {
-		start_screen.input(this_record);
-		return;
-	}
-	if (current_screen == Screen::Settings) {
-		settings_screen.input(this_record);
+	if (current_screen) {
+		current_screen->input(this_record);
 		return;
 	}
 
@@ -123,22 +138,16 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 
 	timeshots = fixed_point_timeshot / 1'000'000.0;
 
-
 	input();
+	kit::update(dt, this_record);
 
-	if (current_screen == Screen::Start) {
-		start_screen.update(dt);
-
-		if (start_screen.exit) application_running = false;
-		if (start_screen.goto_levels) current_screen = Screen::None;
-		if (start_screen.goto_settings) current_screen = Screen::Settings;
-		return;
-	} if (current_screen == Screen::Settings) {
-		settings_screen.update(dt);
-
-		if (settings_screen.go_back) current_screen = Screen::Start;
+	if (current_screen) {
+		current_screen->update(dt);
+		if (auto ptr = current_screen->next()) current_screen = ptr;
 		return;
 	}
+
+	if (quit) application_running = false;
 
 	if (!in_editor) current_level.input(this_record);
 
@@ -208,16 +217,13 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 }
 
 void Game::render(render::Orders& target) noexcept {
-	if (current_screen == Screen::Start) {
-		start_screen.render(target);
-		return;
-	}
-	if (current_screen == Screen::Settings) {
-		settings_screen.render(target);
+	if (current_screen) {
+		current_screen->render(target);
 		return;
 	}
 	
 	current_level.render(target);
+
 	if (in_editor) {
 		current_level.render_debug(target);
 		editor.render(target);
@@ -363,6 +369,7 @@ std::optional<Level> Game::load_level(std::filesystem::path path) noexcept {
 void Game::new_time(float time) noexcept {
 	if (profile.best_time.count(current_level.name) == 0)
 		profile.best_time[current_level.name].best = time;
+
 	profile.best_time[current_level.name].last = time;
 	auto& it = profile.best_time[current_level.name].best;
 

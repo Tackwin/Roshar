@@ -5,35 +5,16 @@
 #include "Managers/InputsManager.hpp"
 #include "Graphic/Graphics.hpp"
 
-struct Control_Bindings {
-	struct Action {
-		std::optional<Keyboard::Key> key;
-		std::optional<Mouse::Button> button;
-		std::optional<Joystick::Button> controller;
+#include "Screen.hpp"
 
-		std::optional<Vector2f> left_joystick_vector;
-	};
+#include "Profil/Profile.hpp"
 
-	Action jump = { Keyboard::Key::Space, Mouse::Button::Count, Joystick::Button::RB };
-	Action up = { Keyboard::Key::Z };
-	Action left = { Keyboard::Key::Q };
-	Action down = { Keyboard::Key::S };
-	Action right = { Keyboard::Key::D };
-	Action grap = { Keyboard::Key::LCTRL, std::nullopt, Joystick::Button::LB };
-	Action clear = { std::nullopt, Mouse::Button::Right, Joystick::Button::B };
-	Action cancel = { Keyboard::Key::Z, std::nullopt, Joystick::Button::B };
+struct Settings_Screen : public Screen {
 
-	Keyboard::Key slow = Keyboard::Key::LSHIFT;
-
-	Mouse::Button start_drag;
-	Mouse::Button clear_bindings;
-};
-
-struct Settings_Screen {
-
-	void input(IM::Input_Iterator it) noexcept;
-	void update(float dt) noexcept;
-	void render(render::Orders& target) noexcept;
+	virtual void input(IM::Input_Iterator it) noexcept override;
+	virtual void update(float dt) noexcept override;
+	virtual void render(render::Orders& target) noexcept override;
+	virtual Screen* next() noexcept override;
 
 	bool go_back{ false };
 

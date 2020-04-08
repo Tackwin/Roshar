@@ -11,6 +11,7 @@ namespace asset {
 		inline static Key Indicator{ 5 };
 		inline static Key Guy_Sheet{ 6 };
 		inline static Key Dust_Sheet{ 7 };
+		inline static Key Card_Plus{ 8 };
 	};
 	struct Shader_Id {
 		inline static Key Default{ 1 };

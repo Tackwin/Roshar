@@ -664,12 +664,35 @@ dyn_struct_structure_iterator& dyn_struct_structure_iterator::operator++() noexc
 	return *this;
 }
 bool dyn_struct_structure_iterator::operator==(
-const dyn_struct_structure_iterator& other
+	const dyn_struct_structure_iterator& other
 ) const noexcept {
 	return iterator == other.iterator;
 }
 bool dyn_struct_structure_iterator::operator!=(
-const dyn_struct_structure_iterator& other
+	const dyn_struct_structure_iterator& other
+) const noexcept {
+	return iterator != other.iterator;
+}
+
+std::pair<std::string, const dyn_struct&>
+dyn_struct_const_structure_iterator::operator*() const noexcept {
+	return std::pair<std::string, const dyn_struct&>{ iterator->first, *iterator->second };
+}
+std::pair<std::string, const dyn_struct&>
+dyn_struct_const_structure_iterator::operator->() const noexcept {
+	return std::pair<std::string, const dyn_struct&>{ iterator->first, *iterator->second };
+}
+dyn_struct_const_structure_iterator& dyn_struct_const_structure_iterator::operator++() noexcept {
+	++iterator;
+	return *this;
+}
+bool dyn_struct_const_structure_iterator::operator==(
+	const dyn_struct_const_structure_iterator& other
+) const noexcept {
+	return iterator == other.iterator;
+}
+bool dyn_struct_const_structure_iterator::operator!=(
+	const dyn_struct_const_structure_iterator& other
 ) const noexcept {
 	return iterator != other.iterator;
 }
@@ -727,15 +750,15 @@ dyn_struct_array_iterator end(const dyn_struct_array_iterator_tag& d_struct) noe
 	return { d_struct.it->end() };
 }
 
-const dyn_struct_structure_iterator
-cbegin(const dyn_struct_structure_iterator_tag& d_struct) noexcept {
+const dyn_struct_const_structure_iterator
+begin(const dyn_struct_const_structure_iterator_tag& d_struct) noexcept {
 	return { d_struct.it->begin() };
 }
 dyn_struct_structure_iterator begin(const dyn_struct_structure_iterator_tag& d_struct) noexcept {
 	return { d_struct.it->begin() };
 }
-const dyn_struct_structure_iterator
-cend(const dyn_struct_structure_iterator_tag& d_struct) noexcept {
+const dyn_struct_const_structure_iterator
+end(const dyn_struct_const_structure_iterator_tag& d_struct) noexcept {
 	return { d_struct.it->end() };
 }
 dyn_struct_structure_iterator end(const dyn_struct_structure_iterator_tag& d_struct) noexcept {
@@ -757,6 +780,12 @@ dyn_struct_structure_iterator_tag iterate_structure(dyn_struct& d_struct) noexce
 	assert(std::holds_alternative<dyn_struct::structure_t>(d_struct.value));
 	return { &std::get<dyn_struct::structure_t>(d_struct.value) };
 }
+
+dyn_struct_const_structure_iterator_tag iterate_structure(const dyn_struct& d_struct) noexcept {
+	assert(std::holds_alternative<dyn_struct::structure_t>(d_struct.value));
+	return { &std::get<dyn_struct::structure_t>(d_struct.value) };
+}
+
 
 bool has(const dyn_struct& d_struct, std::string_view key) noexcept {
 	return std::holds_alternative<dyn_struct::structure_t>(d_struct.value) &&

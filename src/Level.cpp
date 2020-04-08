@@ -1133,7 +1133,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	};
 
 	str["camera"] = level.camera;
-	str["name"] = level.name;
+	str["name"] = level.name.empty() ? level.file_path.generic_string() : level.name;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {
 	x.pos = (Vector2f)str["pos"];

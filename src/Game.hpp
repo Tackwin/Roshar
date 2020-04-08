@@ -10,11 +10,11 @@
 
 #include "Screens/Start.hpp"
 #include "Screens/Settings.hpp"
+#include "Screens/ProfileSelection.hpp"
 
 struct Game {
 	Profile profile;
-
-	Control_Bindings control_bindings;
+	std::vector<Profile> profiles;
 
 	Editor editor;
 
@@ -26,6 +26,8 @@ struct Game {
 	bool in_test{ false };
 	bool in_full_test{ false };
 	bool in_editor{ false };
+
+	bool quit{ false };
 
 	IM::Input_Iterator this_record;
 	IM::Input_Iterator curr_record;
@@ -60,6 +62,9 @@ struct Game {
 	void update(std::uint64_t dt) noexcept;
 	void render(render::Orders& target) noexcept;
 
+	Start_Screen start_screen;
+	Settings_Screen settings_screen;
+	Profile_Selection_Screen profile_selection_screen;
 private:
 	std::uint64_t fixed_point_timeshot{ 0 };
 	std::uint64_t to_carry_over{ 0 };
@@ -74,15 +79,7 @@ private:
 
 	std::optional<Level> load_level(std::filesystem::path path) noexcept;
 
-	enum class Screen {
-		Start = 0,
-		Settings,
-		None,
-		Count
-	} current_screen = Screen::Start;
-
-	Start_Screen start_screen;
-	Settings_Screen settings_screen;
+	Screen* current_screen = &start_screen;
 };
 
 extern Game* game;

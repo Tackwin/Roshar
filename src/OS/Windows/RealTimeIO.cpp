@@ -66,6 +66,10 @@ size_t io::map_key(size_t x) noexcept {
 	case Keyboard::X:          return 'X';
 	case Keyboard::Y:          return 'Y';
 	case Keyboard::Z:          return 'Z';
+	case Keyboard::Left:       return VK_LEFT;
+	case Keyboard::Right:      return VK_RIGHT;
+	case Keyboard::Up:         return VK_UP;
+	case Keyboard::Down:       return VK_DOWN;
 	case Keyboard::Escape:     return VK_ESCAPE;
 	case Keyboard::LCTRL:      return VK_LCONTROL;
 	case Keyboard::LSHIFT:     return VK_LSHIFT;

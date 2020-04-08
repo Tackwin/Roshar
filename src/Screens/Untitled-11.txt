@@ -1,0 +1,37 @@
+Rédiger les procédures de tests du système général
+Création du nouveau plugin statistique: Fait(Luca)
+Afficher l'utilisation des différents conteneurs par type de tâches
+	- En Histogram absolue (Vertical Diagram): Fait(Luca)
+	- En Histogram relatif (Horizontal Diagram): En cours(Luca)
+Exporter l'affichage de la tache ci dessus en svg
+	- Vertical: Fait(Luca)
+	- Horizontal: En attente
+Exporter l'affichage de la tache ci dessus en png
+	- Vertical: En cours(Luca)
+	- Horizontal: En attente
+Exporter l'affichage de la tache ci dessus en csv
+	- Vertical: -
+	- Horizontal: -
+Réaliser la courbe des compteurs (Counter stats): En cours(Luca)
+Exporter:
+	- svg: En cours(Luca)
+	- png: En cours(Luca)
+	- csv: En cours(Luca)
+Réaliser ABE: -
+Exporter ABE: -
+Réaliser CPE: -
+Exporter CPE: -
+Seuil Idle: Aimerai le faire(Luca)
+Exporter Seuil Idle: 
+	- svg: Aimerai le faire(Luca)
+	- png: Aimerai le faire(Luca)
+Réaliser l'affichage de la matrcie d'affinité: -
+Exporter Matrice:
+	- svg: -
+	- png: -
+	- csv: -
+Filtrer et fusionner les conteneurs: Aimerai le faire(Luca)
+Porter l'affichage de la timeline sur qt: -
+Optimisation: A faire(Tous)
+Portage sur Vulkan: sera surement fait par personne (pas le temps)
+
