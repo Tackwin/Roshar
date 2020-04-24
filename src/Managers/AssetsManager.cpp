@@ -58,6 +58,15 @@ namespace asset {
 	auto x = xstd::uuid();
 	return load_shader(x, vertex, fragment) ? std::optional{x} : std::nullopt;
 }
+[[nodiscard]] std::optional<Key> Store_t::load_shader(
+	std::filesystem::path vertex,
+	std::filesystem::path fragment,
+	std::filesystem::path geometry
+) noexcept {
+	auto x = xstd::uuid();
+	return load_shader(x, vertex, fragment, geometry) ? std::optional{x} : std::nullopt;
+}
+
 
 [[nodiscard]] bool Store_t::load_shader(
 	Key k, std::filesystem::path vertex, std::filesystem::path fragment
@@ -71,6 +80,27 @@ namespace asset {
 		std::filesystem::canonical(fragment)
 	};
 
+
+	shaders.insert({ k, std::move(s) });
+
+	return true;
+}
+
+[[nodiscard]] bool Store_t::load_shader(
+	Key k,
+	std::filesystem::path vertex,
+	std::filesystem::path fragment,
+	std::filesystem::path geometry
+) noexcept {
+	auto new_shader = Shader::create_shader(vertex, fragment, geometry);
+	if (!new_shader) return false;
+
+	Asset_t<Shader> s{
+		std::move(*new_shader),
+		std::filesystem::canonical(vertex),
+		std::filesystem::canonical(fragment),
+		std::filesystem::canonical(geometry)
+	};
 
 	shaders.insert({ k, std::move(s) });
 
@@ -188,6 +218,13 @@ void Store_t::monitor_path(std::filesystem::path dir) noexcept {
 					if (x.asset.build_shaders()) printf("Rebuilt shader.\n");
 					else printf("Faield to rebuild shader.\n");
 				}
+				else if (x.geometry == path) {
+
+					if (!x.asset.load_geometry(path)) continue;
+
+					if (x.asset.build_shaders()) printf("Rebuilt shader.\n");
+					else printf("Failed to rebuild shader.\n");
+				}
 			}
 			return false;
 		}
@@ -214,7 +251,7 @@ void Store_t::load_known_textures() noexcept {
 	X("assets/textures/basic_binding_indicator_body.png", Basic_Binding_Indicator_Body);
 	X("assets/textures/dust_sheet.png",                   Dust_Sheet                  );
 	X("assets/textures/indicator.png",                    Indicator                   );
-	X("assets/textures/guy_sheet.png",                    Guy_Sheet                   );
+	X("assets/textures/poulp-sheet.png",                  Guy_Sheet                   );
 	X("assets/textures/card_plus.png",                    Card_Plus                   );
 	X("assets/textures/rock.png",                         Rock                        );
 	X("assets/textures/key.png",                          Key_Item                    );
@@ -246,9 +283,10 @@ void Store_t::load_known_shaders() noexcept {
 	std::optional<Key> opt;
 
 
-#define X(f, v, x)\
+#define X(f, v, g, x)\
 	printf("Loading " #x " shader... ");\
-	opt = load_shader(f, v);\
+	if (*g == '\0') opt = load_shader(f, v);\
+	else opt = load_shader(f, v, g);\
 	if (opt) {\
 		Shader_Id::x = *opt;\
 		printf("sucess :) !\n");\
@@ -257,9 +295,15 @@ void Store_t::load_known_shaders() noexcept {
 		printf("failed :( !\n");\
 	}
 
-	X("assets/shaders/default.vertex", "assets/shaders/default.fragment", Default);
-	X("assets/shaders/light.vertex",   "assets/shaders/light.fragment",   Light  );
-	X("assets/shaders/hdr.vertex",     "assets/shaders/hdr.fragment",     HDR    );
+	X("assets/shaders/default.vertex", "assets/shaders/default.fragment", "", Default);
+	X("assets/shaders/light.vertex",   "assets/shaders/light.fragment",   "", Light  );
+	X("assets/shaders/hdr.vertex",     "assets/shaders/hdr.fragment",     "", HDR    );
+	X(
+		"assets/shaders/line.vertex",
+		"assets/shaders/hdr.fragment",
+		"assets/shaders/line.geometry",
+		Line
+	);
 #undef X
 }
 

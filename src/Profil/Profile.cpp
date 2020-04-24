@@ -4,7 +4,7 @@ void to_dyn_struct(dyn_struct& str, const Profile& profile) noexcept {
 	str = dyn_struct::structure_t{};
 
 	str["name"] = profile.name;
-
+	str["uptime"] = profile.uptime;
 	str["times"] = dyn_struct::structure_t{};
 
 	for (auto& [k, v] : profile.best_time) {
@@ -23,6 +23,7 @@ void from_dyn_struct(const dyn_struct& str, Profile& profile) noexcept {
 		profile.best_time[k].best = (float)*at(v, "best");
 		profile.best_time[k].last = (float)*at(v, "last");
 	}
+	profile.uptime = has(str, "uptime") ? (float)str["uptime"] : 0.f;
 
 	profile.name = (std::string)str["name"];
 	profile.bindings = (Control_Bindings)str["bindings"];

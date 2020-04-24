@@ -43,7 +43,7 @@ void kit::key_prompt(std::string label, float size, Control_Bindings::Action& bi
 	std::uint32_t style = Style::Normal;
 	if (it.hovering) style |= Style::Underline;
 
-	auto& text_size = asset::Store.get_font(asset::Font_Id::Consolas).compute_size(label, size);
+	auto text_size = asset::Store.get_font(asset::Font_Id::Consolas).compute_size(label, size);
 
 	auto back_rec = Rectanglef{
 		Environment.window_width * .1f,
@@ -139,12 +139,24 @@ bool kit::card(Profile& profile) noexcept {
 
 	state.orders.late_push_rec(rec, state.card_color);
 	state.orders.late_push_text(
-		pos + Vector2f{ state.card_padding, state.card_padding },
+		pos + Vector2f{ size.x / 2.f, size.y * .9f },
 		asset::Font_Id::Consolas,
 		name,
 		state.card_title_size,
-		{ 0, 0 }
+		{ 0.5, 1.f }
 	);
+
+	std::string uptime;
+	uptime.resize(5);
+	sprintf(uptime.data(), "%5.f", profile.uptime);
+	state.orders.late_push_text(
+		pos + Vector2f{ size.x / 2.f, size.y * .8f },
+		asset::Font_Id::Consolas,
+		uptime,
+		state.card_uptime_size,
+		{ 0.5, 1.f }
+	);
+
 
 	pos.x += size.x + state.card_margin;
 	state.current_pos.x = pos.x;
@@ -168,8 +180,6 @@ std::optional<kit::State::Card_State> kit::card_plus() noexcept {
 	auto name = "New";
 	auto size = font.compute_size(name, state.card_title_size);
 
-	if (state.last_input->is_just_pressed(Mouse::Left)) printf("Bite\n");
-
 	pos.x += state.card_margin;
 
 	size.y += 2 * state.card_padding;
@@ -189,7 +199,7 @@ std::optional<kit::State::Card_State> kit::card_plus() noexcept {
 		};
 		state.current_pos = pos + Vector2f{ size.x / 2, size.y * .9f },
 		state.current_origin = {.5f, 1.f};
-		card_state.name = kit::input_text("Player Name", state.card_title_size);
+		card_state.name = kit::text_input("Player Name", state.card_title_size);
 	} else {
 		state.orders.late_push_text(
 			pos + Vector2f{ size.x / 2, size.y * .9f },
@@ -232,8 +242,8 @@ std::optional<kit::State::Card_State> kit::card_plus() noexcept {
 
 // >SEE: It seems that win32 has a feature to handle carets(text cursor) natively. I should use that
 // i guess it would be usefull to the semantic of the program.
-std::string kit::input_text(const std::string& default, float size) noexcept {
-	auto& input_state = state.input_text_states[default];
+std::string kit::text_input(std::string def, float size) noexcept {
+	auto& input_state = state.input_text_states[def];
 
 	if (IM::iterator_is_valid(state.last_input)) {
 		if (state.last_input->new_character != '\0') {
@@ -272,7 +282,7 @@ std::string kit::input_text(const std::string& default, float size) noexcept {
 		state.orders.late_push_text(
 			pos,
 			asset::Font_Id::Consolas,
-			default,
+			def,
 			size,
 			state.current_origin,
 			render::Text_Info::Style::Normal,
@@ -283,7 +293,7 @@ std::string kit::input_text(const std::string& default, float size) noexcept {
 			pos, asset::Font_Id::Consolas, input_state.str, size, state.current_origin
 		);
 
-	auto displayed = input_state.str.empty() ? default : input_state.str;
+	auto displayed = input_state.str.empty() ? def : input_state.str;
 
 	auto& font = asset::Store.get_font(asset::Font_Id::Consolas);
 	auto cursor_pos = font.compute_size(displayed.substr(0, input_state.cursor_pos), size);

@@ -332,7 +332,7 @@ void InputsManager::update(float dt) {
 		new_record.joystick_buttons_infos[i].pressed = pressed;
 	}
 	
-	new_record.focused = true;
+	new_record.focused = io::is_window_focused();
 	new_record.scroll = wheel_scroll;
 
 	Vector2f last_mouse_screen_pos =

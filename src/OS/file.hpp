@@ -14,6 +14,15 @@ namespace file {
 		Win_File_Read,
 		Win_File_Write,
 		Win_File_Incomplete_Write,
+		
+		Web_Create_File = 0,
+		Web_File_Size,
+		Web_File_Read,
+		Web_File_Write,
+		Web_File_Incomplete_Write,
+
+		Unsupported_Operation,
+
 		No_Error
 	};
 

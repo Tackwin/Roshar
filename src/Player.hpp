@@ -19,6 +19,7 @@ struct Player {
 	};
 
 	Rectanglef hitbox{ 0, 0, .4f, .7f };
+	Vector2f sprite_size{ 0.4f, 0.8f };
 	Vector2f velocity;
 	Vector2f forces;
 

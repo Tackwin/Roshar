@@ -23,6 +23,7 @@ class Editor {
 		Key_Item,
 		Moving_Block,
 		Torch,
+		Flowing_Water,
 		Size
 	};
 	std::optional<Creating_Element> element_to_create;

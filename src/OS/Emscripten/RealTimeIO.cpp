@@ -96,4 +96,9 @@ size_t io::map_controller(size_t x) noexcept {
 	return {};
 }
 
+bool io::is_window_focused() noexcept {
+	// >TODO(Tackwin)
+	return true;
+}
+
 #endif

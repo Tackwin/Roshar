@@ -40,6 +40,8 @@ struct Profile {
 	Control_Bindings bindings;
 
 	std::string current_level;
+
+	float uptime = .0f;
 };
 
 extern void to_dyn_struct(dyn_struct& str, const Profile& profile) noexcept;

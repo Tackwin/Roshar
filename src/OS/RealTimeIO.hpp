@@ -167,4 +167,5 @@ namespace io {
 	extern size_t map_key(size_t x) noexcept;
 	extern size_t map_mouse(size_t x) noexcept;
 	extern size_t map_controller(size_t x) noexcept;
+	extern bool is_window_focused() noexcept;
 }

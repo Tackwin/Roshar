@@ -19,6 +19,7 @@ struct Friction_Zone;
 struct Key_Item;
 struct Torch;
 struct Moving_Block;
+struct Flowing_Water;
 
 template<typename T>
 struct Circle;
@@ -27,6 +28,7 @@ struct Vector;
 template<typename T>
 struct Rectangle_t;
 
+[[nodiscard]] extern bool test(const Flowing_Water& x, const Rectangle_t<float>& rec) noexcept;
 [[nodiscard]] extern bool test(const Moving_Block& x, const Rectangle_t<float>& rec) noexcept;
 [[nodiscard]] extern bool test(const Player& x, const Rectangle_t<float>& rec) noexcept;
 [[nodiscard]] extern bool test(const Friction_Zone& b, const Rectangle_t<float>& x) noexcept;

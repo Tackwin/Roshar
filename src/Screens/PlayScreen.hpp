@@ -20,6 +20,9 @@ public:
 	bool in_test{ false };
 	bool in_full_test{ false };
 	bool in_editor{ false };
+	bool in_menu{ false };
+
+	bool go_main_menu{false};
 
 	Rectanglef ui_view{ {0, 0}, {1280, 720 } };
 
@@ -43,6 +46,8 @@ public:
 	float camera_fade_out_timer = 0;
 	float camera_fade_in_timer = 0;
 
+	double start_level_time = 0;
+
 	void go_in_test() noexcept;
 	void go_in_replay() noexcept;
 	void go_in_full_test() noexcept;
@@ -51,8 +56,12 @@ public:
 	std::optional<Level> load_level(std::filesystem::path path) noexcept;
 
 	void input(IM::Input_Iterator it) noexcept;
+	void input_menu(IM::Input_Iterator it) noexcept;
 	void update(float dt) noexcept;
+	void update_menu(float dt) noexcept;
 	void render(render::Orders& target) noexcept;
+	void render_menu(render::Orders& target) noexcept;
+
 	Screen* next() noexcept;
 	void new_time(float time) noexcept;
 };

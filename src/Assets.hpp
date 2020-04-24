@@ -17,6 +17,7 @@ namespace asset {
 		inline static Key Default{ 1 };
 		inline static Key Light{ 2 };
 		inline static Key HDR{ 3 };
+		inline static Key Line{ 4 };
 	};
 	struct Animation_Id {
 		inline static Key Guy{ 1 };

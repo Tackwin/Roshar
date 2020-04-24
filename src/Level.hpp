@@ -15,6 +15,16 @@
 
 #include "Player.hpp"
 
+struct Flowing_Water {
+	bool editor_selected{ false };
+
+	std::vector<Vector2f> path;
+	float width{ 10.f };
+	float flow_rate{ 1.f };
+
+	void render(render::Orders& target) const noexcept;
+};
+
 struct Block {
 	bool editor_selected{ false };
 
@@ -252,6 +262,7 @@ struct Level {
 	std::vector<Moving_Block>       moving_blocks;
 	std::vector<Trigger_Zone>       trigger_zones;
 	std::vector<Prest_Source>       prest_sources;
+	std::vector<Flowing_Water>      flowing_waters;
 	std::vector<Friction_Zone>      friction_zones;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones;
 

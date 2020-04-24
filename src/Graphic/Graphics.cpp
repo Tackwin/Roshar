@@ -501,6 +501,41 @@ void render::immediate(Line_Info info) noexcept {
 
 }
 
+
+void render::immediate(Textured_Line_Info info) noexcept {
+	static GLuint vao{ 0 };
+	static GLuint vbo{ 0 };
+
+	if (!vao) {
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+#ifdef GL_DEBUG
+		auto label = "textured_line_info_vbo";
+		glObjectLabel(GL_BUFFER, vbo, (GLsizei)strlen(label) - 1, label);
+#endif
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, info.path_size * sizeof(Vector2f), info.paths, GL_DYNAMIC_DRAW);
+
+	auto& shader = asset::Store.get_shader(asset::Shader_Id::Default);
+	shader.use();
+	shader.set_window_size({ Environment.window_width, Environment.window_height });
+	shader.set_view(current_view.world_bounds);
+	shader.set_origin({ info.thickness * .5f, 0 });
+	shader.set_uniform("use_normal_texture", false);
+	shader.set_use_texture(false);
+	shader.set_texture(0);
+
+	glBindVertexArray(vao);
+	glDrawArrays(GL_LINE_STRIP_ADJACENCY, 0, info.path_size);
+
+}
+
 void render::immediate(Point_Light_Info info) noexcept {
 	auto& shader = asset::Store.get_shader(asset::Shader_Id::Light);
 	shader.use();
@@ -514,7 +549,7 @@ void render::immediate(Point_Light_Info info) noexcept {
 
 void render::immediate(Text_Info info) noexcept {
 	auto& font = asset::Store.get_font(info.font_id);
-	auto& texture_size = asset::Store.get_albedo(font.texture_id).get_size();
+	auto texture_size = asset::Store.get_albedo(font.texture_id).get_size();
 	Vector2f pos = info.pos;
 
 	auto size = font.compute_size(std::string_view{info.text, info.text_size}, info.height);

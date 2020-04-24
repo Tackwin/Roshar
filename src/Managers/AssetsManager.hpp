@@ -28,6 +28,7 @@ namespace asset {
 		Shader asset;
 		std::filesystem::path vertex;
 		std::filesystem::path fragment;
+		std::filesystem::path geometry;
 	};
 
 	template<>
@@ -60,8 +61,19 @@ namespace asset {
 		[[nodiscard]] std::optional<Key> load_shader(
 			std::filesystem::path vertex, std::filesystem::path fragment
 		) noexcept;
+		[[nodiscard]] std::optional<Key> load_shader(
+			std::filesystem::path vertex,
+			std::filesystem::path fragment,
+			std::filesystem::path geometry
+		) noexcept;
 		[[nodiscard]] bool load_shader(
 			Key k, std::filesystem::path vertex, std::filesystem::path fragment
+		) noexcept;
+		[[nodiscard]] bool load_shader(
+			Key k,
+			std::filesystem::path vertex,
+			std::filesystem::path fragment,
+			std::filesystem::path geometry
 		) noexcept;
 
 		[[nodiscard]] Animation_Sheet& get_animation(Key k) noexcept;

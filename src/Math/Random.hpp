@@ -22,7 +22,7 @@ static inline uint32_t pcg32_random_r(pcg32_random_t* rng) {
     return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-static inline uint32_t random() {
+static inline uint32_t randomu() {
     return pcg32_random_r(&pcg32_global);
 }
 
@@ -33,13 +33,13 @@ END minimalist PCG code
 // map random value to [0,range) with slight bias
 static inline uint32_t random(uint32_t range) {
     uint64_t random32bit, multiresult;
-    random32bit =  random();
+    random32bit =  randomu();
     multiresult = random32bit * range;
     return multiresult >> 32; // [0, range)
 }
 // map random value to [0,range) with slight bias
 static inline double randomf() {
-    return random() / (double)(0xffff'ffff);
+    return randomu() / (double)(0xffff'ffff);
 }
 static inline double randomf(double range) {
     return range * randomf();

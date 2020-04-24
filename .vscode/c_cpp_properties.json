@@ -17,7 +17,13 @@
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.23.28105/bin/Hostx64/x64/cl.exe",
             "cStandard": "c11",
             "cppStandard": "c++20",
-            "intelliSenseMode": "msvc-x64"
+            "intelliSenseMode": "msvc-x64",
+            "forcedInclude": [
+                "src/global.hpp",
+                "src/xstd.hpp",
+                "src/constexpr.hpp",
+                "src/macros.hpp"
+            ]
         },
         {
             "name": "Roshar",

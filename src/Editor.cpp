@@ -207,6 +207,29 @@ void Editor::render(render::Orders& target) noexcept {
 			for (auto& y : game->play_screen.current_level.friction_zones) if (pred(y))
 				y.friction = friction;
 	}
+	
+	n_selected = std::count_if(BEG_END(game->play_screen.current_level.flowing_waters), pred);
+	if (n_selected) {
+		ImGui::Separator();
+		ImGui::Text("Flowing Waters");
+		float width = { 0 };
+		float flow_rate = { 0 };
+		if (n_selected == 1) {
+			auto it = std::find_if(BEG_END(game->play_screen.current_level.flowing_waters), pred);
+
+			width = it->width;
+			flow_rate = it->flow_rate;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::SliderFloat("Width", &width, 0, 100))
+			for (auto& y : game->play_screen.current_level.flowing_waters) if (pred(y))
+				y.width = width;
+		if (ImGui::SliderFloat("Flow Rate", &flow_rate, 0, 100))
+			for (auto& y : game->play_screen.current_level.flowing_waters) if (pred(y))
+				y.flow_rate = flow_rate;
+		ImGui::Text("To add the next point press A. To undo the last point Shift + A");
+	}
 
 	n_selected = std::count_if(BEG_END(game->play_screen.current_level.moving_blocks), pred);
 	if (n_selected) {
@@ -555,6 +578,7 @@ void Editor::render(render::Orders& target) noexcept {
 					X(Friction_Zone);
 					X(Key_Item);
 					X(Torch);
+					X(Flowing_Water);
 					X(Moving_Block);
 					default: assert(false);
 					break;
@@ -567,6 +591,7 @@ void Editor::render(render::Orders& target) noexcept {
         );
 		element_to_create = (Creating_Element)x;
 		require_dragging =
+			element_to_create != Creating_Element::Flowing_Water &&
 			element_to_create != Creating_Element::Prest &&
 			element_to_create != Creating_Element::Key_Item &&
 			element_to_create != Creating_Element::Rock &&
@@ -583,7 +608,7 @@ void Editor::render(render::Orders& target) noexcept {
 				auto ext = p.path().extension();
 				if (ext != ".json") continue;
 
-				printf("Resaving: %ws... ", p.path().c_str());
+				printf("Resaving: %s... ", p.path().generic_string().c_str());
 				if (auto l = load_from_json_file(p); l) {
 					save_to_json_file((Level)(*l), p);
 				}
@@ -739,13 +764,38 @@ void Editor::update(float dt) noexcept {
 	}
 
 	if (IM::isKeyJustPressed(Keyboard::A)) {
-		for (auto& x : game->play_screen.current_level.moving_blocks) {
+		for (size_t i = game->play_screen.current_level.moving_blocks.size() - 1; i + 1 > 0; --i) {
+			auto& x = game->play_screen.current_level.moving_blocks[i];
 			if (!x.editor_selected) continue;
 
-			x.waypoints.push_back(get_mouse_pos());
+			if (IM::isKeyPressed(Keyboard::LSHIFT) || IM::isKeyPressed(Keyboard::RSHIFT)) {
+				if (!x.waypoints.empty()) x.waypoints.pop_back();
+			} else {
+				x.waypoints.push_back(get_mouse_pos());
+			}
+
+			if (x.waypoints.empty()) game->play_screen.current_level.moving_blocks.erase(
+				BEG(game->play_screen.current_level.moving_blocks) + i
+			);
 
 			if (x.waypoints.size() > 1)
 				x.max_t += x.waypoints.back().dist_to(*(END(x.waypoints) - 2));
+		}
+		
+		for (size_t i = game->play_screen.current_level.flowing_waters.size() - 1; i + 1 > 0; --i) {
+			auto& x = game->play_screen.current_level.flowing_waters[i];
+			if (!x.editor_selected) continue;
+
+			if (IM::isKeyPressed(Keyboard::LSHIFT) || IM::isKeyPressed(Keyboard::RSHIFT)) {
+				if (!x.path.empty()) x.path.pop_back();
+			} else {
+				x.path.push_back(get_mouse_pos());
+			}
+
+			
+			if (x.path.empty()) game->play_screen.current_level.flowing_waters.erase(
+				BEG(game->play_screen.current_level.flowing_waters) + i
+			);
 		}
 	}
 
@@ -772,6 +822,12 @@ void Editor::update(float dt) noexcept {
 	}
 	if (element_creating && element_to_create && IM::isMouseJustPressed(Mouse::Left)) {
 		switch (*element_to_create) {
+			case Creating_Element::Flowing_Water: {
+				Flowing_Water w;
+				w.path.push_back(get_mouse_pos());
+				game->play_screen.current_level.flowing_waters.push_back(w);
+				break;
+			}
 			case Creating_Element::Prest: {
 				Prest_Source p;
 				p.pos = get_mouse_pos();
@@ -841,15 +897,16 @@ void Editor::update(float dt) noexcept {
 		iter(game->play_screen.current_level.rocks);
 		iter(game->play_screen.current_level.doors);
 		iter(game->play_screen.current_level.blocks);
+		iter(game->play_screen.current_level.torches);
 		iter(game->play_screen.current_level.key_items);
 		iter(game->play_screen.current_level.dry_zones);
 		iter(game->play_screen.current_level.kill_zones);
 		iter(game->play_screen.current_level.next_zones);
 		iter(game->play_screen.current_level.dispensers);
-		iter(game->play_screen.current_level.torches);
 		iter(game->play_screen.current_level.trigger_zones);
 		iter(game->play_screen.current_level.moving_blocks);
 		iter(game->play_screen.current_level.prest_sources);
+		iter(game->play_screen.current_level.flowing_waters);
 		iter(game->play_screen.current_level.friction_zones);
 		iter(game->play_screen.current_level.auto_binding_zones);
 
@@ -1008,6 +1065,7 @@ void Editor::delete_all_selected() noexcept {
 	iter(game->play_screen.current_level.prest_sources);
 	iter(game->play_screen.current_level.decor_sprites);
 	iter(game->play_screen.current_level.friction_zones);
+	iter(game->play_screen.current_level.flowing_waters);
 	iter(game->play_screen.current_level.auto_binding_zones);
 
 #define S(x) game->play_screen.current_level.x.size()
@@ -1025,6 +1083,7 @@ void Editor::delete_all_selected() noexcept {
 		S(prest_sources) +
 		S(decor_sprites) +
 		S(friction_zones) +
+		S(flowing_waters) +
 		S(auto_binding_zones) +
 		S(dispensers);
 #undef S

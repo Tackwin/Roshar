@@ -9,9 +9,9 @@
 #include "Collision.hpp"
 #include "Math/Circle.hpp"
 
-constexpr size_t Idle_Animation      = 0;
-constexpr size_t Run_Animation       = 1;
-constexpr size_t Jump_Animation      = 2;
+constexpr size_t Run_Animation       = 0;
+constexpr size_t Jump_Animation      = 1;
+constexpr size_t Idle_Animation      = 2;
 constexpr size_t Jump_Idle_Animation = 3;
 
 Animation_Sheet& get_animation() noexcept;
@@ -252,20 +252,22 @@ void Player::render(render::Orders& target) const noexcept {
 void Player::render(render::Orders& target, Graphic_State state) const noexcept {
 	if (Environment.show_sprite) {
 		target.push_sprite(
-			graphic_state.world_rec, asset::Texture_Id::Guy_Sheet, graphic_state.texture_rec
+			state.world_rec, asset::Texture_Id::Guy_Sheet, state.texture_rec
 		);
 	}
 	else {
 		target.push_rectangle(state.world_rec, { grappled ? 0.2 : 0.7, 0.1, 1, 1 });
 	}
 
+	target.push_rectangle(hitbox, {1, 0, 0, 0.1});
+
 	render_bindings(target);
 }
 
 
 Player::Graphic_State Player::get_graphic_state() const noexcept {
-	auto w = Rectanglef{ hitbox }.zoom(1.0f);
-	if (last_dir == Dir::Left) w.flip_x();
+	auto w = Rectanglef{ hitbox.pos, sprite_size }.zoom(1.0f);
+	if (last_dir == Dir::Left) w = w.flip_x();
 	return {
 		.world_rec = w,
 		.texture_rec = animation.get_rec()

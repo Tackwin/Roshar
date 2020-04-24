@@ -180,3 +180,8 @@ bool test(const Door& b, const Player& x) noexcept {
 bool test(const Decor_Sprite& b, const Player& x) noexcept {
 	return b.rec.intersect(x.hitbox);
 }
+
+bool test(const Flowing_Water& x, const Rectangle_t<float>& rec) noexcept {
+	for (auto& e : x.path) if (rec.in(e)) return true;
+	return false;
+}

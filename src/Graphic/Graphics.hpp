@@ -21,6 +21,14 @@ namespace render {
 		float thickness;
 	};
 
+	struct Textured_Line_Info {
+		Vector2f* paths;
+		size_t path_size;
+		float thickness;
+		asset::Key texture;
+		asset::Key shader;
+	};
+
 	struct Sprite_Info {
 		Vector2f pos;
 		Vector2f size;
@@ -87,6 +95,7 @@ namespace render {
 
 	struct Order {
 		union {
+			Textured_Line_Info textured_line;
 			Point_Light_Info point_light;
 			Ambient_Light ambient_light;
 			Rectangle_Info rectangle;
@@ -107,6 +116,7 @@ namespace render {
 			Sprite = 0,
 			Ambient_Light_Push,
 			Ambient_Light_Pop,
+			Textured_Line,
 			Point_Light,
 			Rectangle,
 			View_Push,
@@ -139,6 +149,13 @@ namespace render {
 		Vector2f b,
 		Vector4d color,
 		float thickness
+	) noexcept;
+	Order textured_line(
+		Vector2f* path,
+		size_t path_size,
+		float thickness,
+		asset::Key texture,
+		asset::Key shader
 	) noexcept;
 	Order sprite(
 		Vector2f pos,
@@ -189,9 +206,24 @@ namespace render {
 		void pop_ambient_light() noexcept;
 
 		void append(const Orders& orders) noexcept {
-			objects.insert(std::end(objects), BEG_END(orders.objects));
-			late.insert(std::end(late), BEG_END(orders.late));
-			lights.insert(std::end(lights), BEG_END(orders.lights));
+			auto f = [&](const auto& other, auto& me) {
+				for (auto x : other) {
+					switch(x.kind) {
+						default: break;
+						case Order::Kind::Textured_Line:
+							x.textured_line.paths =
+								(Vector2f*)((size_t)(x.textured_line.paths) + data.size());
+							break;
+						case Order::Kind::Text:
+							x.text.text = (char*)((size_t)x.text.text + data.size());
+					}
+					me.push_back(x);
+				}
+			};
+			f(orders.objects, objects);
+			f(orders.late, late);
+			f(orders.lights, lights);
+
 			data.insert(std::end(data), BEG_END(orders.data));
 		}
 
@@ -200,6 +232,32 @@ namespace render {
 		}
 		void push_line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
 			objects.emplace_back(line(a, b, color, thickness));
+		}
+		void push_textured_line(
+			std::vector<Vector2f> path,
+			float thickness,
+			asset::Key texture,
+			asset::Key shader
+		) noexcept {
+			data.resize(data.size() + path.size() * sizeof(Vector2f));
+			memcpy(data.data() + data.size(), path.data(), path.size() * sizeof(Vector2f));
+
+			objects.emplace_back(textured_line(
+				(Vector2f*)data.data(), path.size(), thickness, texture, shader
+			));
+		}
+		void late_push_textured_line(
+			std::vector<Vector2f> path,
+			float thickness,
+			asset::Key texture,
+			asset::Key shader
+		) noexcept {
+			data.resize(data.size() + path.size() * sizeof(Vector2f));
+			memcpy(data.data() + data.size(), path.data(), path.size() * sizeof(Vector2f));
+
+			late.emplace_back(textured_line(
+				(Vector2f*)data.data(), path.size(), thickness, texture, shader
+			));
 		}
 		void late_push_line(Vector2f a, Vector2f b, Vector4d color, float thickness) noexcept {
 			late.emplace_back(line(a, b, color, thickness));
@@ -386,4 +444,5 @@ namespace render {
 	void immediate(Rectangle_Info      info) noexcept;
 	void immediate(Arrow_Info          info) noexcept;
 	void immediate(Line_Info           info) noexcept;
+	void immediate(Textured_Line_Info  info) noexcept;
 }

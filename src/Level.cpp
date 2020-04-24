@@ -17,6 +17,12 @@
 
 void match_and_destroy_keys(Player& p, Door& d) noexcept;
 
+void Flowing_Water::render(render::Orders& target) const noexcept {
+	for (auto& x : path) {
+		target.push_circle(0.1f, x, { 0.1, 0.15, 0.5, 1.0 });
+	}
+}
+
 void Block::render(render::Orders& target) const noexcept {
 	Vector4d color = { 1, 1, 1, 1 };
 	if (back) color = { .2, .8, .2, 1 };
@@ -369,6 +375,8 @@ void Level::render(render::Orders& target) const noexcept {
 	renders(prest_sources);
 	renders(projectiles);
 	renders(rocks);
+
+	renders(flowing_waters);
 
 	for (auto& x : markers) target.push_circle(0.05f, x, { 1, 0, 0, 1 });
 
@@ -916,6 +924,7 @@ void Level::resume() noexcept {
 	iter(trigger_zones);
 	iter(prest_sources);
 	iter(friction_zones);
+	iter(flowing_waters);
 	iter(auto_binding_zones);
 }
 
@@ -942,6 +951,19 @@ void match_and_destroy_keys(Player& p, Door& d) noexcept {
 		}
         parent_loop:;
 	}
+}
+
+void from_dyn_struct(const dyn_struct& str, Flowing_Water& water) noexcept {
+	water.path      = (std::vector<Vector2f>)str["path"];
+	water.flow_rate = (float)str["flow_rate"];
+	water.width     = (float)str["width"];
+}
+
+void to_dyn_struct(dyn_struct& str, const Flowing_Water& water) noexcept {
+	str = dyn_struct::structure_t{};
+	str["path"] = water.path;
+	str["flow_rate"] = water.flow_rate;
+	str["width"] = water.width;
 }
 
 void from_dyn_struct(const dyn_struct& str, Moving_Block& block) noexcept {
@@ -1087,6 +1109,7 @@ void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
 	X(rocks);
 	X(markers);
 	X(auto_binding_zones);
+	X(flowing_waters);
 	X(torches);
 #undef X
 
@@ -1121,6 +1144,7 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["trigger_zones"]       = level.trigger_zones;
 	str["torches"]             = level.torches;
 	str["moving_blocks"]       = level.moving_blocks;
+	str["flowing_waters"]      = level.flowing_waters;
 
 	auto& player = str["player"] = dyn_struct::structure_t{};
     

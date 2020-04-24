@@ -134,6 +134,7 @@ void Texture::set_resize_filter(Texture::Filter filter) noexcept{
 			set_parameteri(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			set_parameteri(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
+		default: assert(false);
 	}
 }
 

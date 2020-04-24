@@ -1,7 +1,6 @@
 #include <imgui.h>
 #include <atomic>
 #include <GL/glew.h>
-#include <GL/wglew.h>
 
 #include "Graphic/Graphics.hpp"
 #include "Graphic/Graphics.hpp"
@@ -93,6 +92,7 @@ void update_game(std::uint64_t dt) noexcept {
 			case Debug_Framebuffer::Depth:     *out = "Depth";   break;
 			case Debug_Framebuffer::Normal:    *out = "Normal";  break;
 			case Debug_Framebuffer::Position:  *out = "Position"; break;
+			default: *out = "??"; break;
 			}
 			return true;
 		},
@@ -157,9 +157,13 @@ void render_orders(render::Orders& orders) noexcept {
 		case render::Order::Kind::Line:
 			render::immediate(x.line);
 			break;
-		case render::Order::Kind::Text:
+		case render::Order::Kind::Text: {
+			size_t idx = (size_t)&x.text.text[0];
+			char* ptr = (char*)&orders.data[idx];
+			x.text.text = ptr;
 			render::immediate(x.text);
 			break;
+		}
 		default: assert("Logic error.");
 		}
 	}

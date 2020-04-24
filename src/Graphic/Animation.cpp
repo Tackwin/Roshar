@@ -20,7 +20,10 @@ void Animation::update(float dt) noexcept {
 	else {
 		size_t idx = once_stack.back();
 		rows[idx] += dt;
-		if (rows[idx] >= sheet.entries[idx].time) once_stack.pop_back();
+		if (rows[idx] >= sheet.entries[idx].time) {
+			rows[idx] = 0;
+			once_stack.pop_back();
+		}
 	}
 }
 

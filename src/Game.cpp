@@ -3,7 +3,7 @@
 #include "dyn_struct.hpp"
 #include "Graphic/Graphics.hpp"
 
-#include "Graphic/UI/Kit.hpp" 
+#include "Graphic/UI/Kit.hpp"
 
 Game* game = nullptr;
 

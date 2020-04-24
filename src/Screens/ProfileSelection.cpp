@@ -32,7 +32,12 @@ void Profile_Selection_Screen::render(render::Orders& target) noexcept {
 }
 
 Screen* Profile_Selection_Screen::next() noexcept {
-	return (enter_game || selected.has_value()) ? &(game->play_screen) : nullptr;
+	if (enter_game || selected.has_value()) {
+		enter_game = false;
+		selected.reset();
+		return &game->play_screen;
+	}
+	return nullptr;
 }
 
 void Profile_Selection_Screen::add_new_profile(std::string name) noexcept {

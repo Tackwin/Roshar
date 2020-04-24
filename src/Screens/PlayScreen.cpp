@@ -1,6 +1,7 @@
 #include "PlayScreen.hpp"
 
 #include "Game.hpp"
+#include "Graphic/UI/Kit.hpp"
 
 void Play_Screen::input(IM::Input_Iterator it) noexcept {
 	this_record = it;
@@ -24,14 +25,11 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 		phantom_paths.push_back({});
 		in_replay = false;
 	}
-	if (IM::isKeyPressed(Keyboard::Escape)) {
-		if (in_replay || in_full_test || in_test) {
-			to_swap_level = copy_level;
-			in_test = false;
-			in_replay = false;
-			in_full_test = false;
-		}
+	if (IM::isKeyJustPressed(Keyboard::Escape)) {
+		in_menu = !in_menu;
 	}
+
+	if (in_menu) input_menu(it);
 
 	if (IM::isKeyJustPressed(Keyboard::F10)) {
 		to_swap_level = copy_level;
@@ -50,6 +48,8 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 		to_swap_level = copy_level;
 		return go_in_test();
 	}
+
+
 	if (IM::isKeyJustPressed(Keyboard::Quote) || IM::isKeyJustPressed(Joystick::Y)) {
 		died = true;
 	}
@@ -58,7 +58,7 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 		return;
 	}
 
-	if ((in_replay || in_test) && begin_record && end_record) {
+	if ((in_replay || in_test) && begin_record && end_record && !in_editor) {
 		if (curr_record == std::next(*end_record)) {
 			curr_record = *begin_record;
 			this_record = curr_record;
@@ -71,9 +71,14 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 	if (!in_editor) current_level.input(this_record);
 	if (!this_record->focused) return;
 	if (input_active_timer > 0.f) return;
+
 }
 
 void Play_Screen::update(float dt) noexcept {
+	if (in_menu) {
+		update_menu(dt);
+		return;
+	}
 	if (to_swap_level) {
 		copy_level = *to_swap_level;
 		current_level = *to_swap_level;
@@ -86,6 +91,10 @@ void Play_Screen::update(float dt) noexcept {
 
 		if (in_full_test) return go_in_test();
 		if (in_replay) current_level.feed_phantom_path(phantom_paths);
+	
+		if (!in_replay && !in_test && !in_full_test && !in_editor){
+			start_level_time = seconds();
+		}
 	}
 
 	if (!in_editor) {
@@ -94,6 +103,7 @@ void Play_Screen::update(float dt) noexcept {
 			if (camera_fade_out_timer > 0.f) return;
 
 			to_swap_level = copy_level;
+			game->profile->uptime += seconds() - start_level_time;
 			input_active_timer = Input_Active_Time;
 			camera_fade_in_timer = Camera_Fade_Time;
 			return;
@@ -111,6 +121,8 @@ void Play_Screen::update(float dt) noexcept {
 
 	if (succeed) {
 		if (!in_test && !in_replay) {
+			printf("%f\n", seconds() - start_level_time);
+			game->profile->uptime += seconds() - start_level_time;
 			// >TODO(Tackwin): go in replay mode. Don't forget to setup your input iterators.
 			go_in_replay();
 		}
@@ -140,6 +152,8 @@ void Play_Screen::update(float dt) noexcept {
 }
 
 void Play_Screen::render(render::Orders& target) noexcept {
+	if (in_menu) render_menu(target);
+
 	current_level.render(target);
 
 	if (in_editor) {
@@ -185,7 +199,62 @@ void Play_Screen::render(render::Orders& target) noexcept {
 	target.late_push_text({0, 0}, asset::Font_Id::Consolas, str, 10, {0, 0});
 }
 
+void Play_Screen::input_menu(IM::Input_Iterator it) noexcept {
+	kit::get_state().current_origin = {0.5f, 0.5f};
+	kit::get_state().current_pos = {
+		Environment.window_width / 2.f, 4 * Environment.window_height / 5.f
+	};
+	if (kit::button("Return", 48)) in_menu = !in_menu;
+	
+	kit::get_state().current_pos = {
+		Environment.window_width / 2.f, 3 * Environment.window_height / 5.f
+	};
+	if (kit::button("Die", 48)) {
+		if (in_replay || in_full_test || in_test) {
+			to_swap_level = copy_level;
+			in_test = false;
+			in_replay = false;
+			in_full_test = false;
+		} else {
+			in_menu = false;
+			died = true;
+		}
+	}
+
+	kit::get_state().current_pos = {
+		Environment.window_width / 2.f, 2 * Environment.window_height / 5.f
+	};
+	go_main_menu |= kit::button("Main Menu", 48);
+	
+	kit::get_state().current_pos = {
+		Environment.window_width / 2.f, 1 * Environment.window_height / 5.f
+	};
+	if (kit::button("Delete save", 48)) {
+		go_main_menu = true;
+		for (size_t i = game->profiles.size() - 1; i + 1 > 0; --i) {
+			if (&game->profiles[i] == game->profile) {
+				game->profiles.erase(BEG(game->profiles) + i);
+				break;
+			}
+		}
+	}
+}
+
+void Play_Screen::update_menu(float) noexcept {}
+
+void Play_Screen::render_menu(render::Orders& target) noexcept {
+	Rectanglef view = {0, 0, (float)Environment.window_width, (float)Environment.window_height};
+	target.late_push_view(view);
+	defer { target.late_pop_view(); };
+
+	target.late_push_rec(view, {0, 0, 0, 0.75});
+}
+
 Screen* Play_Screen::next() noexcept {
+	if (go_main_menu) {
+		go_main_menu = !go_main_menu;
+		return &game->start_screen;
+	}
 	return nullptr;
 }
 

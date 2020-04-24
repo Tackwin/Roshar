@@ -5,6 +5,7 @@
 #include <cassert>
 #include <Windows.h>
 #include <Xinput.h>
+#include <tchar.h>
 
 
 using namespace io;
@@ -194,3 +195,10 @@ Vector2f io::get_mouse_pos() noexcept {
 		(float)(Environment.window_height - p.y)
 	};
 }
+bool io::is_window_focused() noexcept {
+	auto handle = GetActiveWindow();
+	TCHAR buffer[1000];
+	GetClassName(handle, buffer, 1000);
+	return _tcscmp(buffer, TEXT("Roshar Class")) == 0;
+}
+
