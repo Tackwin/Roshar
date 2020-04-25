@@ -16,11 +16,16 @@ void Profile_Selection_Screen::input(IM::Input_Iterator it) noexcept {
 		enter_game = true;
 	}
 	for (size_t i = 0; i < game->profiles.size(); ++i) {
-		if (kit::card(game->profiles[i])) {
+		auto response = kit::card(game->profiles[i]);
+		if (response.enter) {
 			selected = i;
 			game->profile = &game->profiles[i];
 			game->play_screen.to_swap_level =
 				game->play_screen.load_level(game->profile->current_level);
+		}
+		if (response.erase) {
+			game->profiles.erase(BEG(game->profiles) + i);
+			i--;
 		}
 	}
 }

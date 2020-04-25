@@ -15,9 +15,15 @@
 
 #include "Player.hpp"
 
-struct Flowing_Water {
-	bool editor_selected{ false };
+#include "introspection.hpp"
 
+struct Editable {
+	std::uint32_t id;
+	bool editor_selected{ false };
+	bool editor_remove_flage{ false };
+};
+
+struct Flowing_Water : Editable {
 	std::vector<Vector2f> path;
 	float width{ 10.f };
 	float flow_rate{ 1.f };
@@ -25,9 +31,7 @@ struct Flowing_Water {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Block {
-	bool editor_selected{ false };
-
+struct Block : Editable {
 	bool back{ false };
 
 	enum class Prest_Kind {
@@ -48,17 +52,13 @@ struct Block {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Kill_Zone {
-	bool editor_selected{ false };
-	
+struct Kill_Zone : Editable {
 	Vector2f pos;
 	Vector2f size;
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Next_Zone {
-	bool editor_selected{ false };
-	
+struct Next_Zone : Editable {
 	std::string next_level;
 
 	Vector2f pos;
@@ -67,7 +67,7 @@ struct Next_Zone {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Trigger_Zone {
+struct Trigger_Zone : Editable {
 	bool editor_selected{ false };
 
 	std::uint64_t id;
@@ -77,9 +77,7 @@ struct Trigger_Zone {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Door {
-	bool editor_selected{ false };
-	
+struct Door : Editable {
 	Rectanglef rec;
 
 	bool closed{ true };
@@ -91,7 +89,7 @@ struct Door {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Dry_Zone {
+struct Dry_Zone : Editable {
 	bool editor_selected{ false };
 
 	Rectanglef rec;
@@ -99,8 +97,7 @@ struct Dry_Zone {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Dispenser {
-	bool editor_selected{ false };
+struct Dispenser : Editable {
 	Vector2f start_pos;
 	Vector2f end_pos;
 
@@ -127,10 +124,8 @@ struct Projectile {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Prest_Source {
+struct Prest_Source : Editable {
 	static const inline auto Radius_Multiplier = 0.2f;
-
-	bool editor_selected{ false };
 
 	float prest;
 	Vector2f pos;
@@ -138,9 +133,7 @@ struct Prest_Source {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Rock {
-	bool editor_selected{ false };
-
+struct Rock : Editable {
 	std::uint64_t running_id = xstd::uuid();
 
 	float r;
@@ -156,9 +149,7 @@ struct Rock {
 	}
 };
 
-struct Auto_Binding_Zone {
-	bool editor_selected{ false };
-
+struct Auto_Binding_Zone : Editable {
 	Rectanglef rec;
 
 	Vector2f binding;
@@ -167,9 +158,7 @@ struct Auto_Binding_Zone {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Friction_Zone {
-	bool editor_selected{ false };
-
+struct Friction_Zone : Editable {
 	Rectanglef rec;
 
 	float friction{ 1 };
@@ -177,9 +166,8 @@ struct Friction_Zone {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Decor_Sprite {
+struct Decor_Sprite : Editable {
 	float opacity{ 1 };
-	bool editor_selected{ false };
 
 	std::filesystem::path texture_path;
 	asset::Key texture_key;
@@ -190,10 +178,8 @@ struct Decor_Sprite {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Key_Item {
+struct Key_Item : Editable {
 	inline static Vector2f Key_World_Size{ 0.16f, 0.36f };
-
-	bool editor_selected{ false };
 
 	Vector2f pos;
 	std::uint64_t id;
@@ -201,9 +187,7 @@ struct Key_Item {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Torch {
-	bool editor_selected{ false };
-
+struct Torch : Editable {
 	Vector2f pos;
 	Vector4d color;
 	float intensity;
@@ -213,9 +197,7 @@ struct Torch {
 	void render(render::Orders& target) const noexcept;
 };
 
-struct Moving_Block {
-	bool editor_selected{ false };
-
+struct Moving_Block : Editable {
 	std::vector<Vector2f> waypoints;
 
 	float speed{ 1 };
@@ -265,6 +247,24 @@ struct Level {
 	std::vector<Flowing_Water>      flowing_waters;
 	std::vector<Friction_Zone>      friction_zones;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones;
+
+	Tuple<Type_List<
+		std::vector<Rock>,
+		std::vector<Door>,
+		std::vector<Block>,
+		std::vector<Torch>,
+		std::vector<Dry_Zone>,
+		std::vector<Key_Item>,
+		std::vector<Kill_Zone>,
+		std::vector<Next_Zone>,
+		std::vector<Dispenser>,
+		std::vector<Moving_Block>,
+		std::vector<Trigger_Zone>,
+		std::vector<Prest_Source>,
+		std::vector<Flowing_Water>,
+		std::vector<Friction_Zone>,
+		std::vector<Auto_Binding_Zone>
+	>> list;
 
 	std::vector<Particle> particles;
 

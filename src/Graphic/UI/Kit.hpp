@@ -37,6 +37,7 @@ namespace kit {
 
 		Vector2f current_pos;
 		Vector2f current_origin{ 0, 0 };
+		Vector4d current_color{1, 1, 1, 1};
 
 		IM::Input_Iterator last_input{ IM::end() };
 
@@ -48,10 +49,16 @@ namespace kit {
 		float card_margin{ 5.f };
 		float card_title_size{ 28.f };
 		float card_uptime_size{ 12.f };
+		float card_delete_size{ 12.f };
 		Vector2f card_min_size{ 300, 475 };
 		Vector4d card_color{ 0.129, 0.161, 0.227, 1.0 };
 
 		render::Orders orders;
+	};
+
+	struct Card_Response {
+		bool erase { false };
+		bool enter { false };
 	};
 
 	extern void input(IM::Input_Iterator it) noexcept;
@@ -65,7 +72,7 @@ namespace kit {
 	) noexcept;
 	extern bool label(std::string text) noexcept;
 	extern bool button(std::string label, float size) noexcept;
-	extern bool card(Profile& profile) noexcept;
+	extern Card_Response card(Profile& profile) noexcept;
 	extern std::optional<State::Card_State> card_plus() noexcept;
 	extern std::string text_input(std::string def, float size) noexcept;
 };

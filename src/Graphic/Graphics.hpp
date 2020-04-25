@@ -183,7 +183,7 @@ namespace render {
 	) noexcept;
 	Order point_light(
 		Vector2f pos,
-		Vector4d color,
+		Vector4d color, 
 		float intensity,
 		float angle,
 		float spread

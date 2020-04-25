@@ -80,7 +80,9 @@ bool kit::button(std::string label, float size) noexcept {
 	auto rec = Rectanglef{pos, 1.3f * font.compute_size(label, size)};
 	rec.pos.x -= rec.size.x * state.current_origin.x;
 	rec.pos.y -= rec.size.y * state.current_origin.y;
-	state.orders.late_push_text(pos, asset::Font_Id::Consolas, label, size, state.current_origin);
+	state.orders.late_push_text(
+		pos, asset::Font_Id::Consolas, label, size, state.current_origin, 0, state.current_color
+	);
 
 	if (!IM::iterator_is_valid(state.last_input)) return false;
 
@@ -120,7 +122,8 @@ void kit::render(render::Orders& target) noexcept {
 	target.append(state.orders);
 }
 
-bool kit::card(Profile& profile) noexcept {
+kit::Card_Response kit::card(Profile& profile) noexcept {
+	kit::Card_Response res;
 	auto& card_state = state.card_states[State::Card_State::Card_Id++];
 
 	auto pos = state.current_pos;
@@ -147,8 +150,8 @@ bool kit::card(Profile& profile) noexcept {
 	);
 
 	std::string uptime;
-	uptime.resize(5);
-	sprintf(uptime.data(), "%5.f", profile.uptime);
+	uptime.resize(13);
+	sprintf(uptime.data(), "Uptime %5.f", profile.uptime);
 	state.orders.late_push_text(
 		pos + Vector2f{ size.x / 2.f, size.y * .8f },
 		asset::Font_Id::Consolas,
@@ -156,6 +159,21 @@ bool kit::card(Profile& profile) noexcept {
 		state.card_uptime_size,
 		{ 0.5, 1.f }
 	);
+
+	if (card_state.hovering) {
+		auto temp_pos = state.current_pos;
+		auto temp_color = state.current_color;
+		defer {
+			state.current_color = temp_color;
+			state.current_pos = temp_pos;
+		};
+		state.current_color = {1, 1, 1, xstd::map_rp_to_01(10 * card_state.time_hovered)};
+		state.current_pos = pos + Vector2f{ size.x / 2.f, size.y * .6f };
+		auto button_size = 0.7f + 0.4f * xstd::map_rp_to_01(10 * card_state.time_hovered);
+		if (button("Delete", state.card_delete_size * button_size)) {
+			res.erase = true;
+		}
+	}
 
 
 	pos.x += size.x + state.card_margin;
@@ -167,9 +185,11 @@ bool kit::card(Profile& profile) noexcept {
 			card_state.selected = card_state.hovering; 
 	}
 	
-	return IM::iterator_is_valid(state.last_input) &&
+
+	res.enter = !res.erase && IM::iterator_is_valid(state.last_input) &&
 		rec.in(state.last_input->mouse_screen_pos) &&
 		state.last_input->is_just_pressed(Mouse::Left);
+	return res;
 }
 
 std::optional<kit::State::Card_State> kit::card_plus() noexcept {

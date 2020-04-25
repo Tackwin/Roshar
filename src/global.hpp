@@ -24,7 +24,7 @@ struct Environment_t {
 
 	bool debug_input{ false };
 	bool show_camera_target{ false };
-	bool show_sprite{ false };
+	bool show_sprite{ true };
 
 	std::uint64_t physics_step{ 5'000/*us*/ }; // 200 ups
 	float speed_up_step{ 1 }; // 200 ups

@@ -259,8 +259,6 @@ void Player::render(render::Orders& target, Graphic_State state) const noexcept 
 		target.push_rectangle(state.world_rec, { grappled ? 0.2 : 0.7, 0.1, 1, 1 });
 	}
 
-	target.push_rectangle(hitbox, {1, 0, 0, 0.1});
-
 	render_bindings(target);
 }
 
@@ -357,7 +355,8 @@ void Player::start_move_sideway() noexcept {
 }
 void Player::stop_move_sideway() noexcept {
 	speed_down_timer = Speed_Down_Time;
-	animation.running_idx = Idle_Animation;
+	if (floored) animation.running_idx = Idle_Animation;
+	else         animation.running_idx = Jump_Idle_Animation;
 }
 void Player::move_sideway(Player::Dir dir) noexcept {
 	want_to_go = dir;
@@ -368,7 +367,9 @@ void Player::move_sideway(Player::Dir dir) noexcept {
 	else if (dir == Left) top_speed *= -5;
 	else assert(false); // Logic error.
 
-	if (floored) animation.running_idx = Run_Animation;
+	if (floored) {
+		animation.running_idx = Run_Animation;
+	}
 
 	top_speed *= move_factor * (want_slow ? Slow_Factor : 1);
 	flat_velocities.push_back({ top_speed, 0 });

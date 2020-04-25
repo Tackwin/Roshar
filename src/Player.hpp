@@ -115,7 +115,7 @@ struct Player {
 	Graphic_State get_graphic_state() const noexcept;
 private:
 	static constexpr float Slow_Factor{ 0.5f };
-	static constexpr float Drag_Dead_Zone{ 50.f };
+	static constexpr float Drag_Dead_Zone{ 200.f };
 	std::uint64_t dragged_rock{ 0 };
 
 	Vector2f mouse_screen_pos;

@@ -354,33 +354,37 @@ void Moving_Block::update(float dt) noexcept {
 void Level::render(render::Orders& target) const noexcept {
 	target.push_view(camera);
 
-	auto renders = [&](const auto& cont) { for (const auto& x : cont) x.render(target); };
+	auto renders = [&](const auto& cont) {
+		for (const auto& x : cont) x.render(target);
+	};
 
-	renders(friction_zones);
-	renders(auto_binding_zones);
-	renders(trigger_zones);
-	renders(next_zones);
-	renders(dry_zones);
-	renders(kill_zones);
-	renders(doors);
-	renders(blocks);
-	renders(dispensers);
+	for_each(list, renders);
 
-	renders(decor_sprites);
-	renders(torches);
-
-	renders(moving_blocks);
-
-	renders(key_items);
-	renders(prest_sources);
-	renders(projectiles);
-	renders(rocks);
-
-	renders(flowing_waters);
+	//renders(friction_zones);
+	//renders(auto_binding_zones);
+	//renders(trigger_zones);
+	//renders(next_zones);
+	//renders(dry_zones);
+	//renders(kill_zones);
+	//renders(doors);
+	//renders(blocks);
+	//renders(dispensers);
+//
+	//renders(decor_sprites);
+	//renders(torches);
+//
+	//renders(moving_blocks);
+//
+	//renders(key_items);
+	//renders(prest_sources);
+	//renders(projectiles);
+	//renders(rocks);
+//
+	//renders(flowing_waters);
 
 	for (auto& x : markers) target.push_circle(0.05f, x, { 1, 0, 0, 1 });
 
-	player.render(target);
+	if (phantom_paths.empty()) player.render(target);
 	for (auto& p : phantom_paths) {
 		if (phantom_path_idx >= p.size()) continue;
 
