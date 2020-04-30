@@ -248,24 +248,6 @@ struct Level {
 	std::vector<Friction_Zone>      friction_zones;
 	std::vector<Auto_Binding_Zone>  auto_binding_zones;
 
-	Tuple<Type_List<
-		std::vector<Rock>,
-		std::vector<Door>,
-		std::vector<Block>,
-		std::vector<Torch>,
-		std::vector<Dry_Zone>,
-		std::vector<Key_Item>,
-		std::vector<Kill_Zone>,
-		std::vector<Next_Zone>,
-		std::vector<Dispenser>,
-		std::vector<Moving_Block>,
-		std::vector<Trigger_Zone>,
-		std::vector<Prest_Source>,
-		std::vector<Flowing_Water>,
-		std::vector<Friction_Zone>,
-		std::vector<Auto_Binding_Zone>
-	>> list;
-
 	std::vector<Particle> particles;
 
 	std::vector<Particle_Spot> particle_spots;

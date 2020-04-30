@@ -267,6 +267,7 @@ void render::immediate(Sprite_Info info) noexcept {
 	shader.set_rotation(info.rotation);
 	shader.set_size(info.size);
 	shader.set_use_texture((bool)info.texture);
+	shader.set_uniform("invert_x", info.texture_rect.w * info.size.x < 0);
 	shader.set_uniform("texture_rect", info.texture_rect);
 	shader.set_uniform("use_normal_texture", asset::Store.get_normal(info.texture) ? 1 : 0);
 	shader.set_uniform("texture_rect", info.texture_rect);

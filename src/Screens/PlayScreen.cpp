@@ -31,7 +31,7 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 
 	if (in_menu) input_menu(it);
 
-	if (IM::isKeyJustPressed(Keyboard::F10)) {
+	if (IM::isKeyJustPressed(Keyboard::F9)) {
 		to_swap_level = copy_level;
 		return go_in_full_test();
 	}
@@ -39,12 +39,12 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 		in_test = false;
 	}
 
-	if (in_replay && IM::isKeyJustPressed(Keyboard::F11)) {
+	if (in_replay && IM::isKeyJustPressed(Keyboard::F10)) {
 		auto test_file_save = current_level.file_path.replace_extension(".test");
 		IM::save_range(test_file_save, *begin_record, std::next(*end_record));
 	}
 
-	if (!in_replay && IM::isKeyJustPressed(Keyboard::F11)) {
+	if (!in_replay && IM::isKeyJustPressed(Keyboard::F10)) {
 		to_swap_level = copy_level;
 		return go_in_test();
 	}

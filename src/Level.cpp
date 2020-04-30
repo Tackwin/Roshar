@@ -358,29 +358,29 @@ void Level::render(render::Orders& target) const noexcept {
 		for (const auto& x : cont) x.render(target);
 	};
 
-	for_each(list, renders);
+	//for_each(list, renders);
 
-	//renders(friction_zones);
-	//renders(auto_binding_zones);
-	//renders(trigger_zones);
-	//renders(next_zones);
-	//renders(dry_zones);
-	//renders(kill_zones);
-	//renders(doors);
-	//renders(blocks);
-	//renders(dispensers);
-//
-	//renders(decor_sprites);
-	//renders(torches);
-//
-	//renders(moving_blocks);
-//
-	//renders(key_items);
-	//renders(prest_sources);
-	//renders(projectiles);
-	//renders(rocks);
-//
-	//renders(flowing_waters);
+	renders(friction_zones);
+	renders(auto_binding_zones);
+	renders(trigger_zones);
+	renders(next_zones);
+	renders(dry_zones);
+	renders(kill_zones);
+	renders(doors);
+	renders(blocks);
+	renders(dispensers);
+
+	renders(decor_sprites);
+	renders(torches);
+
+	renders(moving_blocks);
+
+	renders(key_items);
+	renders(prest_sources);
+	renders(projectiles);
+	renders(rocks);
+
+	renders(flowing_waters);
 
 	for (auto& x : markers) target.push_circle(0.05f, x, { 1, 0, 0, 1 });
 
@@ -1217,12 +1217,13 @@ void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	x.texture_path = (std::string)str["texture_path"];
 
 	auto& texture_loaded = asset::Store.textures_loaded;
-	if (!texture_loaded.count(x.texture_path.string())) {
+	auto path = std::filesystem::canonical(x.texture_path);
+	if (!texture_loaded.count(path.string())) {
 		x.texture_key = asset::Store.make_texture();
 	}
 	else {
 		x.texture_key = std::find_if(
-			BEG_END(texture_loaded), [p = x.texture_path.string()](auto x) {return x.first == p; }
+			BEG_END(texture_loaded), [p = path.string()](auto x) { return x.first == p; }
 		)->second;
 	}
 }

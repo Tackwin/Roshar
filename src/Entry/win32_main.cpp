@@ -49,11 +49,60 @@ IMGUI_IMPL_API LRESULT  ImGui_ImplWin32_WndProcHandler(
 	HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 );
 
+void toggle_fullscren(HWND hwnd) {
+	static WINDOWPLACEMENT g_wpPrev = { sizeof(g_wpPrev) };
+
+	DWORD dwStyle = GetWindowLong(hwnd, GWL_STYLE);
+	if (dwStyle & WS_OVERLAPPEDWINDOW) {
+		MONITORINFO mi = { sizeof(mi) };
+		if (
+			GetWindowPlacement(hwnd, &g_wpPrev) &&
+			GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi)
+		) {
+			SetWindowLong(hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+			SetWindowPos(
+				hwnd, HWND_TOP,
+				mi.rcMonitor.left, mi.rcMonitor.top,
+				mi.rcMonitor.right - mi.rcMonitor.left,
+				mi.rcMonitor.bottom - mi.rcMonitor.top,
+				SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+			);
+		}
+	} else {
+		SetWindowLong(hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(hwnd, &g_wpPrev);
+		SetWindowPos(
+			hwnd,
+			NULL,
+			0,
+			0,
+			0,
+			0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+		);
+	}
+}
+
 
 LRESULT WINAPI window_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept {
 	ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 
 	switch (msg) {
+	case WM_KEYDOWN: {
+		if (wParam == VK_F11) toggle_fullscren(hWnd);
+		break;
+	}
+	case WM_SIZE: {
+		Environment.window_width = (size_t)((int)LOWORD(lParam));
+		Environment.window_height = (size_t)((int)HIWORD(lParam));
+		break;
+	}
+	case WM_SIZING: {
+		RECT* rect = (RECT*)lParam;
+		Environment.window_width = rect->right - rect->left;
+		Environment.window_height = rect->bottom - rect->top;
+		break;
+	}
 	case WM_CHAR:
 		post_char((std::uint32_t)(wchar_t)wParam);
 		break;
