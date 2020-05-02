@@ -251,13 +251,13 @@ struct Rectangle_t {
 			return { pos,{ (T)(h * ratio), h } };
 		}
 	}
-	Rectangle_t<T> fitDownRatio(double ratio) const noexcept {
-		if (w < h) {
-			return { pos,{ w, (T)(w / ratio) } };
-		}
-		else {
-			return { pos,{ (T)(h * ratio), h } };
-		}
+	Rectangle_t<T> fitDownRatio(Vector2<T> ratio) const noexcept {
+		auto h_scale = h / ratio.y;
+		auto w_scale = w / ratio.x;
+
+		auto scale = std::min(h_scale, w_scale);
+
+		return {pos, ratio * scale};
 	}
 
 	Rectangle_t<T> restrict_in(Rectangle_t<T> area) const noexcept {

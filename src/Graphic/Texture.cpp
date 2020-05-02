@@ -45,7 +45,7 @@ bool Texture::load_file(std::filesystem::path path) {
 	int w = (int)info.width;
 	int h = (int)info.height;
 	std::uint8_t* data = stbi_load(
-		path.string().c_str(), &w, &h, &comp, STBI_rgb_alpha
+		(Exe_Path / path).string().c_str(), &w, &h, &comp, STBI_rgb_alpha
 	);
 	defer{ stbi_image_free(data); };
 	info.width = w;

@@ -511,10 +511,10 @@ void Level::update(float dt) noexcept {
 	for (size_t i = 0; i < decor_sprites.size(); ++i) {
 		auto& x = decor_sprites[i];
 		if (!x.texture_loaded) {
-			// >TODO
-			(void)asset::Store.load_texture(x.texture_key, x.texture_path);
-			x.texture_loaded = true;
+			x.texture_loaded = asset::Store.load_texture(x.texture_key, x.texture_path);
 		}
+		if (!x.texture_loaded)
+			printf("Couldn't load %s.\n", x.texture_path.generic_string().c_str());
 	}
 
 	debug_vectors.clear();
@@ -1217,7 +1217,7 @@ void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 	x.texture_path = (std::string)str["texture_path"];
 
 	auto& texture_loaded = asset::Store.textures_loaded;
-	auto path = std::filesystem::canonical(x.texture_path);
+	auto path = std::filesystem::weakly_canonical(x.texture_path);
 	if (!texture_loaded.count(path.string())) {
 		x.texture_key = asset::Store.make_texture();
 	}
@@ -1229,7 +1229,6 @@ void from_dyn_struct(const dyn_struct& str, Decor_Sprite& x) noexcept {
 }
 void to_dyn_struct(dyn_struct& str, const Decor_Sprite& x) noexcept {
 	auto relative_path = std::filesystem::weakly_canonical(x.texture_path);
-	relative_path = relative_path.lexically_relative(Exe_Path);
 
 	str = dyn_struct::structure_t{};
 	str["rec"] = x.rec;

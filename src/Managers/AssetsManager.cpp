@@ -38,13 +38,13 @@ namespace asset {
 	auto normal_path = path;
 	normal_path.replace_filename(path.stem().string() + "_n.png");
 
-	if (std::filesystem::is_regular_file(normal_path)) {
+	if (std::filesystem::is_regular_file(Exe_Path / normal_path)) {
 		new_texture.normal = std::make_unique<Texture>();
 		new_texture.normal->load_file(normal_path);
 	}
 
 	if (loaded) {
-		textures_loaded[std::filesystem::canonical(path).string()] = k;
+		textures_loaded[std::filesystem::weakly_canonical(path).string()] = k;
 		return true;
 	}
 	else {
@@ -76,8 +76,8 @@ namespace asset {
 
 	Asset_t<Shader> s{
 		std::move(*new_shader),
-		std::filesystem::canonical(vertex),
-		std::filesystem::canonical(fragment)
+		std::filesystem::weakly_canonical(vertex),
+		std::filesystem::weakly_canonical(fragment)
 	};
 
 
@@ -97,9 +97,9 @@ namespace asset {
 
 	Asset_t<Shader> s{
 		std::move(*new_shader),
-		std::filesystem::canonical(vertex),
-		std::filesystem::canonical(fragment),
-		std::filesystem::canonical(geometry)
+		std::filesystem::weakly_canonical(vertex),
+		std::filesystem::weakly_canonical(fragment),
+		std::filesystem::weakly_canonical(geometry)
 	};
 
 	shaders.insert({ k, std::move(s) });
@@ -255,6 +255,8 @@ void Store_t::load_known_textures() noexcept {
 	X("assets/textures/card_plus.png",                    Card_Plus                   );
 	X("assets/textures/rock.png",                         Rock                        );
 	X("assets/textures/key.png",                          Key_Item                    );
+	// >TODO(tackwin) if it isn't available generate a normal one.
+	X("assets/textures/palette.png",                      Palette                     );
 
 #undef X
 }
@@ -347,7 +349,7 @@ void Store_t::load_from_config(std::filesystem::path config_path) noexcept {
 		return false;
 	};
 #ifndef WEB
-	file::monitor_file(std::filesystem::canonical(Exe_Path / config_path), f);
+	file::monitor_file(std::filesystem::weakly_canonical(Exe_Path / config_path), f);
 #endif
 	f();
 }

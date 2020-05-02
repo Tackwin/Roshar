@@ -64,7 +64,7 @@ Shader& Shader::operator=(Shader&& that) noexcept {
 }
 
 bool Shader::load_vertex(std::filesystem::path path) noexcept {
-	auto expected = file::read_whole_text(path);
+	auto expected = file::read_whole_text(Exe_Path / path);
 	if (!expected) return false;
 
 	char* source = (*expected).data();
@@ -98,7 +98,7 @@ bool Shader::load_vertex(std::filesystem::path path) noexcept {
 	return true;
 }
 bool Shader::load_fragment(std::filesystem::path path) noexcept {
-	auto expected = file::read_whole_text(path);
+	auto expected = file::read_whole_text(Exe_Path / path);
 	if (!expected) return false;
 
 	char* source = (*expected).data();
@@ -126,7 +126,7 @@ bool Shader::load_fragment(std::filesystem::path path) noexcept {
 	return true;
 }
 bool Shader::load_geometry(std::filesystem::path path) noexcept {
-	auto expected = file::read_whole_text(path);
+	auto expected = file::read_whole_text(Exe_Path / path);
 	if (!expected) return false;
 
 	char* source = (*expected).data();

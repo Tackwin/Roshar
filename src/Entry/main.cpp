@@ -60,8 +60,13 @@ void post_char(std::uint32_t arg) noexcept {
 void update_game(std::uint64_t dt) noexcept {
 	Environment.window_ratio = Environment.window_height / (1.f * Environment.window_width);
 	
+	ImGui::ShowDemoWindow();
+
 	ImGui::Begin("Environment");
 	int x = IM::controller_idx;
+
+
+
 	ImGui::InputInt("Controller #", &x);
 	IM::controller_idx = (size_t)std::clamp(x, 0, 4);
 	ImGui::InputInt("Drag angle step", &Environment.drag_angle_step);
@@ -219,16 +224,30 @@ void render_orders(render::Orders& orders) noexcept {
 	ImGui::Begin("Hdr");
 	defer{ ImGui::End(); };
 
-	ImGui::InputFloat("gamma", &gamma);
-	ImGui::InputFloat("exposure", &exposure);
+	ImGui::SliderFloat("gamma", &gamma, 0, 2);
+	ImGui::SliderFloat("exposure", &exposure, 0, 2);
 
 	auto& shader_hdr = asset::Store.get_shader(asset::Shader_Id::HDR);
+	auto& palette = asset::Store.get_albedo(asset::Texture_Id::Palette);
+	palette.bind(3);
 	shader_hdr.use();
 	shader_hdr.set_uniform("gamma", gamma);
 	shader_hdr.set_uniform("exposure", exposure);
+	shader_hdr.set_uniform("palette", 3);
+	shader_hdr.set_uniform("palette_size", (Vector2f)palette.get_size());
 	shader_hdr.set_uniform("hdr_texture", 0);
 
-	glViewport(0, 0, (GLsizei)Environment.window_width, (GLsizei)Environment.window_height);
+	Rectanglef viewport_rect{
+		0.f, 0.f, (float)Environment.window_width, (float)Environment.window_height
+	};
+	viewport_rect = viewport_rect.fitDownRatio({16, 9});
+
+	glViewport(
+		(Environment.window_width - (GLsizei)viewport_rect.w) / 2,
+		(Environment.window_height - (GLsizei)viewport_rect.h) / 2,
+		(GLsizei)viewport_rect.w,
+		(GLsizei)viewport_rect.h
+	);
 
 	hdr_buffer.render_quad();
 

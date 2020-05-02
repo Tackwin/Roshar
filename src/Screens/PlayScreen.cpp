@@ -224,6 +224,9 @@ void Play_Screen::input_menu(IM::Input_Iterator it) noexcept {
 	kit::get_state().current_pos = {
 		Environment.window_width / 2.f, 2 * Environment.window_height / 5.f
 	};
+	// >SEE(Tackwin): I think it's a nice feature that we don't go out of the pause when we go back
+	// to the main menu. That way when we come back in the level we are still in pause and we have
+	// the time to think about where we left off.
 	go_main_menu |= kit::button("Main Menu", 48);
 	
 	kit::get_state().current_pos = {
@@ -231,6 +234,7 @@ void Play_Screen::input_menu(IM::Input_Iterator it) noexcept {
 	};
 	if (kit::button("Delete save", 48)) {
 		go_main_menu = true;
+		in_menu = false;
 		for (size_t i = game->profiles.size() - 1; i + 1 > 0; --i) {
 			if (&game->profiles[i] == game->profile) {
 				game->profiles.erase(BEG(game->profiles) + i);

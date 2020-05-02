@@ -142,7 +142,7 @@ void Editor::render(render::Orders& target) noexcept {
 		Decor_Sprite decor;
 		decor.texture_key = *key;
 		decor.texture_loaded = true;
-		decor.texture_path = std::filesystem::canonical(result.filepath);
+		decor.texture_path = std::filesystem::weakly_canonical(result.filepath);
 		decor.rec.pos = game->play_screen.current_level.camera.center();
 		decor.rec.size = {
 			(float)texture.albedo.get_size().x, (float)texture.albedo.get_size().y

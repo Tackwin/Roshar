@@ -39,11 +39,12 @@ void Game::input() noexcept {
 	if (!IM::isWindowFocused()) return;
 
 	kit::input(this_record);
+
 	if (current_screen) {
 		current_screen->input(this_record);
-		return;
 	}
-
+	
+	if (quit) application_running = false;
 }
 
 void Game::update(std::uint64_t dt) noexcept {
@@ -71,7 +72,6 @@ void Game::update_step(std::uint64_t fixed_dt) noexcept {
 		return;
 	}
 
-	if (quit) application_running = false;
 }
 
 void Game::render(render::Orders& target) noexcept {

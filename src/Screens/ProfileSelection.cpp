@@ -13,6 +13,8 @@ void Profile_Selection_Screen::input(IM::Input_Iterator it) noexcept {
 	if (auto opt = kit::card_plus()) {
 		add_new_profile(opt->name);
 		game->profile = &game->profiles.back();
+		game->play_screen.to_swap_level =
+			game->play_screen.load_level(game->profile->current_level);
 		enter_game = true;
 	}
 	for (size_t i = 0; i < game->profiles.size(); ++i) {

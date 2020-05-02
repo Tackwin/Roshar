@@ -21,7 +21,7 @@ std::optional<formats::png> formats::png_from_file(std::filesystem::path path) n
 		return SWAP_UINT32(x);
 	};
 
-	auto load_chunk = [&] noexcept {
+	auto load_chunk = [&] () noexcept {
 		formats::png::Chunk c;
 		
 		c.length = load_uint32(&raw[it + 0]);

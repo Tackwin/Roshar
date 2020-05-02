@@ -574,7 +574,7 @@ Inputs_Info update(Inputs_Info_2 old) noexcept {
 Inputs_Info update(Inputs_Info x) { return x; }
 
 bool IM::load_record_at(std::filesystem::path path, std::uint64_t id) noexcept {
-	auto expected = file::read_whole_file(path);
+	auto expected = file::read_whole_file(Exe_Path / path);
 	if (!expected) return 0;
 	loaded_record[id].clear();
 	auto bytes = *expected;
