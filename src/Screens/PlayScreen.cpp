@@ -33,7 +33,8 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 
 	if (IM::isKeyJustPressed(Keyboard::F9)) {
 		to_swap_level = copy_level;
-		return go_in_full_test();
+		if (!in_full_test) return go_in_full_test();
+		else return go_to_gameplay();
 	}
 	if (in_test && IM::isKeyJustPressed(Keyboard::Return)) {
 		in_test = false;
@@ -46,7 +47,8 @@ void Play_Screen::input(IM::Input_Iterator it) noexcept {
 
 	if (!in_replay && IM::isKeyJustPressed(Keyboard::F10)) {
 		to_swap_level = copy_level;
-		return go_in_test();
+		if (!in_test) return go_in_test();
+		else return go_to_gameplay();
 	}
 
 
@@ -197,6 +199,13 @@ void Play_Screen::render(render::Orders& target) noexcept {
 	std::string str{buffer};
 
 	target.late_push_text({0, 0}, asset::Font_Id::Consolas, str, 10, {0, 0});
+
+	str = "";
+	if (in_replay) str = "In Replay";
+	if (in_test) str = "In Test";
+	if (in_full_test) str = "In Full Test";
+
+	target.late_push_text({0, 20}, asset::Font_Id::Consolas, str, 10, {0, 0});
 }
 
 void Play_Screen::input_menu(IM::Input_Iterator it) noexcept {
@@ -271,6 +280,15 @@ void Play_Screen::go_in_replay() noexcept {
 	in_test = false;
 	in_full_test = false;
 }
+
+void Play_Screen::go_to_gameplay() noexcept{
+	end_record.reset();
+	begin_record.reset();
+	in_test = false;
+	in_replay = false;
+	in_full_test = false;
+}
+
 
 void Play_Screen::go_in_test() noexcept {
 	auto test_file = current_level.file_path.replace_extension(".test");

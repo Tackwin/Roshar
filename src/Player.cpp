@@ -450,8 +450,8 @@ void Player::start_drag() noexcept {
 	for (const auto& x : game->play_screen.current_level.rocks) {
 		auto range = Environment.binding_range * Environment.binding_range;
 		if (
-			is_in(mouse_world_pos, { x.pos, x.r }) &&
-			(x.pos - hitbox.center()).length2() <= range
+			is_in(mouse_world_pos, { x.rec.pos, x.r }) &&
+			(x.rec.pos - hitbox.center()).length2() <= range
 		) {
 			dragged_rock = x.running_id;
 			return;

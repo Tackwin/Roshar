@@ -7,19 +7,19 @@
 #include "Math/Vector.hpp"
 
 bool test(const Rock& r, const Rectangle_t<float>& x) noexcept {
-	return is_in(x, Circlef{ .c = r.pos,.r = r.r });
+	return is_in(x, Circlef{ .c = r.rec.pos,.r = r.r });
 }
 
 bool test(const Block& b, const Rock& x) noexcept {
-	return !b.back && is_in(Rectanglef(b.pos, b.size), Circlef{ .c = x.pos,.r = x.r });
+	return !b.back && is_in(b.rec, Circlef{ .c = x.rec.pos,.r = x.r });
 }
 
 bool test(const Dry_Zone& b, const Rock& x) noexcept {
-	return is_in(b.rec, Circlef{ .c = x.pos,.r = x.r });
+	return is_in(b.rec, Circlef{ .c = x.rec.pos,.r = x.r });
 }
 
 bool test(const Key_Item& b, const Rectangle_t<float>& x) noexcept {
-	return x.in(b.pos);
+	return x.in(b.rec.pos);
 }
 
 bool test(const Player& x, const Rectangle_t<float>& rec) noexcept {
@@ -32,29 +32,29 @@ bool test(const Moving_Block& x, const Rectangle_t<float>& rec) noexcept {
 
 bool test(const Block& b, const Player& p) noexcept {
 	if (!p.grappling && b.back) return false;
-	return p.hitbox.intersect({ b.pos, b.size });
+	return p.hitbox.intersect(b.rec);
 }
 
 bool test(const Block& b, const Rectanglef& r) noexcept {
-	return Rectangle_t<float>{ b.pos, b.size }.intersect(r);
+	return b.rec.intersect(r);
 }
 
 bool test(const Block& b, const Vector2f& v) noexcept {
 	return
-		b.pos.x < v.x && v.x < b.pos.x + b.size.x &&
-		b.pos.y < v.y && v.y < b.pos.y + b.size.y;
+		b.rec.pos.x < v.x && v.x < b.rec.pos.x + b.rec.size.x &&
+		b.rec.pos.y < v.y && v.y < b.rec.pos.y + b.rec.size.y;
 }
 
 bool test(const Torch& b, const Rectangle_t<float>& x) noexcept {
-	return x.in(b.pos);
+	return x.in(b.rec.pos);
 }
 
 bool test(const Kill_Zone& b, const Player& p) noexcept {
-	return p.hitbox.intersect({ b.pos, b.size });
+	return p.hitbox.intersect(b.rec);
 }
 
 bool test(const Kill_Zone& b, const Rectanglef& r) noexcept {
-	return Rectangle_t<float>{ b.pos, b.size }.intersect(r);
+	return b.rec.intersect(r);
 }
 
 bool test(const Dry_Zone& b, const Player& p) noexcept {
@@ -67,20 +67,20 @@ bool test(const Dry_Zone& b, const Rectanglef& r) noexcept {
 
 bool test(const Kill_Zone& b, const Vector2f& v) noexcept {
 	return
-		b.pos.x < v.x && v.x < b.pos.x + b.size.x &&
-		b.pos.y < v.y && v.y < b.pos.y + b.size.y;
+		b.rec.pos.x < v.x && v.x < b.rec.pos.x + b.rec.size.x &&
+		b.rec.pos.y < v.y && v.y < b.rec.pos.y + b.rec.size.y;
 }
 
 bool test(const Prest_Source& b, const Player& p) noexcept {
 	Circlef c;
-	c.c = b.pos;
+	c.c = b.rec.pos;
 	c.r = std::sqrt(b.prest) * Prest_Source::Radius_Multiplier;
 	return is_in(p.hitbox, c);
 }
 
 bool test(const Prest_Source& b, const Rectanglef& p) noexcept {
 	Circlef c;
-	c.c = b.pos;
+	c.c = b.rec.pos;
 	c.r = std::sqrt(b.prest) * Prest_Source::Radius_Multiplier;
 	return is_in(Rectangle_t<float>(p.pos, p.size), c);
 }
@@ -88,7 +88,7 @@ bool test(const Prest_Source& b, const Rectanglef& p) noexcept {
 bool test(const Prest_Source& b, const Vector2f& p) noexcept {
 	auto mult = Prest_Source::Radius_Multiplier * Prest_Source::Radius_Multiplier;
 	//     (b.pos - p.pos).length2() < sqrt(b.prest) * Prest_Source::Radius_Multiplier
-	return (b.pos - p).length2() < b.prest * mult;
+	return (b.rec.pos - p).length2() < b.prest * mult;
 }
 
 
@@ -103,7 +103,7 @@ bool test(const Friction_Zone& b, const Rectangle_t<float>& x) noexcept {
 
 bool test(const Projectile& x, const Player& p) noexcept {
 	Circlef c;
-	c.c = x.pos;
+	c.c = x.rec.pos;
 	c.r = x.r;
 	return is_in(p.hitbox, c);
 }
@@ -111,7 +111,7 @@ bool test(const Projectile& x, const Player& p) noexcept {
 
 bool test(const Dispenser& x, const Vector2f& p) noexcept {
 	Circlef c;
-	c.c = x.start_pos;
+	c.c = x.rec.pos;
 	c.r = x.proj_r;
 	if (is_in(p, c)) return true;
 	c.c = x.end_pos;
@@ -121,21 +121,21 @@ bool test(const Dispenser& x, const Projectile& p) noexcept {
 	Circlef c;
 	c.c = x.end_pos;
 	c.r = p.r;
-	return is_in(p.pos, c);
+	return is_in(p.rec.pos, c);
 }
 
 bool test(const Dispenser& x, const Rectanglef& r) noexcept {
 	Circlef c;
-	c.c = x.start_pos;
+	c.c = x.rec.pos;
 	c.r = x.proj_r;
 	return is_in(r, c);
 }
 
 bool test(const Next_Zone& x, const Rectangle_t<float>& r) noexcept {
-	return r.intersect({ x.pos, x.size });
+	return r.intersect(x.rec);
 }
 bool test(const Next_Zone& x, const Player& p) noexcept {
-	return Rectangle_t<float>{ x.pos, x.size }.intersect(p.hitbox);
+	return x.rec.intersect(p.hitbox);
 }
 
 std::optional<Vector2f> get_next_velocity(
@@ -184,4 +184,8 @@ bool test(const Decor_Sprite& b, const Player& x) noexcept {
 bool test(const Flowing_Water& x, const Rectangle_t<float>& rec) noexcept {
 	for (auto& e : x.path) if (rec.in(e)) return true;
 	return false;
+}
+
+bool test(const Projectile& p, const Rectangle_t<float>& r) noexcept {
+	return r.in(p.rec.pos);
 }

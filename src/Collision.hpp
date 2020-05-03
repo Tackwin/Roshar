@@ -59,6 +59,7 @@ struct Rectangle_t;
 [[nodiscard]] extern bool test(const Dispenser& x, const Rectangle_t<float>& r) noexcept;
 [[nodiscard]] extern bool test(const Decor_Sprite& x, const Rectangle_t<float>& r) noexcept;
 [[nodiscard]] extern bool test(const Dispenser& x, const Projectile& p) noexcept;
+[[nodiscard]] extern bool test(const Projectile& p, const Rectangle_t<float>& r) noexcept;
 [[nodiscard]] extern std::optional<Vector<2, float>> get_next_velocity(
 	const Circle<float>& circle,
 	const Vector<2, float> current_velocity,

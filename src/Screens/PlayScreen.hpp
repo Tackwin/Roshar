@@ -51,6 +51,7 @@ public:
 	void go_in_test() noexcept;
 	void go_in_replay() noexcept;
 	void go_in_full_test() noexcept;
+	void go_to_gameplay() noexcept;
 
 public:
 	std::optional<Level> load_level(std::filesystem::path path) noexcept;

@@ -220,6 +220,13 @@ struct Vector : public __vec_member<D, T> {
 	{}
     
 	template<size_t Dp = D>
+		constexpr Vector(T x, T y, std::enable_if_t<Dp == 3, T> z) :
+	__vec_member<3, T>(x, y, z)
+	{}
+
+
+    
+	template<size_t Dp = D>
 		constexpr Vector(T x, T y, T z, std::enable_if_t<Dp == 4, T> w) :
 	__vec_member<4, T>(x, y, z, w)
 	{}
@@ -361,13 +368,13 @@ struct Vector : public __vec_member<D, T> {
 	}
 
 	template<size_t Dp = D>
-		std::enable_if_t<Dp == 2, Vector<D, T>> fitDownRatio(double ratio) const noexcept {
-		if (this->x < this->y) {
-			return { this->x, (T)(this->x / ratio) };
-		}
-		else {
-			return { (T)(this->y * ratio), this->y };
-		}
+	std::enable_if_t<Dp == 2, Vector<D, T>> fitDownRatio(Vector2<T> ratio) const noexcept {
+		auto h_scale = x / ratio.x;
+		auto w_scale = y / ratio.y;
+
+		auto scale = std::min(h_scale, w_scale);
+
+		return ratio * scale;
 	}
 
 	template<typename L>

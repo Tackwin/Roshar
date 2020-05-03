@@ -25,6 +25,7 @@ emcc -O1 "build/imgui_demo.bc"`
 	"build/Level.bc"`
 	"build/Player.bc"`
 	"build/Time.bc"`
+	"build/Formats.bc"`
 	"build/Profile.bc"`
 	"build/PlayScreen.bc"`
 	"build/ProfileSelection.bc"`

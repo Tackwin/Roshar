@@ -35,14 +35,14 @@ vec3 light_pixel(vec2 pix) {
 	const float linear = 0.25;
 	const float quadratic = 0.05;
 	
-	const float step = 0.05;
-	const float distance_step = 100.0;
+	const float step = 0.1;
+	const float distance_step = 10.0;
 
 	vec4 albedo = texture(buffer_albedo, pix);
 	vec3 normal = 1.0 - texture(buffer_normal, pix).xyz * 2.0;
 	vec3 pos = texture(buffer_position, pix).xyz;
 
-	if (texture(buffer_normal, pix).a == 0.0) return albedo.rgb;
+	if (texture(buffer_normal, pix).xyz == vec3(1.0, 1.0, 1.0)) return albedo.rgb;
 
 	vec3 result = albedo.xyz * ambient_intensity;
 
@@ -62,7 +62,9 @@ vec3 light_pixel(vec2 pix) {
 
 		factor = round(factor / step) * step;
 
-		result = result + albedo.rgb * light_points[i].color.rgb * factor;
+		result =
+			result +
+			albedo.rgb * light_points[i].color.rgb * factor;
 		//result = N;
 	}
 

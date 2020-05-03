@@ -339,9 +339,20 @@ void InputsManager::update(float dt) {
 		records.empty() ? Vector2f{} : records.back().mouse_screen_pos;
 
 	new_record.mouse_screen_pos = io::get_mouse_pos();
-	new_record.mouse_screen_delta = new_record.mouse_screen_pos - last_mouse_screen_pos;
+
+	Rectanglef viewport = {
+		0.f, 0.f, (float)Environment.window_width, (float)Environment.window_height
+	};
+	viewport.fitDownRatio({16, 9});
 
 	new_record.window_size = { Environment.window_width, Environment.window_height };
+	new_record.mouse_screen_pos.x *= viewport.w / Environment.window_width;
+	new_record.mouse_screen_pos.y *= viewport.h / Environment.window_height;
+	//new_record.mouse_screen_pos += (new_record.window_size - viewport.size) / 2;
+	new_record.window_size = (Vector2u)viewport.size;
+
+	new_record.mouse_screen_delta = new_record.mouse_screen_pos - last_mouse_screen_pos;
+
 
 	new_record.key_captured = ImGui::GetIO().WantCaptureKeyboard;
 	new_record.mouse_captured = ImGui::GetIO().WantCaptureMouse;
@@ -385,6 +396,57 @@ Vector2f IM::applyInverseView(const render::View_Info& view, Vector2f p) noexcep
 		view.world_bounds.y + view.world_bounds.h * normalized.y
 	};
 }
+
+Vector2f IM::view_to_buffer(const Rectanglef& view, Vector2f p) noexcept {
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+
+	return {
+		Environment.buffer_width * (p.x - view.x) / view.w,
+		Environment.buffer_height * (p.y - view.y) / view.h
+	};
+}
+
+Vector2f IM::pos_view_to_window(const Rectanglef& view, Vector2f p) noexcept {
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+
+	return {
+		last_record.window_size.x * (p.x - view.x) / view.w,
+		last_record.window_size.y * (p.y - view.y) / view.h
+	};
+}
+Vector2f IM::size_view_to_window(const Rectanglef& view, Vector2f p) noexcept {
+	if (records.empty()) return {};
+
+	const auto& last_record = records.back();
+
+
+	return {
+		last_record.window_size.x * p.x / view.w,
+		last_record.window_size.y * p.y / view.h
+	};
+}
+
+Vector2f IM::size_view_to_view(Rectanglef A, Rectanglef B, Vector2f p) noexcept {
+	return {
+		B.w * p.x / A.w,
+		B.h * p.y / A.h
+	};
+}
+
+
+Vector2f IM::pos_view_to_view(Rectanglef A, Rectanglef B, Vector2f p) noexcept {
+	return {
+		B.x + B.w * (p.x - A.x) / A.w,
+		B.y + B.h * (p.y - A.y) / A.h
+	};
+}
+
 
 bool IM::isWindowFocused() noexcept {
 	if (records.empty()) return {};

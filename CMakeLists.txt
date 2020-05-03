@@ -75,6 +75,7 @@ add_executable(Roshar
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Collision.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Collision.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/constexpr.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Formats.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Assets.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Editor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Editor.hpp

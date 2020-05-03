@@ -253,6 +253,11 @@ public:
 	static Vector2f getMouseScreenDelta() noexcept;
 	static Vector2f getMouseDeltaInView(const Rectanglef& view) noexcept;
 	static Vector2f getMouseDeltaInView(const render::View_Info& view) noexcept;
+	static Vector2f view_to_buffer(const Rectanglef& view, Vector2f p) noexcept;
+	static Vector2f pos_view_to_window(const Rectanglef& view, Vector2f p) noexcept;
+	static Vector2f size_view_to_window(const Rectanglef& view, Vector2f p) noexcept;
+	static Vector2f size_view_to_view(Rectanglef A, Rectanglef B, Vector2f p) noexcept;
+	static Vector2f pos_view_to_view(Rectanglef A, Rectanglef B, Vector2f p) noexcept;
 	static Vector2f applyInverseView(const Rectanglef& view, Vector2f p) noexcept;
 	static Vector2f applyInverseView(const render::View_Info& view, Vector2f p) noexcept;
 

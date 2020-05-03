@@ -20,7 +20,7 @@ struct Environment_t {
 
 	float dead_velocity{ 10 };
 
-	float binding_range{ 1 };
+	float binding_range{ 10 };
 
 	bool debug_input{ false };
 	bool show_camera_target{ false };
@@ -31,6 +31,10 @@ struct Environment_t {
 
 	std::uint32_t window_width{ 0 };
 	std::uint32_t window_height{ 0 };
+	float inner_window_size_width;
+	float inner_window_size_height;
+	std::uint32_t buffer_width{ 1920 };
+	std::uint32_t buffer_height{ 1080 };
 	float window_ratio{ 0.f };
 
 	Debug_Framebuffer debug_framebuffer{ Debug_Framebuffer::Default };

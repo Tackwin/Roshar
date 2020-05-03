@@ -46,6 +46,7 @@ class Editor {
 
 	std::vector<Vector2f> drag_offset;
 
+	Vector2f* pos_modifier{ nullptr };
 
 	void delete_all_selected() noexcept;
 	void set_camera_bound() noexcept;
@@ -57,7 +58,10 @@ public:
 	std::string save_path;
 
 	void render(render::Orders& target) noexcept;
+	void render_imgui() noexcept;
 	void update(float dt) noexcept;
+
+	void update_selected_pos() noexcept;
 
 	void end_drag(Vector2f start, Vector2f end) noexcept;
 };

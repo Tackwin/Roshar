@@ -18,20 +18,26 @@
 #include "introspection.hpp"
 
 struct Editable {
-	std::uint32_t id;
+	size_t id;
 	bool editor_selected{ false };
 	bool editor_remove_flage{ false };
+
+	virtual void imgui_edit() noexcept {};
+	virtual void render(render::Orders& target) const noexcept = 0;
+};
+
+struct Physicable {
+	Rectanglef rec;
 };
 
 struct Flowing_Water : Editable {
 	std::vector<Vector2f> path;
 	float width{ 10.f };
 	float flow_rate{ 1.f };
-
-	void render(render::Orders& target) const noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Block : Editable {
+struct Block : Editable, Physicable {
 	bool back{ false };
 
 	enum class Prest_Kind {
@@ -41,64 +47,46 @@ struct Block : Editable {
 		Count
 	} prest_kind{ Prest_Kind::Normal };
 
-	Vector2f pos;
-	Vector2f size;
-
 	bool destroy_on_step{false};
 	bool stepped_on{false};
 	float destroy_timer{ 0.f };
 	float destroy_time{ 0.f };
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Kill_Zone : Editable {
-	Vector2f pos;
-	Vector2f size;
-	void render(render::Orders& target) const noexcept;
+struct Kill_Zone : Editable, Physicable {
+	virtual void render(render::Orders& target) const noexcept;
+};
+struct Dry_Zone : Editable, Physicable {
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Next_Zone : Editable {
+struct Next_Zone : Editable, Physicable {
 	std::string next_level;
-
-	Vector2f pos;
-	Vector2f size;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Trigger_Zone : Editable {
+struct Trigger_Zone : Editable, Physicable {
 	bool editor_selected{ false };
 
 	std::uint64_t id;
-	Rectanglef rec;
 	bool triggered{ false };
-
-	void render(render::Orders& target) const noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Door : Editable {
-	Rectanglef rec;
-
+struct Door : Editable, Physicable {
 	bool closed{ true };
 
 	std::vector<std::uint64_t> must_triggered;
 	std::vector<std::uint64_t> mustnt_triggered;
 	std::vector<std::uint64_t> must_have_keys;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Dry_Zone : Editable {
-	bool editor_selected{ false };
-
-	Rectanglef rec;
-
-	void render(render::Orders& target) const noexcept;
-};
-
-struct Dispenser : Editable {
-	Vector2f start_pos;
+struct Dispenser : Editable, Physicable {
 	Vector2f end_pos;
 
 	float hz;
@@ -109,104 +97,90 @@ struct Dispenser : Editable {
 	float offset_timer{ 0 };
 
 	Dispenser() noexcept;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Projectile {
-	Vector2f pos;
+struct Projectile : Physicable {
 	Vector2f speed;
 
 	Vector2f end_pos;
 
 	float r;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Prest_Source : Editable {
+struct Prest_Source : Editable, Physicable {
 	static const inline auto Radius_Multiplier = 0.2f;
-
 	float prest;
-	Vector2f pos;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Rock : Editable {
+struct Rock : Editable, Physicable {
 	std::uint64_t running_id = xstd::uuid();
 
 	float r;
-	Vector2f pos;
 	Vector2f velocity;
 
 	std::vector<Vector2f> bindings;
 	float mass;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 
-	void render(render::Orders& target) const noexcept;
 	auto operator==(const Rock& other) const {
 		return running_id == other.running_id;
 	}
 };
 
-struct Auto_Binding_Zone : Editable {
-	Rectanglef rec;
-
+struct Auto_Binding_Zone : Editable, Physicable {
 	Vector2f binding;
 	std::uint64_t uuid;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Friction_Zone : Editable {
-	Rectanglef rec;
-
+struct Friction_Zone : Editable, Physicable {
 	float friction{ 1 };
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Decor_Sprite : Editable {
+struct Decor_Sprite : Editable, Physicable {
 	float opacity{ 1 };
 
 	std::filesystem::path texture_path;
 	asset::Key texture_key;
 	bool texture_loaded{ false };
-
-	Rectanglef rec;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Key_Item : Editable {
+struct Key_Item : Editable, Physicable {
 	inline static Vector2f Key_World_Size{ 0.16f, 0.36f };
-
-	Vector2f pos;
 	std::uint64_t id;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Torch : Editable {
-	Vector2f pos;
+struct Torch : Editable, Physicable {
 	Vector4d color;
 	float intensity;
 
 	float random_factor;
-
-	void render(render::Orders& target) const noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 };
 
-struct Moving_Block : Editable {
+struct Moving_Block : Editable, Physicable {
 	std::vector<Vector2f> waypoints;
 
 	float speed{ 1 };
 	bool looping{ false };
 
-	Rectanglef rec;
-
-	void render(render::Orders& target) const noexcept;
 	void update(float dt) noexcept;
+	virtual void imgui_edit() noexcept;
+	virtual void render(render::Orders& target) const noexcept;
 
 	Vector2f to_move{};
 

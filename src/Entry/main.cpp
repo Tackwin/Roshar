@@ -13,8 +13,6 @@
 #include "Profiler/Tracer.hpp"
 
 
-constexpr Vector2u Gl_Buffer_Size = { 1920, 1080 };
-
 void startup() noexcept;
 void shutup() noexcept;
 void post_char(std::uint32_t arg) noexcept;
@@ -59,6 +57,12 @@ void post_char(std::uint32_t arg) noexcept {
 
 void update_game(std::uint64_t dt) noexcept {
 	Environment.window_ratio = Environment.window_height / (1.f * Environment.window_width);
+	Vector2f inner_win = {
+		1.f * Environment.window_width, 1.f * Environment.window_height
+	};
+	inner_win = inner_win.fitDownRatio({16, 9});
+	Environment.inner_window_size_width = inner_win.x;
+	Environment.inner_window_size_height = inner_win.y;
 	
 	ImGui::ShowDemoWindow();
 
@@ -121,6 +125,7 @@ void render_game(render::Orders& orders) noexcept {
 }
 
 void render_orders(render::Orders& orders) noexcept {
+	Vector2u Gl_Buffer_Size{ Environment.buffer_width, Environment.buffer_height };
 	static Texture_Buffer texture_target{ Gl_Buffer_Size };
 	static G_Buffer   g_buffer{ Gl_Buffer_Size };
 	static HDR_Buffer hdr_buffer{ Gl_Buffer_Size };
@@ -289,7 +294,7 @@ void render_orders(render::Orders& orders) noexcept {
 			break;
 		case render::Order::Kind::Text:{
 			size_t idx = (size_t)&x.text.text[0];
-			char* ptr = (char*)&orders.data[idx];
+			char* ptr = (char*)(orders.data.data() + idx);
 			x.text.text = ptr;
 			render::immediate(x.text);
 			break;

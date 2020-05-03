@@ -23,12 +23,40 @@ void Flowing_Water::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Block::imgui_edit() noexcept {
+	ImGui::Text("Kind");
+	ImGui::SameLine();
+	int k = (int)prest_kind;
+	ImGui::ListBox(
+		"Kind",
+		&k,
+		[](void*, int i, const char** out) {
+			switch ((Prest_Kind)i) {
+				case Prest_Kind::Normal:        *out = "Normal";    break;
+				case Prest_Kind::Saturated:     *out = "Saturated"; break;
+				case Prest_Kind::Eponge:        *out = "Eponge";    break;
+				default: assert("Logic error"); *out = "";          break;
+			}
+			return true;
+		},
+		nullptr,
+		(int)Prest_Kind::Count
+	);
+	prest_kind = (Prest_Kind)k;
+	ImGui::Checkbox("Destroy on step", &destroy_on_step);
+	if (destroy_on_step) {
+		ImGui::SameLine();
+		if (ImGui::SliderFloat("Time", &destroy_time, 0, 5)) destroy_timer = destroy_time;
+	}
+	ImGui::Checkbox("Back", &back);
+}
+
 void Block::render(render::Orders& target) const noexcept {
 	Vector4d color = { 1, 1, 1, 1 };
 	if (back) color = { .2, .8, .2, 1 };
 	if (destroy_on_step) color.a = std::clamp(destroy_timer / destroy_time, 0.f, 1.f);
 
-	target.push_rectangle(pos, size, color);
+	target.push_rectangle(rec, color);
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -37,8 +65,8 @@ void Block::render(render::Orders& target) const noexcept {
 		float size_up = 0.04f;
 
 		target.push_rectangle(
-			pos - V2F(size_up / 2),
-			size + V2F(size_up / 2),
+			rec.pos - V2F(size_up / 2),
+			rec.size + V2F(size_up / 2),
 			{ 1, 1, 1, alpha * alpha },
 			0.01f,
 			{ 1.0, 0.0, 0.0, 1.0 }
@@ -47,7 +75,7 @@ void Block::render(render::Orders& target) const noexcept {
 }
 
 void Kill_Zone::render(render::Orders& target) const noexcept {
-	target.push_rectangle(pos, size, { 0.1, 1, 0.5, 1 });
+	target.push_rectangle(rec, { 0.1, 1, 0.5, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -57,8 +85,8 @@ void Kill_Zone::render(render::Orders& target) const noexcept {
 		float size_up = 0.04f;
 
 		target.push_rectangle(
-			pos - V2F(size_up / 2),
-			size + V2F(size_up / 2),
+			rec.pos - V2F(size_up / 2),
+			rec.size + V2F(size_up / 2),
 			{ 1, 1, 1, alpha * alpha },
 			0.01f,
 			{ 1.0, 0.0, 0.0, 1.0 }
@@ -66,8 +94,18 @@ void Kill_Zone::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Next_Zone::imgui_edit() noexcept {
+	thread_local char buffer[1024] = { '\0' };
+	memcpy(buffer, next_level.data(), next_level.size());
+	ImGui::InputText("Next", buffer, 1024);
+	next_level = buffer;
+	// >EntityManager
+	// >TODO(Tackwin): Want to do a browse button here but need to make sure that i can check for
+	// this object liveability
+}
+
 void Next_Zone::render(render::Orders& target) const noexcept {
-	target.push_rectangle(pos, size, { 0.1, 0.1, 0.1, 1 });
+	target.push_rectangle(rec, { 0.1, 0.1, 0.1, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -76,8 +114,8 @@ void Next_Zone::render(render::Orders& target) const noexcept {
 		float size_up = 0.04f;
 
 		target.push_rectangle(
-			pos - V2F(size_up / 2),
-			size + V2F(size_up / 2),
+			rec.pos - V2F(size_up / 2),
+			rec.size + V2F(size_up / 2),
 			{ 1, 1, 1, alpha * alpha },
 			0.01f,
 			{ 1.0, 0.0, 0.0, 1.0 }
@@ -104,9 +142,14 @@ void Dry_Zone::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Rock::imgui_edit() noexcept {
+	ImGui::SliderFloat("Mass", &mass, 0, 10);
+	ImGui::SliderFloat("Radius", &r, 0, 10);
+}
+
 void Rock::render(render::Orders& target) const noexcept {
 	target.push_sprite(
-		pos,
+		rec.pos,
 		{ 2 * r, 2 * r },
 		asset::Texture_Id::Rock,
 		{ 0, 0, 1, 1 },
@@ -115,7 +158,7 @@ void Rock::render(render::Orders& target) const noexcept {
 		{1, 1, 1, 1}
 	);
 
-	for (auto& binding : bindings) target.push_arrow(pos, pos + binding, { 1, 0, 1, 1 });
+	for (auto& binding : bindings) target.push_arrow(rec.pos, rec.pos + binding, { 1, 0, 1, 1 });
 
 	if (editor_selected) {
 		thread_local std::uint64_t sin_time = 0;
@@ -123,7 +166,7 @@ void Rock::render(render::Orders& target) const noexcept {
 
 		target.push_circle(
 			r,
-			pos,
+			rec.pos,
 			{ 1., 1., 1., alpha * alpha }
 		);
 	}
@@ -145,6 +188,40 @@ void Trigger_Zone::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Door::imgui_edit() noexcept {
+	thread_local bool must{false};
+	ImGui::Checkbox("Closed", &closed);
+	ImGui::Checkbox(must ? "Must list" : "Mustnt list", &must);
+
+	if (ImGui::Button("Add to list")) {
+		auto& trigger_zone_list = must ? must_triggered : mustnt_triggered;
+		for (auto& x : game->play_screen.current_level.trigger_zones) if (x.editor_selected) {
+			trigger_zone_list.push_back(x.id);
+		}
+		for (auto& x : game->play_screen.current_level.key_items) if (x.editor_selected) {
+			must_have_keys.push_back(x.id);
+		}
+
+		trigger_zone_list.erase(std::unique(BEG_END(trigger_zone_list)), END(trigger_zone_list));
+		must_have_keys.erase(std::unique(BEG_END(must_have_keys)), END(must_have_keys));
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Remove from list")) {
+		auto& trigger_zone_list = must ? must_triggered : mustnt_triggered;
+		auto& key_list = must_have_keys;
+
+		for (const auto& x : game->play_screen.current_level.trigger_zones) if (x.editor_selected) {
+			auto& l = trigger_zone_list;
+			if (auto it = std::find(BEG_END(l), x.id); it != END(l)) l.erase(it);
+		}
+		
+		for (const auto& x : game->play_screen.current_level.key_items) if (x.editor_selected) {
+			auto& l = must_have_keys;
+			if (auto it = std::find(BEG_END(l), x.id); it != END(l)) l.erase(it);
+		}
+	}
+}
+
 void Door::render(render::Orders& target) const noexcept {
 	Vector4d color = { .9, .9, .9, 1. };
 	if (!closed) color.a = .1;
@@ -163,6 +240,10 @@ void Door::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Friction_Zone::imgui_edit() noexcept {
+	ImGui::SliderFloat("Friction", &friction, 0, 2);
+}
+
 void Friction_Zone::render(render::Orders& target) const noexcept {
 	target.push_rectangle(rec, { std::atan(friction) * 0.9, std::atan(friction) * 0.9, 0.1, 1 });
 
@@ -179,11 +260,21 @@ void Friction_Zone::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Prest_Source::imgui_edit() noexcept {
+	ImGui::SliderFloat("Prest", &prest, 0, 10);
+}
+
 void Prest_Source::render(render::Orders& target) const noexcept {
 	auto r = std::sqrt(prest) * Radius_Multiplier;
 
-	if (editor_selected) target.push_circle(r + 0.04f, pos, { 1.0, 1.0, 1.0, 0.1 });
-	else                 target.push_circle(r, pos, { 0, 1, 1, 1 });
+	if (editor_selected) target.push_circle(r + 0.04f, rec.pos, { 1.0, 1.0, 1.0, 0.1 });
+	else                 target.push_circle(r, rec.pos, { 0, 1, 1, 1 });
+}
+
+
+void Auto_Binding_Zone::imgui_edit() noexcept {
+	ImGui::SliderFloat("X", &binding.x, 0, 1);
+	ImGui::SliderFloat("X", &binding.y, 0, 1);
 }
 
 void Auto_Binding_Zone::render(render::Orders& target) const noexcept {
@@ -207,18 +298,26 @@ Dispenser::Dispenser() noexcept {
 	timer = (1 / hz) - std::fmodf(offset_timer, 1 / hz);
 }
 
+void Dispenser::imgui_edit() noexcept {
+	ImGui::SliderFloat("Radius", &proj_r, 0, 1);
+	ImGui::SliderFloat("Speed", &proj_speed, 0, 1);
+	ImGui::SliderFloat("Cadence", &hz, 0.1, 10);
+	ImGui::SliderFloat("Offset", &offset_timer, 0, 1);
+	timer = 1 / hz;
+}
+
 void Dispenser::render(render::Orders& target) const noexcept {
-	target.push_circle(proj_r, start_pos, { 0.4, 0.3, 0.2, 1. });
+	target.push_circle(proj_r, rec.pos, { 0.4, 0.3, 0.2, 1. });
 
 	if (editor_selected) {
-		target.push_circle(proj_r, start_pos, { 0.4, 0.3, 0.2, 1. }, 0.1f);
+		target.push_circle(proj_r, rec.pos, { 0.4, 0.3, 0.2, 1. }, 0.1f);
 
 		std::size_t i = 0;
 		auto proj_timer = offset_timer + ++i / hz - timer;
 
-		while ((end_pos - start_pos).length() > proj_speed * proj_timer && proj_timer > 0) {
+		while ((end_pos - rec.pos).length() > proj_speed * proj_timer && proj_timer > 0) {
 			Projectile p;
-			p.pos = start_pos + (end_pos - start_pos).normalize() * proj_timer * proj_speed;
+			p.rec.pos = rec.pos + (end_pos - rec.pos).normalize() * proj_timer * proj_speed;
 			p.r = proj_r;
 			p.render(target);
 			proj_timer = offset_timer + ++i / hz - timer;
@@ -227,7 +326,11 @@ void Dispenser::render(render::Orders& target) const noexcept {
 }
 
 void Projectile::render(render::Orders& target) const noexcept {
-	target.push_circle(r, pos, { 0.2, 0.3, 0.4, 1. });
+	target.push_circle(r, rec.pos, { 0.2, 0.3, 0.4, 1. });
+}
+
+void Decor_Sprite::imgui_edit() noexcept {
+	ImGui::SliderFloat("Opacity", &opacity, 0, 1);
 }
 
 void Decor_Sprite::render(render::Orders& target) const noexcept {
@@ -248,6 +351,12 @@ void Decor_Sprite::render(render::Orders& target) const noexcept {
 	}
 }
 
+void Key_Item::imgui_edit() noexcept {
+	int i_id = id;
+	ImGui::InputInt("Id", &i_id);
+	id = i_id;
+}
+
 void Key_Item::render(render::Orders& target) const noexcept {
 	Vector4d color{ 1, 1, 1, 1 };
 	if (editor_selected) {
@@ -258,7 +367,7 @@ void Key_Item::render(render::Orders& target) const noexcept {
 	}
 
 	target.push_sprite(
-		pos,
+		rec.pos,
 		Key_World_Size,
 		asset::Texture_Id::Key_Item,
 		{ 0, 0, 1, 1 },
@@ -266,6 +375,16 @@ void Key_Item::render(render::Orders& target) const noexcept {
 		0,
 		color
 	);
+}
+
+void Torch::imgui_edit() noexcept {
+	Vector3f c((float)color.x, (float)color.y, (float)color.z);
+	ImGui::SliderFloat("Intensity", &intensity, 0, 100, "%.3f", 2);
+	ImGui::SliderFloat("Random Factor", &random_factor, 0, 10, "%.3f", 2);
+	ImGui::ColorEdit3("Color", &c.x);
+	color.x = c.x;
+	color.y = c.y;
+	color.z = c.z;
 }
 
 void Torch::render(render::Orders& target) const noexcept {
@@ -277,12 +396,20 @@ void Torch::render(render::Orders& target) const noexcept {
 		2 * PI * randomf(), 2 * PI * randomf(), 2 * PI * randomf()
 	};
 
-	rand_pos = pos + random_factor * randomf() * Vector2f::createUnitVector(2 * PI * randomf());
+	rand_pos = rec.pos + random_factor * randomf() * Vector2f::createUnitVector(2 * PI * randomf());
 	rand_color = color + random_factor * randomf() * Vector4d::createUnitVector(angles);
 	rand_intensity = intensity + random_factor * randomf();
 
 	target.push_point_light(rand_pos, rand_color, rand_intensity);
 	target.late_push_circle(std::sqrtf(rand_intensity) / 10, rand_pos, rand_color);
+}
+
+void Moving_Block::imgui_edit() noexcept {
+	ImGui::SliderFloat("t", &t, 0, 1);
+	ImGui::SliderFloat("Speed", &speed, 0, 1);
+	ImGui::Checkbox("Looping", &looping);
+	ImGui::Checkbox("Reverse", &reverse);
+	ImGui::Text("To add a waypoint press A");
 }
 
 void Moving_Block::render(render::Orders& target) const noexcept {
@@ -400,7 +527,7 @@ void Level::render(render::Orders& target) const noexcept {
 
 	if (focused_rock) {
 		target.push_sprite(
-			rocks[*focused_rock].pos,
+			rocks[*focused_rock].rec.pos,
 			V2F(1.5f),
 			asset::Texture_Id::Indicator,
 			{ 0, 0, 1, 1 },
@@ -465,10 +592,12 @@ void Level::input(IM::Input_Iterator record) noexcept {
 	if (record->is_just_pressed(Joystick::LB) && !rocks.empty()) {
 		auto sorted_rocks = rocks;
 		sorted_rocks.erase(std::remove_if(BEG_END(sorted_rocks), [&](Rock& x) {
-			return (x.pos - player.hitbox.pos).length2() > range;
+			return (x.rec.pos - player.hitbox.pos).length2() > range;
 		}), END(sorted_rocks));
 		std::sort(BEG_END(sorted_rocks), [&](const Rock& a, const Rock& b) {
-			return (a.pos - player.hitbox.pos).length() < (b.pos - player.hitbox.pos).length();
+			auto dt_a = (a.rec.pos - player.hitbox.pos);
+			auto dt_b = (b.rec.pos - player.hitbox.pos);
+			return dt_a.length() < dt_b.length();
 		});
 
 		if (!sorted_rocks.empty() && !focused_rock) {
@@ -549,9 +678,9 @@ void Level::update(float dt) noexcept {
 			x.timer = 1 / x.hz;
 
 			Projectile p;
-			p.pos = x.start_pos;
+			p.rec.pos = x.rec.pos;
 			p.r = x.proj_r;
-			p.speed = (x.end_pos - x.start_pos).normalize() * x.proj_speed;
+			p.speed = (x.end_pos - x.rec.pos).normalize() * x.proj_speed;
 			p.end_pos = x.end_pos;
 
 			projectiles.push_back(p);
@@ -560,13 +689,13 @@ void Level::update(float dt) noexcept {
 	for (size_t i = projectiles.size() - 1; i + 1 > 0; --i) {
 		auto& x = projectiles[i];
 
-		x.pos += x.speed * dt;
+		x.rec.pos += x.speed * dt;
 
 		Circlef c;
 		c.c = x.end_pos;
 		c.r = x.r;
 
-		if (is_in(x.pos, c)) {
+		if (is_in(x.rec.pos, c)) {
 			projectiles.erase(BEG(projectiles) + i);
 		}
 	}
@@ -591,7 +720,7 @@ void Level::update(float dt) noexcept {
 	if (focused_rock) {
 		auto range = Environment.binding_range * Environment.binding_range;
 
-		if (player.hitbox.center().dist_to2(rocks[*focused_rock].pos) > range)
+		if (player.hitbox.center().dist_to2(rocks[*focused_rock].rec.pos) > range)
 			focused_rock.reset();
 	}
 
@@ -628,28 +757,27 @@ void Level::test_collisions(float dt) noexcept {
 		Rectanglef rec;
 
 		circle.r = rock.r;
-		circle.c = rock.pos + rock.velocity * dt;
+		circle.c = rock.rec.pos + rock.velocity * dt;
 
 		for (const auto& block : blocks) {
-			rec.pos = block.pos;
-			rec.size = block.size;
+			rec = block.rec;
 
 			if (block.back) continue;
 
 			if (auto opt = get_next_velocity(circle, rock.velocity, rec, dt); opt) {
 				rock.velocity = *opt;
-				circle.c = rock.pos + rock.velocity * dt;
+				circle.c = rock.rec.pos + rock.velocity * dt;
 			}
 		}
 		for (const auto& door : doors) {
 			if (!door.closed) continue;
 			if (auto opt = get_next_velocity(circle, rock.velocity, door.rec, dt); opt) {
 				rock.velocity = *opt;
-				circle.c = rock.pos + rock.velocity * dt;
+				circle.c = rock.rec.pos + rock.velocity * dt;
 			}
 		}
 
-		rock.pos = circle.c;
+		rock.rec.pos = circle.c;
 	}
 
 	for (const auto& d : dry_zones) {
@@ -745,7 +873,7 @@ void Level::update_player(float dt) noexcept {
 			if (capabilities.holding && test(x, grap_box)){
 				response.holded = Player_Response::Holding_Block{};
 				response.holded->back = x.back;
-				response.holded->rec = {x.pos, x.size};
+				response.holded->rec = x.rec;
 			}
 
 			if (!test(x, player)) continue;
@@ -753,7 +881,7 @@ void Level::update_player(float dt) noexcept {
 			x.stepped_on = true;
 			response.touched_saturated |= x.prest_kind == Block::Prest_Kind::Saturated;
 
-			auto dt_y = player.hitbox.y - (x.pos.y + x.size.y);
+			auto dt_y = player.hitbox.y - (x.rec.y + x.rec.h);
 			bool can_climb = capabilities.auto_climb && -player.hitbox.h / 5.f < dt_y && dt_y < 0;
 
 			if (can_climb) response.auto_climbed = dt_y;
@@ -999,13 +1127,16 @@ void from_dyn_struct(const dyn_struct& str, Block& block) noexcept {
 			block.destroy_timer = block.destroy_time;
 		}
 	}
-	block.pos = (Vector2f)str["pos"];
-	block.size = (Vector2f)str["size"];
+	if (has(str, "pos")) {
+		block.rec.pos = (Vector2f)str["pos"];
+		block.rec.size = (Vector2f)str["size"];
+	} else if (has(str, "rec")) {
+		block.rec = (Rectanglef)str["rec"];
+	}
 }
 void to_dyn_struct(dyn_struct& str, const Block& block) noexcept {
 	str = dyn_struct::structure_t{};
-	str["pos"] = block.pos;
-	str["size"] = block.size;
+	str["rec"] = block.rec;
 	str["kind"] = (int)block.prest_kind;
 	str["back"] = block.back;
 	str["destroy_on_step"] = block.destroy_on_step;
@@ -1031,14 +1162,14 @@ void to_dyn_struct(dyn_struct& str, const Dry_Zone& x) noexcept {
 }
 void from_dyn_struct(const dyn_struct& str, Torch& x) noexcept {
 	x.color = (Vector4d)str["color"];
-	x.pos = (Vector2f)str["pos"];
+	x.rec.pos = (Vector2f)str["pos"];
 	x.intensity = (float)str["intensity"];
 	if (has(str, "random_factor")) x.random_factor = (float)str["random_factor"];
 }
 void to_dyn_struct(dyn_struct& str, const Torch& x) noexcept {
 	str = dyn_struct::structure_t{};
 	str["color"] = x.color;
-	str["pos"] = x.pos;
+	str["pos"] = x.rec.pos;
 	str["intensity"] = x.intensity;
 	str["random_factor"] = x.random_factor;
 }
@@ -1048,11 +1179,11 @@ void from_dyn_struct(const dyn_struct& str, Friction_Zone& x) noexcept {
 }
 void to_dyn_struct(dyn_struct& str, const Key_Item& x) noexcept {
 	str = dyn_struct::structure_t{};
-	str["pos"] = x.pos;
+	str["pos"] = x.rec.pos;
 	str["id"] = x.id;
 }
 void from_dyn_struct(const dyn_struct& str, Key_Item& x) noexcept {
-	x.pos = (Vector2f)str["pos"];
+	x.rec.pos = (Vector2f)str["pos"];
 	x.id = (std::uint64_t)str["id"];
 }
 void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept {
@@ -1062,7 +1193,7 @@ void to_dyn_struct(dyn_struct& str, const Friction_Zone& x) noexcept {
 }
 void from_dyn_struct(const dyn_struct& str, Dispenser& dispenser) noexcept {
 	if (has(str, "offset_timer")) dispenser.offset_timer = (float)str["offset_timer"];
-	dispenser.start_pos = (Vector2f)str["start_pos"];
+	dispenser.rec.pos = (Vector2f)str["start_pos"];
 	dispenser.end_pos = (Vector2f)str["end_pos"];
 	dispenser.proj_r = (float)str["proj_r"];
 	dispenser.hz = (float)str["hz"];
@@ -1071,7 +1202,7 @@ void from_dyn_struct(const dyn_struct& str, Dispenser& dispenser) noexcept {
 }
 void to_dyn_struct(dyn_struct& str, const Dispenser& dispenser) noexcept {
 	str = dyn_struct::structure_t{};
-	str["start_pos"] = dispenser.start_pos;
+	str["start_pos"] = dispenser.rec.pos;
 	str["end_pos"] = dispenser.end_pos;
 	str["proj_r"] = dispenser.proj_r;
 	str["proj_speed"] = dispenser.proj_speed;
@@ -1079,21 +1210,24 @@ void to_dyn_struct(dyn_struct& str, const Dispenser& dispenser) noexcept {
 	str["hz"] = dispenser.hz;
 }
 void from_dyn_struct(const dyn_struct& str, Kill_Zone& block) noexcept {
-	block.pos = (Vector2f)str["pos"];
-	block.size = (Vector2f)str["size"];
+	if (has(str, "pos")) {
+		block.rec.pos = (Vector2f)str["pos"];
+		block.rec.size = (Vector2f)str["size"];
+	} else if (has(str, "rec")) {
+		block.rec = (Rectanglef)str["rec"];
+	}
 }
 void to_dyn_struct(dyn_struct& str, const Kill_Zone& block) noexcept {
 	str = dyn_struct::structure_t{};
-	str["pos"] = block.pos;
-	str["size"] = block.size;
+	str["rec"] = block.rec;
 }
 void from_dyn_struct(const dyn_struct& str, Prest_Source& prest) noexcept {
-	prest.pos = (Vector2f)str["pos"];
+	prest.rec.pos = (Vector2f)str["pos"];
 	prest.prest = (float)str["prest"];
 }
 void to_dyn_struct(dyn_struct& str, const Prest_Source& prest) noexcept {
 	str = dyn_struct::structure_t{};
-	str["pos"] = prest.pos;
+	str["pos"] = prest.rec.pos;
 	str["prest"] = prest.prest;
 }
 void from_dyn_struct(const dyn_struct& str, Level& level) noexcept {
@@ -1164,14 +1298,17 @@ void to_dyn_struct(dyn_struct& str, const Level& level) noexcept {
 	str["name"] = level.name.empty() ? level.file_path.generic_string() : level.name;
 }
 void from_dyn_struct(const dyn_struct& str, Next_Zone& x) noexcept {
-	x.pos = (Vector2f)str["pos"];
-	x.size = (Vector2f)str["size"];
+	if (has(str, "pos")) {
+		x.rec.pos = (Vector2f)str["pos"];
+		x.rec.size = (Vector2f)str["size"];
+	} else if (has(str, "rec")) {
+		x.rec = (Rectanglef)str["rec"];
+	}
 	x.next_level = (std::string)str["next_level"];
 }
 void to_dyn_struct(dyn_struct& str, const Next_Zone& x) noexcept {
 	str = dyn_struct::structure_t{};
-	str["pos"] = x.pos;
-	str["size"] = x.size;
+	str["rec"] = x.rec;
 	str["next_level"] = x.next_level;
 }
 void from_dyn_struct(const dyn_struct& str, Trigger_Zone& x) noexcept {
@@ -1200,14 +1337,14 @@ void to_dyn_struct(dyn_struct& str, const Door& x) noexcept {
 	str["mustnt_triggered"] = x.mustnt_triggered;
 }
 void from_dyn_struct(const dyn_struct& str, Rock& x) noexcept {
-	x.pos = (Vector2f)str["pos"];
+	x.rec.pos = (Vector2f)str["pos"];
 	x.velocity = (Vector2f)str["velocity"];
 	x.r = (float)str["r"];
 	x.mass = (float)str["mass"];
 }
 void to_dyn_struct(dyn_struct& str, const Rock& x) noexcept {
 	str = dyn_struct::structure_t{};
-	str["pos"] = x.pos;
+	str["pos"] = x.rec.pos;
 	str["velocity"] = x.velocity;
 	str["mass"] = x.mass;
 	str["r"] = x.r;

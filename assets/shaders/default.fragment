@@ -28,9 +28,9 @@ void main() {
     	texel.w * color.w
     );
 
-    g_normal = vec4(0.5, 0.5, 1, 1);
-    if (use_normal_texture) {
-    	g_normal = texture(normal_texture, texture_coord);
+    g_normal = vec4(1.0, 1.0, 1.0, texel.a);
+    if (use_normal_texture && texel.a != 0.0) {
+    	g_normal = texture(normal_texture, texture_coord * texture_rect.zw + texture_rect.xy);
     }
 
     g_position = vec4(pos, 1);
